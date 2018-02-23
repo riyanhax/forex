@@ -1,18 +1,29 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:1.5.10.RELEASE")
+    }
+}
+
 repositories {
     mavenCentral()
 }
 
 ext {
-    slf4jVersion = '1.7.25'
     groovyVersion = '2.4.8'
+    slf4jVersion = '1.7.25'
     spockVersion = '1.1-groovy-2.4-rc-3'
+    springVersion = '4.3.3.RELEASE'
 }
 
-//apply plugin: 'java'
 apply plugin: 'groovy'
+apply plugin: 'org.springframework.boot'
 
 dependencies {
     compile "org.slf4j:slf4j-api:$slf4jVersion"
+    compile "org.springframework.boot:spring-boot-starter-web"
 
     testCompile "org.codehaus.groovy:groovy-all:$groovyVersion"
     testCompile("org.spockframework:spock-core:$spockVersion") {
