@@ -1,26 +1,14 @@
 package simulator
 
-import instrument.CurrencyPair
-import instrument.CurrencyPairHistory
-import instrument.CurrencyPairService
 import spock.lang.Specification
 
 import java.time.LocalDateTime
 import java.time.Month
-import java.time.ZonedDateTime
 
 class SimulatorImplSpec extends Specification {
 
-    CurrencyPairService currencyPairService = Mock()
-
-    def setup() {
-        currencyPairService.getData(_ as CurrencyPair, _ as ZonedDateTime) >> { pair, time ->
-            new CurrencyPairHistory(pair, time, 1.025d, 1.035d, 1.021d, 1.022d)
-        }
-    }
-
     def 'should run simulation from start to end time'() {
-        SimulatorImpl simulator = new SimulatorImpl(currencyPairService)
+        SimulatorImpl simulator = new SimulatorImpl([])
 
         given: 'a simulation with a start and end time'
         def start = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 30)
@@ -56,7 +44,7 @@ class SimulatorImplSpec extends Specification {
         def end = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 32)
 
         Simulation simulation = new Simulation(start, end, 0L);
-        SimulatorImpl simulator = new SimulatorImpl(currencyPairService)
+        SimulatorImpl simulator = new SimulatorImpl([])
 
         when: 'the simulation is over'
         simulator.run(simulation)
@@ -68,4 +56,21 @@ class SimulatorImplSpec extends Specification {
         thrown IllegalStateException
     }
 
+    def 'should notify each time observer at each interval'() {
+        TimeAware observer = Mock()
+
+        given: 'a simulation with a start and end time'
+        def start = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 30)
+        def end = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 32)
+
+        Simulation simulation = new Simulation(start, end, 0L);
+        SimulatorImpl simulator = new SimulatorImpl([observer])
+
+        when: 'the simulation is ran'
+        simulator.run(simulation)
+
+        then: 'the observer was notified of each minute'
+        1 * observer.advanceTime(null, start)
+        1 * observer.advanceTime(start, LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 31))
+    }
 }

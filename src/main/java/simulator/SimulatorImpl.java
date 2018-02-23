@@ -11,19 +11,19 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @Service
 class SimulatorImpl implements Simulator {
 
     private static final Logger LOG = LoggerFactory.getLogger(SimulatorImpl.class);
 
-    private final CurrencyPairService currencyPairService;
-
+    private final List<TimeAware> timeObservers;
     private LocalDateTime time;
 
     @Autowired
-    public SimulatorImpl(CurrencyPairService currencyPairService) {
-        this.currencyPairService = currencyPairService;
+    public SimulatorImpl(List<TimeAware> timeObservers) {
+        this.timeObservers = timeObservers;
     }
 
     @Override
@@ -38,6 +38,8 @@ class SimulatorImpl implements Simulator {
 
     void init(Simulation simulation) {
         time = simulation.startTime;
+
+        timeObservers.forEach(it -> it.advanceTime(null, time));
     }
 
     void nextMinute(Simulation simulation) {
@@ -45,9 +47,10 @@ class SimulatorImpl implements Simulator {
             throw new IllegalStateException("Can't advance beyond the end of the simulation!");
         }
 
-        CurrencyPairHistory data = currencyPairService.getData(CurrencyPair.EURUSD, time.atZone(ZoneId.systemDefault()));
-        LOG.info("Time: {}\n\tEUR/USD Open: {}, High: {}, Low: {}, Close: {}", time.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
-                data.open, data.high, data.low, data.close);
+        LocalDateTime previous = time;
+        time = time.plusMinutes(1L);
+
+        timeObservers.forEach(it -> it.advanceTime(previous, time));
 
         if (simulation.millisDelayBetweenMinutes > 0) {
             try {
@@ -56,8 +59,6 @@ class SimulatorImpl implements Simulator {
                 LOG.error("Interrupted trying to wait!", e);
             }
         }
-
-        time = time.plusMinutes(1L);
     }
 
     LocalDateTime currentTime() {

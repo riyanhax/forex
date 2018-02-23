@@ -1,4 +1,5 @@
 import instrument.InstrumentConfig;
+import market.MarketConfig;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -7,7 +8,7 @@ import simulator.Simulation;
 import simulator.Simulator;
 import simulator.SimulatorConfig;
 
-@SpringBootApplication(scanBasePackageClasses = {InstrumentConfig.class, SimulatorConfig.class})
+@SpringBootApplication(scanBasePackageClasses = {InstrumentConfig.class, SimulatorConfig.class, MarketConfig.class})
 public class Application {
 
     public static void main(String[] args) {
