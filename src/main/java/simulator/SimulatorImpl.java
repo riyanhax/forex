@@ -10,16 +10,19 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+import static java.time.temporal.ChronoUnit.MINUTES;
+
 @Service
 class SimulatorImpl implements Simulator {
 
     private static final Logger LOG = LoggerFactory.getLogger(SimulatorImpl.class);
 
     private final List<Broker> brokers;
-    private LocalDateTime time;
+    private SimulatorClockImpl clock;
 
     @Autowired
-    public SimulatorImpl(List<Broker> brokers) {
+    public SimulatorImpl(SimulatorClockImpl clock, List<Broker> brokers) {
+        this.clock = clock;
         this.brokers = brokers;
     }
 
@@ -27,30 +30,27 @@ class SimulatorImpl implements Simulator {
     public void run(Simulation simulation) {
         init(simulation);
 
-        while (time.isBefore(simulation.endTime)) {
-
+        while (clock.now().isBefore(simulation.endTime)) {
             nextMinute(simulation);
         }
     }
 
     void init(Simulation simulation) {
-        time = simulation.startTime;
-
-        brokers.forEach(it -> it.advanceTime(null, time));
+        clock.init(simulation.startTime);
+        brokers.forEach(TimeAware::processUpdates);
     }
 
     void nextMinute(Simulation simulation) {
-        if (time.equals(simulation.endTime)) {
+        LocalDateTime previous = clock.now();
+        if (!previous.isBefore(simulation.endTime)) {
             throw new IllegalStateException("Can't advance beyond the end of the simulation!");
         }
 
+        clock.advance(1, MINUTES);
 
-        LocalDateTime previous = time;
-        time = time.plusMinutes(1L);
+        LOG.info("Time: {}", clock.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm")));
 
-        LOG.info("Time: {}", time.format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm")));
-
-        brokers.forEach(it -> it.advanceTime(previous, time));
+        brokers.forEach(TimeAware::processUpdates);
 
         if (simulation.millisDelayBetweenMinutes > 0) {
             try {
@@ -59,9 +59,5 @@ class SimulatorImpl implements Simulator {
                 LOG.error("Interrupted trying to wait!", e);
             }
         }
-    }
-
-    LocalDateTime currentTime() {
-        return time;
     }
 }

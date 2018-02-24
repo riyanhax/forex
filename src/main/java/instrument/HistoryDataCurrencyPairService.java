@@ -2,6 +2,7 @@ package instrument;
 
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -16,7 +17,7 @@ class HistoryDataCurrencyPairService implements CurrencyPairService {
     }
 
     @Override
-    public CurrencyPairHistory getData(CurrencyPair pair, ZonedDateTime time) {
-        return new CurrencyPairHistory(pair, time, 1.025d, 1.035d, 1.021d, 1.022d);
+    public CurrencyPairHistory getData(CurrencyPair pair, LocalDateTime time) {
+        return new CurrencyPairHistory(pair, time, new OHLC(1.025d, 1.035d, 1.021d, 1.022d));
     }
 }

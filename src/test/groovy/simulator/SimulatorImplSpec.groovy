@@ -1,5 +1,6 @@
 package simulator
 
+import broker.Broker
 import spock.lang.Specification
 
 import java.time.LocalDateTime
@@ -8,7 +9,9 @@ import java.time.Month
 class SimulatorImplSpec extends Specification {
 
     def 'should run simulation from start to end time'() {
-        SimulatorImpl simulator = new SimulatorImpl([])
+        def clock = new SimulatorClockImpl()
+
+        SimulatorImpl simulator = new SimulatorImpl(clock, [])
 
         given: 'a simulation with a start and end time'
         def start = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 30)
@@ -20,8 +23,8 @@ class SimulatorImplSpec extends Specification {
         def times = []
 
         when: 'we process each minute of a simulation'
-        while (simulator.currentTime().isBefore(end)) {
-            times += simulator.currentTime()
+        while (clock.now().isBefore(end)) {
+            times += clock.now()
 
             simulator.nextMinute(simulation)
         }
@@ -44,7 +47,7 @@ class SimulatorImplSpec extends Specification {
         def end = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 32)
 
         Simulation simulation = new Simulation(start, end, 0L);
-        SimulatorImpl simulator = new SimulatorImpl([])
+        SimulatorImpl simulator = new SimulatorImpl(new SimulatorClockImpl(), [])
 
         when: 'the simulation is over'
         simulator.run(simulation)
@@ -56,21 +59,20 @@ class SimulatorImplSpec extends Specification {
         thrown IllegalStateException
     }
 
-    def 'should notify each time observer at each interval'() {
-        TimeAware observer = Mock()
+    def 'should notify broker at each interval'() {
+        Broker broker = Mock()
 
         given: 'a simulation with a start and end time'
         def start = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 30)
         def end = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 32)
 
         Simulation simulation = new Simulation(start, end, 0L);
-        SimulatorImpl simulator = new SimulatorImpl([observer])
+        SimulatorImpl simulator = new SimulatorImpl(new SimulatorClockImpl(), [broker])
 
         when: 'the simulation is ran'
         simulator.run(simulation)
 
-        then: 'the observer was notified of each minute'
-        1 * observer.advanceTime(null, start)
-        1 * observer.advanceTime(start, LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 31))
+        then: 'the broker was notified of each minute'
+        3 * broker.processUpdates()
     }
 }

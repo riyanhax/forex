@@ -6,6 +6,7 @@ import static java.time.LocalDateTime.of;
 import static java.time.Month.JANUARY;
 
 public class Simulation {
+
     public final LocalDateTime startTime;
     public final LocalDateTime endTime;
     public final long millisDelayBetweenMinutes;
