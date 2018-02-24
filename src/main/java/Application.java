@@ -1,3 +1,4 @@
+import broker.BrokerConfig;
 import instrument.InstrumentConfig;
 import market.MarketConfig;
 import org.springframework.boot.CommandLineRunner;
@@ -7,8 +8,10 @@ import org.springframework.context.annotation.Bean;
 import simulator.Simulation;
 import simulator.Simulator;
 import simulator.SimulatorConfig;
+import trader.TraderConfig;
 
-@SpringBootApplication(scanBasePackageClasses = {InstrumentConfig.class, SimulatorConfig.class, MarketConfig.class})
+@SpringBootApplication(scanBasePackageClasses = {InstrumentConfig.class, SimulatorConfig.class, MarketConfig.class,
+        BrokerConfig.class, TraderConfig.class})
 public class Application {
 
     public static void main(String[] args) {
