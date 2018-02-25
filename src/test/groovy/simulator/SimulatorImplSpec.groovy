@@ -13,7 +13,7 @@ class SimulatorImplSpec extends Specification {
 
         SimulatorImpl simulator = new SimulatorImpl(clock, [])
 
-        given: 'a simulation with a start and end time'
+        given: 'a simulation with a start and end timestamp'
         def start = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 30)
         def end = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 37)
 
@@ -42,7 +42,7 @@ class SimulatorImplSpec extends Specification {
     }
 
     def 'should not be able to advance past the end of a simulation'() {
-        given: 'a simulation with a start and end time'
+        given: 'a simulation with a start and end timestamp'
         def start = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 30)
         def end = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 32)
 
@@ -62,7 +62,7 @@ class SimulatorImplSpec extends Specification {
     def 'should notify broker at each interval'() {
         Broker broker = Mock()
 
-        given: 'a simulation with a start and end time'
+        given: 'a simulation with a start and end timestamp'
         def start = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 30)
         def end = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 32)
 

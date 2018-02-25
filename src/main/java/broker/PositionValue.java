@@ -1,8 +1,10 @@
 package broker;
 
-public interface PositionValue<I extends Instrument> extends Position<I> {
+import market.Instrument;
 
-    Position<I> getPosition();
+public interface PositionValue<INSTRUMENT extends Instrument, POSITION extends Position<INSTRUMENT>> extends Position<INSTRUMENT> {
+
+    POSITION getPosition();
 
     double value();
 }

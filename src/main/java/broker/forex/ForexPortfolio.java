@@ -1,7 +1,7 @@
 package broker.forex;
 
 import broker.PortfolioImpl;
-import instrument.CurrencyPair;
+import market.forex.CurrencyPair;
 
 import java.util.Set;
 

@@ -1,4 +1,4 @@
-package instrument;
+package market.forex;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Stopwatch;
@@ -7,6 +7,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.io.CharStreams;
 import com.google.common.io.LineProcessor;
+import market.OHLC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,9 +27,9 @@ import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 
 @Service
-class HistoryDataCurrencyPairService implements CurrencyPairService {
+class HistoryDataCurrencyPairService implements CurrencyPairHistoryService {
 
-    public static final Logger LOG = LoggerFactory.getLogger(HistoryDataCurrencyPairService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HistoryDataCurrencyPairService.class);
 
     private static class CurrencyPairYear {
         final CurrencyPair pair;
@@ -56,7 +57,7 @@ class HistoryDataCurrencyPairService implements CurrencyPairService {
         @Override
         public String toString() {
             return MoreObjects.toStringHelper(this)
-                    .add("pair", pair)
+                    .add("instrument", pair)
                     .add("year", year)
                     .toString();
         }
@@ -81,7 +82,7 @@ class HistoryDataCurrencyPairService implements CurrencyPairService {
                                 int part = 0;
                                 String[] parts = line.split(";");
                                 LocalDateTime parsedDate = LocalDateTime.parse(parts[part++], timestampParser).withSecond(0);
-                                // The files are at UTC-5 (no daylight savings time observed)
+                                // The files are at UTC-5 (no daylight savings timestamp observed)
                                 OffsetDateTime dateTime = parsedDate.atOffset(ZoneOffset.ofHours(-5));
                                 LocalDateTime dateTimeForLocal = dateTime.atZoneSameInstant(clock.getZone()).toLocalDateTime();
 
@@ -111,7 +112,7 @@ class HistoryDataCurrencyPairService implements CurrencyPairService {
     private final SimulatorClock clock;
 
     @Autowired
-    public HistoryDataCurrencyPairService(SimulatorClock clock) {
+    HistoryDataCurrencyPairService(SimulatorClock clock) {
         this.clock = clock;
     }
 

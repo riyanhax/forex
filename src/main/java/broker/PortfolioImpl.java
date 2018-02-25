@@ -1,5 +1,7 @@
 package broker;
 
+import market.Instrument;
+
 import java.util.Set;
 
 public abstract class PortfolioImpl<I extends Instrument, P extends Position<I>> implements Portfolio<I, P> {

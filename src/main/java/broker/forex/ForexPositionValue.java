@@ -1,23 +1,22 @@
 package broker.forex;
 
-import broker.Position;
 import broker.PositionValue;
-import instrument.CurrencyPair;
+import market.forex.CurrencyPair;
 
 import java.util.Objects;
 
-class ForexPositionValue implements PositionValue<CurrencyPair> {
+class ForexPositionValue implements PositionValue<CurrencyPair, ForexPosition> {
 
-    private final Position<CurrencyPair> position;
+    private final ForexPosition position;
     private final double price;
 
-    ForexPositionValue(Position<CurrencyPair> position, double price) {
+    ForexPositionValue(ForexPosition position, double price) {
         this.position = position;
         this.price = price;
     }
 
     @Override
-    public Position<CurrencyPair> getPosition() {
+    public ForexPosition getPosition() {
         return position;
     }
 

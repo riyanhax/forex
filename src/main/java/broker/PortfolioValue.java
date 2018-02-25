@@ -1,8 +1,11 @@
 package broker;
 
+import market.Instrument;
+
 import java.time.LocalDateTime;
 
-public interface PortfolioValue<I extends Instrument, P extends Position<I>> extends Portfolio<I, P> {
+public interface PortfolioValue<INSTRUMENT extends Instrument, POSITION extends Position<INSTRUMENT>>
+        extends Portfolio<INSTRUMENT, POSITION> {
 
     LocalDateTime getTimestamp();
 

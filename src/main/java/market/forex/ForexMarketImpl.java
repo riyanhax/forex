@@ -1,9 +1,6 @@
-package market;
+package market.forex;
 
-import instrument.CurrencyPair;
-import instrument.CurrencyPairHistory;
-import instrument.CurrencyPairService;
-import instrument.OHLC;
+import market.OHLC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,10 +15,10 @@ class ForexMarketImpl implements ForexMarket {
     private static final Logger LOG = LoggerFactory.getLogger(ForexMarketImpl.class);
 
     private final SimulatorClock clock;
-    private final CurrencyPairService currencyPairService;
+    private final CurrencyPairHistoryService currencyPairService;
 
     @Autowired
-    public ForexMarketImpl(SimulatorClock clock, CurrencyPairService currencyPairService) {
+    public ForexMarketImpl(SimulatorClock clock, CurrencyPairHistoryService currencyPairService) {
         this.clock = clock;
         this.currencyPairService = currencyPairService;
     }
@@ -33,7 +30,7 @@ class ForexMarketImpl implements ForexMarket {
 
         Optional<CurrencyPairHistory> history = currencyPairService.getData(CurrencyPair.EURUSD, clock.now());
         history.ifPresent(h -> {
-            OHLC data = h.ohlc;
+            OHLC data = h.getOHLC();
 
             LOG.info("\tEUR/USD Open: {}, High: {}, Low: {}, Close: {}", data.open, data.high, data.low, data.close);
         });
@@ -43,7 +40,7 @@ class ForexMarketImpl implements ForexMarket {
     public double getPrice(CurrencyPair instrument) {
         Optional<CurrencyPairHistory> history = currencyPairService.getData(instrument, clock.now());
 
-        return history.get().ohlc.open;
+        return history.get().getOHLC().open;
     }
 
     @Override

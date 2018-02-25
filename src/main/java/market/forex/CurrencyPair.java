@@ -1,6 +1,6 @@
-package instrument;
+package market.forex;
 
-import broker.Instrument;
+import market.Instrument;
 
 public enum CurrencyPair implements Instrument {
     EURUSD("EURUSD", "EUR/USD");

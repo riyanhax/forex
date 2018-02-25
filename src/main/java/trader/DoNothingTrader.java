@@ -4,7 +4,7 @@ import broker.Broker;
 import broker.Portfolio;
 import broker.Position;
 import broker.Quote;
-import instrument.CurrencyPair;
+import market.forex.CurrencyPair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;

@@ -1,7 +1,7 @@
 package broker.forex;
 
 import broker.PortfolioValueImpl;
-import instrument.CurrencyPair;
+import market.forex.CurrencyPair;
 
 import java.time.LocalDateTime;
 import java.util.Set;

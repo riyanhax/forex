@@ -1,10 +1,10 @@
 package broker.forex;
 
+import broker.BidAsk;
 import broker.Broker;
 import broker.Quote;
-import broker.BidAsk;
-import instrument.CurrencyPair;
-import market.ForexMarket;
+import market.forex.CurrencyPair;
+import market.forex.ForexMarket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -17,7 +17,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
-class Oanda implements Broker<CurrencyPair, ForexMarket> {
+class Oanda implements Broker<CurrencyPair, ForexMarket, ForexPosition, ForexPositionValue, ForexPortfolioValue> {
 
     private static final Logger LOG = LoggerFactory.getLogger(Oanda.class);
 

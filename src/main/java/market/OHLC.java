@@ -1,4 +1,4 @@
-package instrument;
+package market;
 
 public class OHLC {
     public final double open;

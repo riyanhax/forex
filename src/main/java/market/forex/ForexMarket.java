@@ -1,6 +1,6 @@
-package market;
+package market.forex;
 
-import instrument.CurrencyPair;
+import market.Market;
 
 public interface ForexMarket extends Market<CurrencyPair> {
 }
