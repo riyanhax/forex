@@ -1,15 +1,8 @@
 package broker;
 
-import java.time.LocalDateTime;
+public interface PositionValue<I extends Instrument> extends Position<I> {
 
-public interface PositionValue {
-
-    Position getPosition();
-
-    double getUnits();
-
-    LocalDateTime timestamp();
+    Position<I> getPosition();
 
     double value();
-
 }

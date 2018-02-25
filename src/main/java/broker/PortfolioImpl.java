@@ -1,27 +1,23 @@
 package broker;
 
 import java.util.Set;
-import java.util.stream.Collectors;
 
-class PortfolioImpl implements Portfolio {
-    private final Set<PositionValue> positionValues;
+public abstract class PortfolioImpl<I extends Instrument, P extends Position<I>> implements Portfolio<I, P> {
+    private final double cash;
+    private final Set<P> positions;
 
-    public PortfolioImpl(Set<PositionValue> positionValues) {
-        this.positionValues = positionValues;
+    public PortfolioImpl(double cash, Set<P> positions) {
+        this.cash = cash;
+        this.positions = positions;
     }
 
     @Override
     public double getCash() {
-        return System.currentTimeMillis() % 100;
+        return cash;
     }
 
     @Override
-    public Set<Position> getPositions() {
-        return positionValues.stream().map(PositionValue::getPosition).collect(Collectors.toSet());
-    }
-
-    @Override
-    public double getValue() {
-        return getCash() + getPositions().size() * 100;
+    public Set<P> getPositions() {
+        return positions;
     }
 }

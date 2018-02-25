@@ -1,8 +1,8 @@
 package broker;
 
-public interface Position {
+public interface Position<I extends Instrument> {
 
-    Instrument getInstrument();
+    I getInstrument();
 
     int getShares();
 }

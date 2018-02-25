@@ -6,7 +6,7 @@ import trader.Trader;
 
 public interface Broker<I extends Instrument, M extends Market<I>> extends TimeAware {
 
-    Portfolio getPortfolio(Trader trader);
+    PortfolioValue getPortfolio(Trader trader);
 
     Quote getQuote(I instrument);
 }

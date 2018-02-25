@@ -1,11 +1,11 @@
 package broker;
 
-class QuoteImpl implements Quote {
+public class BidAsk implements Quote {
 
     private final double bid;
     private final double ask;
 
-    public QuoteImpl(double bid, double ask) {
+    public BidAsk(double bid, double ask) {
         this.bid = bid;
         this.ask = ask;
     }
