@@ -21,7 +21,8 @@ class SimulatorImpl implements Simulator {
     private SimulatorClockImpl clock;
 
     @Autowired
-    public SimulatorImpl(SimulatorClockImpl clock, List<Broker> brokers) {
+    public SimulatorImpl(SimulatorClockImpl clock,
+                         List<Broker> brokers) {
         this.clock = clock;
         this.brokers = brokers;
     }

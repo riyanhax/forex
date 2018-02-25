@@ -1,5 +1,6 @@
 package broker;
 
+import instrument.CurrencyPair;
 import market.ForexMarket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,14 +12,14 @@ import java.util.List;
 import java.util.Set;
 
 @Service
-class Oanda implements Broker {
+class Oanda implements Broker<CurrencyPair, ForexMarket> {
 
     private static final Logger LOG = LoggerFactory.getLogger(Oanda.class);
 
     private final ForexMarket forexMarket;
     private final List<Trader> traders;
     // TODO DPJ: Make this configurable, maybe in the simulation
-    private final double spread = 2 * .0001d;
+    private final double pipSpread = 2;
 
     public Oanda(ForexMarket forexMarket, List<Trader> traders) {
         this.forexMarket = forexMarket;
@@ -27,6 +28,12 @@ class Oanda implements Broker {
 
     @Override
     public void processUpdates() {
+
+        if (!forexMarket.isAvailable()) {
+            LOG.info("Broker is closed.");
+            return;
+        }
+
         forexMarket.processUpdates();
 
         LOG.info("\tCheck pending orders");
@@ -44,9 +51,10 @@ class Oanda implements Broker {
     }
 
     @Override
-    public Quote getQuote(Instrument instrument) {
-        double price = forexMarket.getPrice(instrument);
+    public Quote getQuote(CurrencyPair pair) {
+        double price = forexMarket.getPrice(pair);
+        double halfSpread = (pipSpread * pair.getPip()) / 2;
 
-        return new QuoteImpl(price - (spread / 2), price + (spread / 2));
+        return new QuoteImpl(price - halfSpread, price + halfSpread);
     }
 }

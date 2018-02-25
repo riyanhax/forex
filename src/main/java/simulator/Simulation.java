@@ -3,6 +3,7 @@ package simulator;
 import java.time.LocalDateTime;
 
 import static java.time.LocalDateTime.of;
+import static java.time.Month.DECEMBER;
 import static java.time.Month.JANUARY;
 
 public class Simulation {
@@ -12,7 +13,7 @@ public class Simulation {
     public final long millisDelayBetweenMinutes;
 
     public Simulation() {
-        this(of(2017, JANUARY, 2, 1, 0), of(2018, JANUARY, 1, 0, 0), 0L);
+        this(of(2017, JANUARY, 1, 1, 0), of(2017, DECEMBER, 31, 23, 59), 0L);
     }
 
     public Simulation(LocalDateTime startTime, LocalDateTime endTime, long realDelayPerMinute) {

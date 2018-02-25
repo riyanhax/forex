@@ -1,6 +1,5 @@
 package market;
 
-import broker.Instrument;
 import instrument.CurrencyPair;
 import instrument.CurrencyPairHistory;
 import instrument.CurrencyPairService;
@@ -11,7 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import simulator.SimulatorClock;
 
-import java.util.Random;
+import java.util.Optional;
 
 @Service
 class ForexMarketImpl implements ForexMarket {
@@ -32,18 +31,23 @@ class ForexMarketImpl implements ForexMarket {
 
         LOG.info("\tUpdating instrument quote data");
 
-        CurrencyPairHistory history = currencyPairService.getData(CurrencyPair.EURUSD, clock.now());
-        OHLC data = history.ohlc;
+        Optional<CurrencyPairHistory> history = currencyPairService.getData(CurrencyPair.EURUSD, clock.now());
+        history.ifPresent(h -> {
+            OHLC data = h.ohlc;
 
-        LOG.info("\tEUR/USD Open: {}, High: {}, Low: {}, Close: {}", data.open, data.high, data.low, data.close);
+            LOG.info("\tEUR/USD Open: {}, High: {}, Low: {}, Close: {}", data.open, data.high, data.low, data.close);
+        });
     }
 
     @Override
-    public double getPrice(Instrument instrument) {
-        if (!CurrencyPair.class.isInstance(instrument)) {
-            throw new IllegalStateException("Unknown instrument: " + instrument);
-        }
+    public double getPrice(CurrencyPair instrument) {
+        Optional<CurrencyPairHistory> history = currencyPairService.getData(instrument, clock.now());
 
-        return currencyPairService.getData((CurrencyPair) instrument, clock.now()).ohlc.open + new Random().nextDouble();
+        return history.get().ohlc.open;
+    }
+
+    @Override
+    public boolean isAvailable() {
+        return currencyPairService.getData(CurrencyPair.EURUSD, clock.now()).isPresent();
     }
 }

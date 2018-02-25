@@ -22,4 +22,8 @@ public enum CurrencyPair implements Instrument {
     public String getName() {
         return name;
     }
+
+    public double getPip() {
+        return 0.0001d;
+    }
 }
