@@ -12,7 +12,7 @@ public class Simulation {
     public final long millisDelayBetweenMinutes;
 
     public Simulation() {
-        this(of(2017, JANUARY, 1, 0, 0), of(2018, JANUARY, 1, 0, 0), 0L);
+        this(of(2017, JANUARY, 2, 1, 0), of(2018, JANUARY, 1, 0, 0), 0L);
     }
 
     public Simulation(LocalDateTime startTime, LocalDateTime endTime, long realDelayPerMinute) {
