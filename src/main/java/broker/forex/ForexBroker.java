@@ -1,8 +1,20 @@
 package broker.forex;
 
-import broker.Broker;
-import market.forex.CurrencyPair;
-import market.forex.ForexMarket;
+import broker.Quote;
+import market.MarketEngine;
+import market.forex.Instrument;
+import market.order.OrderRequest;
+import simulator.Simulation;
+import trader.Trader;
 
-public interface ForexBroker extends Broker<CurrencyPair, ForexMarket, ForexPosition, ForexPositionValue, ForexPortfolioValue> {
+public interface ForexBroker {
+    void init(Simulation simulation);
+
+    void processUpdates(MarketEngine marketEngine);
+
+    ForexPortfolioValue getPortfolio(Trader trader);
+
+    Quote getQuote(Instrument pair);
+
+    void orderFilled(OrderRequest filled);
 }

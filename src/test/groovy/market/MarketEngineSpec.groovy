@@ -1,6 +1,7 @@
 package market
 
-import broker.Broker
+import broker.forex.ForexBroker
+import market.forex.ForexMarket
 import market.order.OrderRequest
 import market.order.OrderStatus
 import simulator.SimulatorClock
@@ -11,15 +12,15 @@ import spock.lang.Unroll
 import java.time.LocalDateTime
 import java.time.Month
 
-import static market.forex.CurrencyPair.EURUSD
+import static market.forex.Instrument.EURUSD
 import static market.order.Orders.buyMarketOrder
 import static market.order.Orders.sellMarketOrder
 
 class MarketEngineSpec extends Specification {
 
     SimulatorClock clock = new TestClock(LocalDateTime.of(2017, Month.JANUARY, 17, 12, 31))
-    Broker broker = Mock()
-    Market market = Mock()
+    ForexBroker broker = Mock()
+    ForexMarket market = Mock()
 
     @Unroll
     def 'should be able to submit a #type market order'() {

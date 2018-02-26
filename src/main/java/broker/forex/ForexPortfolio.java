@@ -1,13 +1,13 @@
 package broker.forex;
 
 import broker.PortfolioImpl;
-import market.forex.CurrencyPair;
+import broker.Position;
 
 import java.util.Set;
 
-class ForexPortfolio extends PortfolioImpl<CurrencyPair, ForexPosition> {
+class ForexPortfolio extends PortfolioImpl {
 
-    public ForexPortfolio(double cash, Set<ForexPosition> positions) {
+    public ForexPortfolio(double cash, Set<Position> positions) {
         super(cash, positions);
     }
 

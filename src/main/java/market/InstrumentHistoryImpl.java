@@ -1,21 +1,23 @@
 package market;
 
+import market.forex.Instrument;
+
 import java.time.LocalDateTime;
 
-public class InstrumentHistoryImpl<I extends Instrument> implements InstrumentHistory<I> {
+public class InstrumentHistoryImpl implements InstrumentHistory {
 
-    public final I instrument;
+    public final Instrument instrument;
     public final LocalDateTime timestamp;
     public final OHLC ohlc;
 
-    public InstrumentHistoryImpl(I instrument, LocalDateTime timestamp, OHLC ohlc) {
+    public InstrumentHistoryImpl(Instrument instrument, LocalDateTime timestamp, OHLC ohlc) {
         this.instrument = instrument;
         this.timestamp = timestamp;
         this.ohlc = ohlc;
     }
 
     @Override
-    public I getInstrument() {
+    public Instrument getInstrument() {
         return instrument;
     }
 

@@ -32,10 +32,10 @@ class HistoryDataCurrencyPairService implements CurrencyPairHistoryService {
     private static final Logger LOG = LoggerFactory.getLogger(HistoryDataCurrencyPairService.class);
 
     private static class CurrencyPairYear {
-        final CurrencyPair pair;
+        final Instrument pair;
         final int year;
 
-        private CurrencyPairYear(CurrencyPair pair, int year) {
+        private CurrencyPairYear(Instrument pair, int year) {
             this.pair = pair;
             this.year = year;
         }
@@ -117,7 +117,7 @@ class HistoryDataCurrencyPairService implements CurrencyPairHistoryService {
     }
 
     @Override
-    public Optional<CurrencyPairHistory> getData(CurrencyPair pair, LocalDateTime time) {
+    public Optional<CurrencyPairHistory> getData(Instrument pair, LocalDateTime time) {
         OHLC ohlc = null;
         int year = time.getYear();
         try {

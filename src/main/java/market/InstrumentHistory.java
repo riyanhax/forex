@@ -1,10 +1,12 @@
 package market;
 
+import market.forex.Instrument;
+
 import java.time.LocalDateTime;
 
-public interface InstrumentHistory<I extends Instrument> {
+public interface InstrumentHistory {
 
-    I getInstrument();
+    Instrument getInstrument();
 
     LocalDateTime getTimestamp();
 

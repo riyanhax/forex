@@ -1,10 +1,13 @@
 package market;
 
+import market.forex.CurrencyPairHistory;
+import market.forex.Instrument;
+
 import java.time.LocalDateTime;
 import java.util.Optional;
 
-public interface InstrumentHistoryService<I extends Instrument, HISTORY extends InstrumentHistory<I>> {
+public interface InstrumentHistoryService {
 
-    Optional<HISTORY> getData(I instrument, LocalDateTime time);
+    Optional<CurrencyPairHistory> getData(Instrument instrument, LocalDateTime time);
 
 }

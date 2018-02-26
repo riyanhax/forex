@@ -1,12 +1,10 @@
 package broker;
 
-import market.Instrument;
-
 import java.util.Set;
 
-public interface Portfolio<I extends Instrument, P extends Position<I>> {
+public interface Portfolio {
 
     double getCash();
 
-    Set<P> getPositions();
+    Set<Position> getPositions();
 }

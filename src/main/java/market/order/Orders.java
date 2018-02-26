@@ -1,20 +1,20 @@
 package market.order;
 
-import market.Instrument;
+import market.forex.Instrument;
 
 public final class Orders {
 
-    private static class MarketOrderImpl<T extends Instrument> implements MarketOrder<T> {
-        private final T instrument;
+    private static class MarketOrderImpl implements MarketOrder {
+        private final Instrument instrument;
         private final int units;
 
-        private MarketOrderImpl(T instrument, int units) {
+        private MarketOrderImpl(Instrument instrument, int units) {
             this.instrument = instrument;
             this.units = units;
         }
 
         @Override
-        public T getInstrument() {
+        public Instrument getInstrument() {
             return instrument;
         }
 
@@ -24,13 +24,13 @@ public final class Orders {
         }
     }
 
-    private static class BuyMarketOrderImpl<T extends Instrument> extends MarketOrderImpl<T> implements BuyMarketOrder<T> {
-        private BuyMarketOrderImpl(T instrument, int units) {
+    private static class BuyMarketOrderImpl extends MarketOrderImpl implements BuyMarketOrder {
+        private BuyMarketOrderImpl(Instrument instrument, int units) {
             super(instrument, units);
         }
     }
 
-    private static class SellMarketOrderImpl<T extends Instrument> extends MarketOrderImpl<T> implements SellMarketOrder<T> {
+    private static class SellMarketOrderImpl<T extends Instrument> extends MarketOrderImpl implements SellMarketOrder {
         private SellMarketOrderImpl(T instrument, int units) {
             super(instrument, units);
         }
@@ -39,11 +39,11 @@ public final class Orders {
     private Orders() {
     }
 
-    public static <T extends Instrument> BuyMarketOrder<T> buyMarketOrder(final int shares, final T instrument) {
-        return new BuyMarketOrderImpl<>(instrument, shares);
+    public static BuyMarketOrder buyMarketOrder(final int shares, final Instrument instrument) {
+        return new BuyMarketOrderImpl(instrument, shares);
     }
 
-    public static <T extends Instrument> SellMarketOrder<T> sellMarketOrder(final int shares, final T instrument) {
+    public static SellMarketOrder sellMarketOrder(final int shares, final Instrument instrument) {
         return new SellMarketOrderImpl<>(instrument, shares);
     }
 }

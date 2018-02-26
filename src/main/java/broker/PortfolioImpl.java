@@ -1,14 +1,12 @@
 package broker;
 
-import market.Instrument;
-
 import java.util.Set;
 
-public abstract class PortfolioImpl<I extends Instrument, P extends Position<I>> implements Portfolio<I, P> {
+public abstract class PortfolioImpl implements Portfolio {
     private final double cash;
-    private final Set<P> positions;
+    private final Set<Position> positions;
 
-    public PortfolioImpl(double cash, Set<P> positions) {
+    public PortfolioImpl(double cash, Set<Position> positions) {
         this.cash = cash;
         this.positions = positions;
     }
@@ -19,7 +17,7 @@ public abstract class PortfolioImpl<I extends Instrument, P extends Position<I>>
     }
 
     @Override
-    public Set<P> getPositions() {
+    public Set<Position> getPositions() {
         return positions;
     }
 }

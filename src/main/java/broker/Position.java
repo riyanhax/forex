@@ -1,10 +1,10 @@
 package broker;
 
-import market.Instrument;
+import market.forex.Instrument;
 
-public interface Position<I extends Instrument> {
+public interface Position {
 
-    I getInstrument();
+    Instrument getInstrument();
 
     int getShares();
 }

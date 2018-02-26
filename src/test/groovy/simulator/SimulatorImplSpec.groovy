@@ -1,6 +1,6 @@
 package simulator
 
-import broker.Broker
+import market.MarketEngine
 import spock.lang.Specification
 
 import java.time.LocalDateTime
@@ -60,19 +60,19 @@ class SimulatorImplSpec extends Specification {
     }
 
     def 'should notify broker at each interval'() {
-        Broker broker = Mock()
+        MarketEngine marketEngine = Mock()
 
         given: 'a simulation with a start and end timestamp'
         def start = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 30)
         def end = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 32)
 
         Simulation simulation = new Simulation(start, end, 0L);
-        SimulatorImpl simulator = new SimulatorImpl(new SimulatorClockImpl(), [broker])
+        SimulatorImpl simulator = new SimulatorImpl(new SimulatorClockImpl(), [marketEngine])
 
         when: 'the simulation is ran'
         simulator.run(simulation)
 
-        then: 'the broker was notified of each minute'
-        3 * broker.processUpdates()
+        then: 'the marketEngine was notified of each minute'
+        3 * marketEngine.processUpdates()
     }
 }

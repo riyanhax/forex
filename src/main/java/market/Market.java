@@ -1,10 +1,11 @@
 package market;
 
+import market.forex.Instrument;
 import simulator.SimulationAware;
 
-public interface Market<I extends Instrument> extends SimulationAware {
+public interface Market extends SimulationAware {
 
-    double getPrice(I instrument);
+    double getPrice(Instrument instrument);
 
     boolean isAvailable();
 

@@ -3,7 +3,7 @@ package market.order
 import spock.lang.Specification
 import spock.lang.Unroll
 
-import static market.forex.CurrencyPair.EURUSD
+import static market.forex.Instrument.EURUSD
 
 class OrdersSpec extends Specification {
 

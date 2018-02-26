@@ -33,7 +33,7 @@ class ForexMarketImpl implements ForexMarket {
 
         LOG.info("\tUpdating instrument quote data");
 
-        Optional<CurrencyPairHistory> history = currencyPairService.getData(CurrencyPair.EURUSD, clock.now());
+        Optional<CurrencyPairHistory> history = currencyPairService.getData(Instrument.EURUSD, clock.now());
         history.ifPresent(h -> {
             OHLC data = h.getOHLC();
 
@@ -42,7 +42,7 @@ class ForexMarketImpl implements ForexMarket {
     }
 
     @Override
-    public double getPrice(CurrencyPair instrument) {
+    public double getPrice(Instrument instrument) {
         Optional<CurrencyPairHistory> history = currencyPairService.getData(instrument, clock.now());
 
         return history.get().getOHLC().open;
@@ -50,6 +50,6 @@ class ForexMarketImpl implements ForexMarket {
 
     @Override
     public boolean isAvailable() {
-        return currencyPairService.getData(CurrencyPair.EURUSD, clock.now()).isPresent();
+        return currencyPairService.getData(Instrument.EURUSD, clock.now()).isPresent();
     }
 }

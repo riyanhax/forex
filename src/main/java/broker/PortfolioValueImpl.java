@@ -1,18 +1,15 @@
 package broker;
 
-import market.Instrument;
-
 import java.time.LocalDateTime;
 import java.util.Set;
 
-public abstract class PortfolioValueImpl<INSTRUMENT extends Instrument, POSITION extends Position<INSTRUMENT>,
-        POSITION_VALUE extends PositionValue<INSTRUMENT, POSITION>> implements PortfolioValue<INSTRUMENT, POSITION> {
+public abstract class PortfolioValueImpl implements PortfolioValue {
 
-    private final Portfolio<INSTRUMENT, POSITION> portfolio;
+    private final Portfolio portfolio;
     private final LocalDateTime timestamp;
-    private final Set<POSITION_VALUE> positionValues;
+    private final Set<PositionValue> positionValues;
 
-    public PortfolioValueImpl(Portfolio<INSTRUMENT, POSITION> portfolio, LocalDateTime timestamp, Set<POSITION_VALUE> positionValues) {
+    public PortfolioValueImpl(Portfolio portfolio, LocalDateTime timestamp, Set<PositionValue> positionValues) {
         this.portfolio = portfolio;
         this.timestamp = timestamp;
         this.positionValues = positionValues;
@@ -24,7 +21,7 @@ public abstract class PortfolioValueImpl<INSTRUMENT extends Instrument, POSITION
     }
 
     @Override
-    public Set<POSITION> getPositions() {
+    public Set<Position> getPositions() {
         return portfolio.getPositions();
     }
 
@@ -36,7 +33,7 @@ public abstract class PortfolioValueImpl<INSTRUMENT extends Instrument, POSITION
     @Override
     public double marketValue() {
         double value = getCash();
-        for (POSITION_VALUE position : positionValues) {
+        for (PositionValue position : positionValues) {
             value += position.value();
         }
 

@@ -1,9 +1,8 @@
 package market;
 
-import broker.Broker;
-import broker.PortfolioValue;
-import broker.Position;
-import broker.PositionValue;
+import broker.forex.ForexBroker;
+import market.forex.ForexMarket;
+import market.forex.Instrument;
 import market.order.BuyMarketOrder;
 import market.order.OrderRequest;
 import market.order.OrderStatus;
@@ -15,36 +14,33 @@ import simulator.SimulatorClock;
 import java.util.HashMap;
 import java.util.Map;
 
-public interface MarketEngine<I extends Instrument> extends Market<I> {
+public interface MarketEngine extends Market {
 
-    OrderRequest<I> getOrder(OrderRequest<I> order);
+    OrderRequest getOrder(OrderRequest order);
 
-    OrderRequest<I> submit(BuyMarketOrder<I> p);
+    OrderRequest submit(BuyMarketOrder p);
 
-    OrderRequest<I> submit(SellMarketOrder<I> p);
+    OrderRequest submit(SellMarketOrder p);
 
-    static <INSTRUMENT extends Instrument, MARKET extends Market<INSTRUMENT>, POSITION extends Position<INSTRUMENT>,
-            POSITION_VALUE extends PositionValue<INSTRUMENT, POSITION>, PORTFOLIO_VALUE extends PortfolioValue<INSTRUMENT, POSITION>>
-    MarketEngine<INSTRUMENT> create(Market<INSTRUMENT> market, Broker<INSTRUMENT, MARKET, POSITION, POSITION_VALUE, PORTFOLIO_VALUE> broker, SimulatorClock clock) {
-        return new MarketEngineImpl<>(market, broker, clock);
+    static MarketEngine create(ForexMarket market, ForexBroker broker, SimulatorClock clock) {
+        return new MarketEngineImpl(market, broker, clock);
     }
 
-    class MarketEngineImpl<INSTRUMENT extends Instrument, MARKET extends Market<INSTRUMENT>, POSITION extends Position<INSTRUMENT>,
-            POSITION_VALUE extends PositionValue<INSTRUMENT, POSITION>, PORTFOLIO_VALUE extends PortfolioValue<INSTRUMENT, POSITION>> implements MarketEngine<INSTRUMENT> {
+    class MarketEngineImpl implements MarketEngine {
 
-        private final Market<INSTRUMENT> market;
-        private final Broker<INSTRUMENT, MARKET, POSITION, POSITION_VALUE, PORTFOLIO_VALUE> broker;
+        private final ForexMarket market;
+        private final ForexBroker broker;
         private final SimulatorClock clock;
-        private final Map<String, OrderRequest<INSTRUMENT>> ordersById = new HashMap<>();
+        private final Map<String, OrderRequest> ordersById = new HashMap<>();
 
-        MarketEngineImpl(Market<INSTRUMENT> market, Broker<INSTRUMENT, MARKET, POSITION, POSITION_VALUE, PORTFOLIO_VALUE> broker, SimulatorClock clock) {
+        MarketEngineImpl(ForexMarket market, ForexBroker broker, SimulatorClock clock) {
             this.market = market;
             this.broker = broker;
             this.clock = clock;
         }
 
         @Override
-        public double getPrice(INSTRUMENT instrument) {
+        public double getPrice(Instrument instrument) {
             return market.getPrice(instrument);
         }
 
@@ -77,13 +73,13 @@ public interface MarketEngine<I extends Instrument> extends Market<I> {
         }
 
         @Override
-        public OrderRequest<INSTRUMENT> getOrder(OrderRequest<INSTRUMENT> order) {
+        public OrderRequest getOrder(OrderRequest order) {
             return ordersById.get(order.getId());
         }
 
         @Override
-        public OrderRequest<INSTRUMENT> submit(BuyMarketOrder<INSTRUMENT> order) {
-            OrderRequest<INSTRUMENT> open = OrderRequest.open(order, clock);
+        public OrderRequest submit(BuyMarketOrder order) {
+            OrderRequest open = OrderRequest.open(order, clock);
             ordersById.put(open.getId(), open);
 
             processOrders();
@@ -96,7 +92,7 @@ public interface MarketEngine<I extends Instrument> extends Market<I> {
                     .filter(it -> it.getStatus() == OrderStatus.OPEN)
                     .forEach(order -> {
                         double price = getPrice(order.getInstrument());
-                        OrderRequest<INSTRUMENT> executed = OrderRequest.executed(order, clock, price);
+                        OrderRequest executed = OrderRequest.executed(order, clock, price);
                         ordersById.put(order.getId(), executed);
 
                         broker.orderFilled(executed);
@@ -104,8 +100,8 @@ public interface MarketEngine<I extends Instrument> extends Market<I> {
         }
 
         @Override
-        public OrderRequest<INSTRUMENT> submit(SellMarketOrder<INSTRUMENT> order) {
-            OrderRequest<INSTRUMENT> open = OrderRequest.open(order, clock);
+        public OrderRequest submit(SellMarketOrder order) {
+            OrderRequest open = OrderRequest.open(order, clock);
             ordersById.put(open.getId(), open);
 
             processOrders();

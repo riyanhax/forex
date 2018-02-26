@@ -1,18 +1,11 @@
 package trader;
 
-import broker.Broker;
-import broker.PortfolioValue;
-import broker.Position;
-import broker.PositionValue;
-import market.Instrument;
-import market.Market;
+import broker.forex.ForexBroker;
 
-public interface Trader<INSTRUMENT extends Instrument, MARKET extends Market<INSTRUMENT>, POSITION extends Position<INSTRUMENT>,
-        POSITION_VALUE extends PositionValue<INSTRUMENT, POSITION>, PORTFOLIO_VALUE extends PortfolioValue<INSTRUMENT, POSITION>,
-        BROKER extends Broker<INSTRUMENT, MARKET, POSITION, POSITION_VALUE, PORTFOLIO_VALUE>> {
+public interface Trader {
 
     String getAccountNumber();
 
-    void processUpdates(BROKER broker);
+    void processUpdates(ForexBroker broker);
 
 }

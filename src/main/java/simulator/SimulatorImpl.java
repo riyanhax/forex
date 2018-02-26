@@ -17,12 +17,12 @@ class SimulatorImpl implements Simulator {
 
     private static final Logger LOG = LoggerFactory.getLogger(SimulatorImpl.class);
 
-    private final List<MarketEngine<?>> marketEngines;
+    private final List<MarketEngine> marketEngines;
     private final SimulatorClockImpl clock;
 
     @Autowired
     public SimulatorImpl(SimulatorClockImpl clock,
-                         List<MarketEngine<?>> marketEngines) {
+                         List<MarketEngine> marketEngines) {
         this.clock = clock;
         this.marketEngines = marketEngines;
     }

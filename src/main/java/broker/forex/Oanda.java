@@ -1,10 +1,12 @@
 package broker.forex;
 
 import broker.BidAsk;
+import broker.Position;
+import broker.PositionValue;
 import broker.Quote;
 import market.MarketEngine;
-import market.forex.CurrencyPair;
 import market.forex.ForexMarket;
+import market.forex.Instrument;
 import market.order.OrderRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +50,7 @@ class Oanda implements ForexBroker {
     }
 
     @Override
-    public void processUpdates(MarketEngine<CurrencyPair> marketEngine) {
+    public void processUpdates(MarketEngine marketEngine) {
 
         LOG.info("\tCheck pending orders");
         LOG.info("\tProcess transactions");
@@ -60,8 +62,8 @@ class Oanda implements ForexBroker {
     public ForexPortfolioValue getPortfolio(Trader trader) {
         ForexPortfolio portfolio = portfoliosByAccountNumber.get(trader.getAccountNumber());
 
-        Set<ForexPosition> positions = portfolio.getPositions();
-        Set<ForexPositionValue> positionValues = positions.stream()
+        Set<Position> positions = portfolio.getPositions();
+        Set<PositionValue> positionValues = positions.stream()
                 .map(it -> {
                     double price = forexMarket.getPrice(it.getInstrument());
                     return new ForexPositionValue(it, price);
@@ -72,7 +74,7 @@ class Oanda implements ForexBroker {
     }
 
     @Override
-    public Quote getQuote(CurrencyPair pair) {
+    public Quote getQuote(Instrument pair) {
         double price = forexMarket.getPrice(pair);
         double halfSpread = (simulation.pipSpread * pair.getPip()) / 2;
 
@@ -80,7 +82,7 @@ class Oanda implements ForexBroker {
     }
 
     @Override
-    public void orderFilled(OrderRequest<CurrencyPair> filled) {
+    public void orderFilled(OrderRequest filled) {
 
     }
 }

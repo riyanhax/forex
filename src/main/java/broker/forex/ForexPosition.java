@@ -1,22 +1,22 @@
 package broker.forex;
 
 import broker.Position;
-import market.forex.CurrencyPair;
+import market.forex.Instrument;
 
 import java.util.Objects;
 
-public class ForexPosition implements Position<CurrencyPair> {
+public class ForexPosition implements Position {
 
-    private final CurrencyPair pair;
+    private final Instrument pair;
     private final int units;
 
-    public ForexPosition(CurrencyPair pair, int units) {
+    public ForexPosition(Instrument pair, int units) {
         this.pair = pair;
         this.units = units;
     }
 
     @Override
-    public CurrencyPair getInstrument() {
+    public Instrument getInstrument() {
         return pair;
     }
 

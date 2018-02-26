@@ -1,10 +1,10 @@
 package trader;
 
+import broker.Position;
 import broker.Quote;
 import broker.forex.ForexBroker;
 import broker.forex.ForexPortfolioValue;
-import broker.forex.ForexPosition;
-import market.forex.CurrencyPair;
+import market.forex.Instrument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -31,12 +31,12 @@ class DoNothingTrader implements ForexTrader {
 
         ForexPortfolioValue portfolio = broker.getPortfolio(this);
         double cash = portfolio.getCash();
-        Set<ForexPosition> positions = portfolio.getPositions();
+        Set<Position> positions = portfolio.getPositions();
 
         LOG.info("\tCash: {}", cash);
         LOG.info("\tPositions: {}", positions);
 
-        CurrencyPair pair = CurrencyPair.EURUSD;
+        Instrument pair = Instrument.EURUSD;
         Quote quote = broker.getQuote(pair);
         LOG.info("\t{} bid: {}, ask: {}", pair.getName(), quote.getBid(), quote.getAsk());
 

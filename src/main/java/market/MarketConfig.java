@@ -1,7 +1,7 @@
 package market;
 
 import broker.forex.ForexBroker;
-import market.forex.CurrencyPair;
+import market.forex.Instrument;
 import market.forex.ForexMarket;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -13,7 +13,7 @@ import simulator.SimulatorClock;
 public class MarketConfig {
 
     @Bean
-    public MarketEngine<CurrencyPair> forexEngine(ForexBroker broker, ForexMarket market, SimulatorClock clock) {
+    public MarketEngine forexEngine(ForexBroker broker, ForexMarket market, SimulatorClock clock) {
         return MarketEngine.create(market, broker, clock);
     }
 

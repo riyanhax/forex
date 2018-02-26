@@ -1,8 +1,10 @@
 package market.order;
 
-public interface Order<INSTRUMENT> {
+import market.forex.Instrument;
 
-    INSTRUMENT getInstrument();
+public interface Order {
+
+    Instrument getInstrument();
 
     int getUnits();
 }
