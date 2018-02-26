@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import simulator.Simulation;
 import simulator.SimulatorClock;
 
 import java.util.Optional;
@@ -21,6 +22,10 @@ class ForexMarketImpl implements ForexMarket {
     public ForexMarketImpl(SimulatorClock clock, CurrencyPairHistoryService currencyPairService) {
         this.clock = clock;
         this.currencyPairService = currencyPairService;
+    }
+
+    @Override
+    public void init(Simulation simulation) {
     }
 
     @Override

@@ -10,11 +10,19 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 class DoNothingTrader implements Trader {
 
     private static final Logger LOG = LoggerFactory.getLogger(DoNothingTrader.class);
+
+    private String accountNo = UUID.randomUUID().toString();
+
+    @Override
+    public String getAccountNumber() {
+        return accountNo;
+    }
 
     @Override
     public void processUpdates(Broker broker) {
@@ -34,4 +42,5 @@ class DoNothingTrader implements Trader {
         LOG.info("\tMaking orders");
         LOG.info("\tClosing orders");
     }
+
 }

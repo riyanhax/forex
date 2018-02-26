@@ -8,6 +8,7 @@ import market.order.BuyMarketOrder;
 import market.order.OrderRequest;
 import market.order.OrderStatus;
 import market.order.SellMarketOrder;
+import simulator.Simulation;
 import simulator.SimulatorClock;
 
 import java.util.HashMap;
@@ -52,10 +53,20 @@ public interface MarketEngine<I extends Instrument> extends Market<I> {
         }
 
         @Override
+        public void init(Simulation simulation) {
+            ordersById.clear();
+
+            market.init(simulation);
+            broker.init(simulation);
+        }
+
+        @Override
         public void processUpdates() {
             market.processUpdates();
 
             processOrders();
+
+            broker.processUpdates();
         }
 
         @Override

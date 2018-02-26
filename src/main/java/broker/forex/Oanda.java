@@ -8,11 +8,14 @@ import market.order.OrderRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import simulator.Simulation;
 import simulator.SimulatorClock;
 import trader.Trader;
 
-import java.util.HashSet;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -24,13 +27,22 @@ class Oanda implements ForexBroker {
     private final SimulatorClock clock;
     private final ForexMarket forexMarket;
     private final List<Trader> traders;
-    // TODO DPJ: Make this configurable, maybe in the simulation
-    private final double pipSpread = 2;
+    private final Map<String, ForexPortfolio> portfoliosByAccountNumber = new HashMap<>();
+    private Simulation simulation;
 
     public Oanda(SimulatorClock clock, ForexMarket forexMarket, List<Trader> traders) {
         this.clock = clock;
         this.forexMarket = forexMarket;
         this.traders = traders;
+    }
+
+    @Override
+    public void init(Simulation simulation) {
+        this.simulation = simulation;
+
+        portfoliosByAccountNumber.clear();
+        traders.forEach(it -> portfoliosByAccountNumber.put(it.getAccountNumber(),
+                new ForexPortfolio(simulation.portfolioDollars, Collections.emptySet())));
     }
 
     @Override
@@ -51,11 +63,9 @@ class Oanda implements ForexBroker {
 
     @Override
     public ForexPortfolioValue getPortfolio(Trader trader) {
-        // TODO DPJ: Cache portfolios per trader
-        Set<ForexPosition> positions = new HashSet<>();
-        long cash = System.currentTimeMillis() * 100;
+        ForexPortfolio portfolio = portfoliosByAccountNumber.get(trader.getAccountNumber());
 
-        ForexPortfolio portfolio = new ForexPortfolio(cash, positions);
+        Set<ForexPosition> positions = portfolio.getPositions();
         Set<ForexPositionValue> positionValues = positions.stream()
                 .map(it -> {
                     double price = forexMarket.getPrice(it.getInstrument());
@@ -69,7 +79,7 @@ class Oanda implements ForexBroker {
     @Override
     public Quote getQuote(CurrencyPair pair) {
         double price = forexMarket.getPrice(pair);
-        double halfSpread = (pipSpread * pair.getPip()) / 2;
+        double halfSpread = (simulation.pipSpread * pair.getPip()) / 2;
 
         return new BidAsk(price - halfSpread, price + halfSpread);
     }

@@ -38,7 +38,8 @@ class SimulatorImpl implements Simulator {
 
     void init(Simulation simulation) {
         clock.init(simulation.startTime);
-        marketEngines.forEach(TimeAware::processUpdates);
+        marketEngines.forEach(it -> it.init(simulation));
+        marketEngines.forEach(SimulationAware::processUpdates);
     }
 
     void nextMinute(Simulation simulation) {
@@ -51,7 +52,7 @@ class SimulatorImpl implements Simulator {
 
         LOG.info("Time: {}", clock.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm")));
 
-        marketEngines.forEach(TimeAware::processUpdates);
+        marketEngines.forEach(SimulationAware::processUpdates);
 
         if (simulation.millisDelayBetweenMinutes > 0) {
             try {
