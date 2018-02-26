@@ -1,10 +1,12 @@
 package trader;
 
-import broker.Broker;
-import broker.Portfolio;
-import broker.Position;
 import broker.Quote;
+import broker.forex.ForexBroker;
+import broker.forex.ForexPortfolioValue;
+import broker.forex.ForexPosition;
+import broker.forex.ForexPositionValue;
 import market.forex.CurrencyPair;
+import market.forex.ForexMarket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -13,7 +15,7 @@ import java.util.Set;
 import java.util.UUID;
 
 @Service
-class DoNothingTrader implements Trader {
+class DoNothingTrader implements Trader<CurrencyPair, ForexMarket, ForexPosition, ForexPositionValue, ForexPortfolioValue, ForexBroker> {
 
     private static final Logger LOG = LoggerFactory.getLogger(DoNothingTrader.class);
 
@@ -25,12 +27,12 @@ class DoNothingTrader implements Trader {
     }
 
     @Override
-    public void processUpdates(Broker broker) {
+    public void processUpdates(ForexBroker broker) {
         LOG.info("\tChecking portfolio");
 
-        Portfolio portfolio = broker.getPortfolio(this);
+        ForexPortfolioValue portfolio = broker.getPortfolio(this);
         double cash = portfolio.getCash();
-        Set<Position> positions = portfolio.getPositions();
+        Set<ForexPosition> positions = portfolio.getPositions();
 
         LOG.info("\tCash: {}", cash);
         LOG.info("\tPositions: {}", positions);

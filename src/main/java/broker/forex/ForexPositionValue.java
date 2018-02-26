@@ -5,7 +5,7 @@ import market.forex.CurrencyPair;
 
 import java.util.Objects;
 
-class ForexPositionValue implements PositionValue<CurrencyPair, ForexPosition> {
+public class ForexPositionValue implements PositionValue<CurrencyPair, ForexPosition> {
 
     private final ForexPosition position;
     private final double price;

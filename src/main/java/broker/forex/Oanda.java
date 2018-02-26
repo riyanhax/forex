@@ -85,7 +85,7 @@ class Oanda implements ForexBroker {
     }
 
     @Override
-    public void orderFilled(OrderRequest filled) {
+    public void orderFilled(OrderRequest<CurrencyPair> filled) {
 
     }
 }
