@@ -2,6 +2,7 @@ package broker.forex;
 
 import broker.BidAsk;
 import broker.Quote;
+import market.MarketEngine;
 import market.forex.CurrencyPair;
 import market.forex.ForexMarket;
 import market.order.OrderRequest;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 import simulator.Simulation;
 import simulator.SimulatorClock;
 import trader.Trader;
+import trader.forex.ForexTrader;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -26,11 +28,11 @@ class Oanda implements ForexBroker {
 
     private final SimulatorClock clock;
     private final ForexMarket forexMarket;
-    private final List<Trader> traders;
+    private final List<ForexTrader> traders;
     private final Map<String, ForexPortfolio> portfoliosByAccountNumber = new HashMap<>();
     private Simulation simulation;
 
-    public Oanda(SimulatorClock clock, ForexMarket forexMarket, List<Trader> traders) {
+    public Oanda(SimulatorClock clock, ForexMarket forexMarket, List<ForexTrader> traders) {
         this.clock = clock;
         this.forexMarket = forexMarket;
         this.traders = traders;
@@ -46,14 +48,7 @@ class Oanda implements ForexBroker {
     }
 
     @Override
-    public void processUpdates() {
-
-        if (!forexMarket.isAvailable()) {
-            LOG.info("Broker is closed.");
-            return;
-        }
-
-        forexMarket.processUpdates();
+    public void processUpdates(MarketEngine<CurrencyPair> marketEngine) {
 
         LOG.info("\tCheck pending orders");
         LOG.info("\tProcess transactions");

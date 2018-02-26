@@ -4,18 +4,17 @@ import broker.Quote;
 import broker.forex.ForexBroker;
 import broker.forex.ForexPortfolioValue;
 import broker.forex.ForexPosition;
-import broker.forex.ForexPositionValue;
 import market.forex.CurrencyPair;
-import market.forex.ForexMarket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import trader.forex.ForexTrader;
 
 import java.util.Set;
 import java.util.UUID;
 
 @Service
-class DoNothingTrader implements Trader<CurrencyPair, ForexMarket, ForexPosition, ForexPositionValue, ForexPortfolioValue, ForexBroker> {
+class DoNothingTrader implements ForexTrader {
 
     private static final Logger LOG = LoggerFactory.getLogger(DoNothingTrader.class);
 

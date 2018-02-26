@@ -4,6 +4,4 @@ public interface SimulationAware {
 
     void init(Simulation simulation);
 
-    void processUpdates();
-
 }

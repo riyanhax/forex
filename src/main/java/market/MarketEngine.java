@@ -8,6 +8,7 @@ import market.order.BuyMarketOrder;
 import market.order.OrderRequest;
 import market.order.OrderStatus;
 import market.order.SellMarketOrder;
+import org.slf4j.LoggerFactory;
 import simulator.Simulation;
 import simulator.SimulatorClock;
 
@@ -62,11 +63,17 @@ public interface MarketEngine<I extends Instrument> extends Market<I> {
 
         @Override
         public void processUpdates() {
+
+            if (!market.isAvailable()) {
+                LoggerFactory.getLogger(MarketEngine.class).info("Broker is closed.");
+                return;
+            }
+
             market.processUpdates();
 
             processOrders();
 
-            broker.processUpdates();
+            broker.processUpdates(this);
         }
 
         @Override
