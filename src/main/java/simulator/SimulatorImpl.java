@@ -1,6 +1,6 @@
 package simulator;
 
-import broker.Broker;
+import market.MarketEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,14 +17,14 @@ class SimulatorImpl implements Simulator {
 
     private static final Logger LOG = LoggerFactory.getLogger(SimulatorImpl.class);
 
-    private final List<Broker> brokers;
-    private SimulatorClockImpl clock;
+    private final List<MarketEngine<?>> marketEngines;
+    private final SimulatorClockImpl clock;
 
     @Autowired
     public SimulatorImpl(SimulatorClockImpl clock,
-                         List<Broker> brokers) {
+                         List<MarketEngine<?>> marketEngines) {
         this.clock = clock;
-        this.brokers = brokers;
+        this.marketEngines = marketEngines;
     }
 
     @Override
@@ -38,7 +38,7 @@ class SimulatorImpl implements Simulator {
 
     void init(Simulation simulation) {
         clock.init(simulation.startTime);
-        brokers.forEach(TimeAware::processUpdates);
+        marketEngines.forEach(TimeAware::processUpdates);
     }
 
     void nextMinute(Simulation simulation) {
@@ -51,7 +51,7 @@ class SimulatorImpl implements Simulator {
 
         LOG.info("Time: {}", clock.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm")));
 
-        brokers.forEach(TimeAware::processUpdates);
+        marketEngines.forEach(TimeAware::processUpdates);
 
         if (simulation.millisDelayBetweenMinutes > 0) {
             try {

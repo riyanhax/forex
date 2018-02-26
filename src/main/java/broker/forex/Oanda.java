@@ -1,10 +1,10 @@
 package broker.forex;
 
 import broker.BidAsk;
-import broker.Broker;
 import broker.Quote;
 import market.forex.CurrencyPair;
 import market.forex.ForexMarket;
+import market.order.OrderRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -17,7 +17,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
-class Oanda implements Broker<CurrencyPair, ForexMarket, ForexPosition, ForexPositionValue, ForexPortfolioValue> {
+class Oanda implements ForexBroker {
 
     private static final Logger LOG = LoggerFactory.getLogger(Oanda.class);
 
@@ -72,5 +72,10 @@ class Oanda implements Broker<CurrencyPair, ForexMarket, ForexPosition, ForexPos
         double halfSpread = (pipSpread * pair.getPip()) / 2;
 
         return new BidAsk(price - halfSpread, price + halfSpread);
+    }
+
+    @Override
+    public void orderFilled(OrderRequest filled) {
+
     }
 }

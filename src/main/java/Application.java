@@ -21,5 +21,5 @@ public class Application {
     public CommandLineRunner commandLineRunner(Simulator simulator) {
         return args -> simulator.run(new Simulation());
     }
-
+    
 }

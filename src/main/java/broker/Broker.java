@@ -2,6 +2,7 @@ package broker;
 
 import market.Instrument;
 import market.Market;
+import market.order.OrderRequest;
 import simulator.TimeAware;
 import trader.Trader;
 
@@ -11,4 +12,6 @@ public interface Broker<INSTRUMENT extends Instrument, MARKET extends Market<INS
     PORTFOLIO_VALUE getPortfolio(Trader trader);
 
     Quote getQuote(INSTRUMENT instrument);
+
+    void orderFilled(OrderRequest<INSTRUMENT> filled);
 }
