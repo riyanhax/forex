@@ -1,5 +1,6 @@
 package market.order;
 
+import broker.Expiry;
 import market.forex.Instrument;
 import simulator.SimulatorClock;
 
@@ -83,6 +84,11 @@ public interface OrderRequest extends Order {
         @Override
         public int getUnits() {
             return order.getUnits();
+        }
+
+        @Override
+        public Expiry expiry() {
+            return order.expiry();
         }
 
         @Override

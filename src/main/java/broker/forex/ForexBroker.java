@@ -15,6 +15,8 @@ public interface ForexBroker {
 
     Quote getQuote(Instrument pair);
 
+    void orderCancelled(OrderRequest filled);
+
     void orderFilled(OrderRequest filled);
 
     boolean isOpen();

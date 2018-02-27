@@ -1,5 +1,6 @@
 package market.order;
 
+import broker.Expiry;
 import market.forex.Instrument;
 
 import java.util.Optional;
@@ -10,17 +11,14 @@ public interface Order {
 
     int getUnits();
 
+    Expiry expiry();
+
+    Optional<Double> limit();
+
     default boolean isSellOrder() {
         return false;
     }
-
     default boolean isBuyOrder() {
         return false;
     }
-
-    default boolean isLimit() {
-        return limit().isPresent();
-    }
-
-    Optional<Double> limit();
 }

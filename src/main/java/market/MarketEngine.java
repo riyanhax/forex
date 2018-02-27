@@ -87,14 +87,16 @@ public interface MarketEngine extends Market {
             ordersById.values().stream()
                     .filter(it -> it.getStatus() == OrderStatus.OPEN)
                     .forEach(order -> {
-                        double price = getPrice(order.getInstrument());
-                        OrderRequest executed = OrderRequest.executed(order, clock, price);
+                        if (order.expiry().isAfter(clock.now(), order)) {
+                            double price = getPrice(order.getInstrument());
+                            OrderRequest executed = OrderRequest.executed(order, clock, price);
 
-                        String orderId = order.getId();
-                        ordersById.put(orderId, executed);
+                            String orderId = order.getId();
+                            ordersById.put(orderId, executed);
 
-                        ForexBroker forexBroker = brokersByOrder.get(orderId);
-                        forexBroker.orderFilled(executed);
+                            ForexBroker forexBroker = brokersByOrder.get(orderId);
+                            forexBroker.orderFilled(executed);
+                        }
                     });
         }
 

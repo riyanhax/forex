@@ -109,6 +109,7 @@ class Oanda implements ForexBroker {
         trader.setPortfolio(portfolio);
     }
 
+    @Override
     public void orderCancelled(OrderRequest cancelled) {
         Trader trader = tradersByOrderId.get(cancelled.getId());
         trader.cancelled(cancelled);
