@@ -92,7 +92,7 @@ class Oanda implements ForexBroker {
     public void orderFilled(OrderRequest filled) {
         Instrument instrument = filled.getInstrument();
         double commission = (filled.isBuyOrder() ? -1 : 1) * halfSpread(instrument);
-        double cashValue = (filled.getExecutionPrice() + commission) * filled.getUnits();
+        double cashValue = (filled.getExecutionPrice().get() + commission) * filled.getUnits();
 
         Trader trader = tradersByOrderId.get(filled.getId());
         ForexPortfolio oldPortfolio = trader.getPortfolio();

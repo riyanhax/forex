@@ -21,22 +21,21 @@ class OrdersSpec extends Specification {
         'sell' | Orders.sellMarketOrder(10, EURUSD) | SellMarketOrder
     }
 
-//    @Unroll
-//    def 'should be able to create #type limit orders'() {
-//
-//        expect: 'it has the correct attributes'
-//        expectedType.isAssignableFrom(order.class)
-//        order.shares == 10
-//        order.security == security
-//        order.price == 2550L
-//        order.duration == Duration.GTC
-//
-//        where:
-//        type   | order                                                       | expectedType
-//        'buy'  | Orders.newBuyLimitOrder(10, security, 2550L, Duration.GTC)  | BuyLimitOrder
-//        'sell' | Orders.newSellLimitOrder(10, security, 2550L, Duration.GTC) | SellLimitOrder
-//    }
-//
+    @Unroll
+    def 'should be able to create #type limit orders'() {
+
+        expect: 'it has the correct attributes'
+        expectedType.isAssignableFrom(order.class)
+        order.units == 10
+        order.instrument == EURUSD
+        order.limit() == Optional.of(2.550d)
+
+        where:
+        type   | order                                     | expectedType
+        'buy'  | Orders.buyLimitOrder(10, EURUSD, 2.550d)  | BuyLimitOrder
+        'sell' | Orders.sellLimitOrder(10, EURUSD, 2.550d) | SellLimitOrder
+    }
+
 //    @Unroll
 //    def 'should be able to create #type stop orders'() {
 //

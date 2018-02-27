@@ -16,16 +16,25 @@ public interface OrderRequest extends Order {
 
     OrderStatus getStatus();
 
-    double getExecutionPrice();
+    Optional<Double> getExecutionPrice();
 
     LocalDateTime getProcessedDate();
 
+    default boolean isExpired(LocalDateTime now) {
+        Optional<Expiry> expiry = expiry();
+        return expiry.isPresent() && !expiry.get().getExpiration(getSubmissionDate()).isAfter(now);
+    }
+
     static OrderRequest open(Order order, SimulatorClock clock) {
-        return new OrderRequestImpl(order, UUID.randomUUID().toString(), clock.now(), null);
+        return new OrderRequestImpl(order, UUID.randomUUID().toString(), clock.now());
     }
 
     static OrderRequest executed(OrderRequest order, SimulatorClock clock, double price) {
-        return new OrderRequestImpl(order, order.getId(), clock.now(), OrderStatus.EXECUTED, clock.now(), price, order.limit().orElse(null));
+        return new OrderRequestImpl(order, order.getId(), clock.now(), OrderStatus.EXECUTED, clock.now(), price);
+    }
+
+    static OrderRequest cancelled(OrderRequest order, SimulatorClock clock) {
+        return new OrderRequestImpl(order, order.getId(), clock.now(), OrderStatus.CANCELLED, clock.now(), null);
     }
 
     class OrderRequestImpl implements OrderRequest {
@@ -33,22 +42,20 @@ public interface OrderRequest extends Order {
         private final String id;
         private final LocalDateTime submissionDate;
         private final LocalDateTime processedDate;
-        private final double executionPrice;
+        private final Double executionPrice;
         private final OrderStatus status;
-        private final Double limit;
 
-        public OrderRequestImpl(Order order, String id, LocalDateTime submissionDate, Double limit) {
-            this(order, id, submissionDate, OrderStatus.OPEN, null, -1, limit);
+        public OrderRequestImpl(Order order, String id, LocalDateTime submissionDate) {
+            this(order, id, submissionDate, OrderStatus.OPEN, null, null);
         }
 
-        public OrderRequestImpl(Order order, String id, LocalDateTime submissionDate, OrderStatus status, LocalDateTime processedDate, double executionPrice, @Nullable Double limit) {
+        public OrderRequestImpl(Order order, String id, LocalDateTime submissionDate, OrderStatus status, @Nullable LocalDateTime processedDate, @Nullable Double executionPrice) {
             this.order = order;
             this.id = id;
             this.submissionDate = submissionDate;
             this.status = status;
             this.processedDate = processedDate;
             this.executionPrice = executionPrice;
-            this.limit = limit;
         }
 
         @Override
@@ -67,8 +74,8 @@ public interface OrderRequest extends Order {
         }
 
         @Override
-        public double getExecutionPrice() {
-            return executionPrice;
+        public Optional<Double> getExecutionPrice() {
+            return Optional.ofNullable(executionPrice);
         }
 
         @Override
@@ -87,13 +94,23 @@ public interface OrderRequest extends Order {
         }
 
         @Override
-        public Expiry expiry() {
+        public Optional<Expiry> expiry() {
             return order.expiry();
         }
 
         @Override
         public Optional<Double> limit() {
-            return Optional.ofNullable(limit);
+            return order.limit();
+        }
+
+        @Override
+        public boolean isSellOrder() {
+            return order.isSellOrder();
+        }
+
+        @Override
+        public boolean isBuyOrder() {
+            return order.isBuyOrder();
         }
     }
 }

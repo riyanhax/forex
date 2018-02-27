@@ -11,7 +11,7 @@ public interface Order {
 
     int getUnits();
 
-    Expiry expiry();
+    Optional<Expiry> expiry();
 
     Optional<Double> limit();
 

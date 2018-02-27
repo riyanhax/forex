@@ -3,16 +3,21 @@ package market;
 import broker.forex.ForexBroker;
 import market.forex.ForexMarket;
 import market.forex.Instrument;
+import market.order.BuyLimitOrder;
 import market.order.BuyMarketOrder;
+import market.order.Order;
 import market.order.OrderRequest;
 import market.order.OrderStatus;
+import market.order.SellLimitOrder;
 import market.order.SellMarketOrder;
 import org.slf4j.LoggerFactory;
 import simulator.Simulation;
 import simulator.SimulatorClock;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 public interface MarketEngine extends Market {
 
@@ -21,6 +26,10 @@ public interface MarketEngine extends Market {
     OrderRequest submit(ForexBroker broker, BuyMarketOrder p);
 
     OrderRequest submit(ForexBroker broker, SellMarketOrder p);
+
+    OrderRequest submit(ForexBroker broker, BuyLimitOrder p);
+
+    OrderRequest submit(ForexBroker broker, SellLimitOrder p);
 
     static MarketEngine create(ForexMarket market, SimulatorClock clock) {
         return new MarketEngineImpl(market, clock);
@@ -75,6 +84,25 @@ public interface MarketEngine extends Market {
 
         @Override
         public OrderRequest submit(ForexBroker broker, BuyMarketOrder order) {
+            return orderSubmitted(broker, order);
+        }
+
+        @Override
+        public OrderRequest submit(ForexBroker broker, BuyLimitOrder order) {
+            return orderSubmitted(broker, order);
+        }
+
+        @Override
+        public OrderRequest submit(ForexBroker broker, SellMarketOrder order) {
+            return orderSubmitted(broker, order);
+        }
+
+        @Override
+        public OrderRequest submit(ForexBroker broker, SellLimitOrder order) {
+            return orderSubmitted(broker, order);
+        }
+
+        private OrderRequest orderSubmitted(ForexBroker broker, Order order) {
             OrderRequest open = OrderRequest.open(order, clock);
             addOrder(broker, open);
 
@@ -84,30 +112,39 @@ public interface MarketEngine extends Market {
         }
 
         private void processOrders() {
-            ordersById.values().stream()
-                    .filter(it -> it.getStatus() == OrderStatus.OPEN)
-                    .forEach(order -> {
-                        if (order.expiry().isAfter(clock.now(), order)) {
-                            double price = getPrice(order.getInstrument());
-                            OrderRequest executed = OrderRequest.executed(order, clock, price);
+            Collection<OrderRequest> orders = ordersById.values();
+            for (OrderRequest order : orders) {
+                if (order.getStatus() == OrderStatus.OPEN) {
+                    String orderId = order.getId();
+                    final OrderRequest updated;
 
-                            String orderId = order.getId();
-                            ordersById.put(orderId, executed);
-
-                            ForexBroker forexBroker = brokersByOrder.get(orderId);
-                            forexBroker.orderFilled(executed);
+                    if (order.isExpired(clock.now())) {
+                        updated = OrderRequest.cancelled(order, clock);
+                    } else {
+                        double price = getPrice(order.getInstrument());
+                        Optional<Double> limit = order.limit();
+                        if (limit.isPresent()) {
+                            double limitPrice = limit.get();
+                            if ((order.isBuyOrder() && price > limitPrice) ||
+                                    (order.isSellOrder() && price < limitPrice)) {
+                                continue; // Limit not met
+                            }
                         }
-                    });
-        }
 
-        @Override
-        public OrderRequest submit(ForexBroker broker, SellMarketOrder order) {
-            OrderRequest open = OrderRequest.open(order, clock);
-            addOrder(broker, open);
+                        updated = OrderRequest.executed(order, clock, price);
+                    }
 
-            processOrders();
+                    ordersById.put(orderId, updated);
 
-            return open;
+                    ForexBroker broker = brokersByOrder.get(orderId);
+
+                    if (updated.getStatus() == OrderStatus.CANCELLED) {
+                        broker.orderCancelled(updated);
+                    } else {
+                        broker.orderFilled(updated);
+                    }
+                }
+            }
         }
 
         private void addOrder(ForexBroker broker, OrderRequest order) {
