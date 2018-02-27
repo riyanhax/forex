@@ -18,24 +18,23 @@ public interface MarketEngine extends Market {
 
     OrderRequest getOrder(OrderRequest order);
 
-    OrderRequest submit(BuyMarketOrder p);
+    OrderRequest submit(ForexBroker broker, BuyMarketOrder p);
 
-    OrderRequest submit(SellMarketOrder p);
+    OrderRequest submit(ForexBroker broker, SellMarketOrder p);
 
-    static MarketEngine create(ForexMarket market, ForexBroker broker, SimulatorClock clock) {
-        return new MarketEngineImpl(market, broker, clock);
+    static MarketEngine create(ForexMarket market, SimulatorClock clock) {
+        return new MarketEngineImpl(market, clock);
     }
 
     class MarketEngineImpl implements MarketEngine {
 
         private final ForexMarket market;
-        private final ForexBroker broker;
         private final SimulatorClock clock;
         private final Map<String, OrderRequest> ordersById = new HashMap<>();
+        private final Map<String, ForexBroker> brokersByOrder = new HashMap<>();
 
-        MarketEngineImpl(ForexMarket market, ForexBroker broker, SimulatorClock clock) {
+        MarketEngineImpl(ForexMarket market, SimulatorClock clock) {
             this.market = market;
-            this.broker = broker;
             this.clock = clock;
         }
 
@@ -52,9 +51,9 @@ public interface MarketEngine extends Market {
         @Override
         public void init(Simulation simulation) {
             ordersById.clear();
+            brokersByOrder.clear();
 
             market.init(simulation);
-            broker.init(simulation);
         }
 
         @Override
@@ -66,10 +65,7 @@ public interface MarketEngine extends Market {
             }
 
             market.processUpdates();
-
             processOrders();
-
-            broker.processUpdates(this);
         }
 
         @Override
@@ -78,9 +74,9 @@ public interface MarketEngine extends Market {
         }
 
         @Override
-        public OrderRequest submit(BuyMarketOrder order) {
+        public OrderRequest submit(ForexBroker broker, BuyMarketOrder order) {
             OrderRequest open = OrderRequest.open(order, clock);
-            ordersById.put(open.getId(), open);
+            addOrder(broker, open);
 
             processOrders();
 
@@ -93,20 +89,28 @@ public interface MarketEngine extends Market {
                     .forEach(order -> {
                         double price = getPrice(order.getInstrument());
                         OrderRequest executed = OrderRequest.executed(order, clock, price);
-                        ordersById.put(order.getId(), executed);
 
-                        broker.orderFilled(executed);
+                        String orderId = order.getId();
+                        ordersById.put(orderId, executed);
+
+                        ForexBroker forexBroker = brokersByOrder.get(orderId);
+                        forexBroker.orderFilled(executed);
                     });
         }
 
         @Override
-        public OrderRequest submit(SellMarketOrder order) {
+        public OrderRequest submit(ForexBroker broker, SellMarketOrder order) {
             OrderRequest open = OrderRequest.open(order, clock);
-            ordersById.put(open.getId(), open);
+            addOrder(broker, open);
 
             processOrders();
 
             return open;
+        }
+
+        private void addOrder(ForexBroker broker, OrderRequest order) {
+            ordersById.put(order.getId(), order);
+            brokersByOrder.put(order.getId(), broker);
         }
     }
 }

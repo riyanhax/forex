@@ -5,7 +5,6 @@ import broker.Position;
 import broker.PositionValue;
 import broker.Quote;
 import market.MarketEngine;
-import market.forex.ForexMarket;
 import market.forex.Instrument;
 import market.order.OrderRequest;
 import org.slf4j.Logger;
@@ -29,14 +28,14 @@ class Oanda implements ForexBroker {
     private static final Logger LOG = LoggerFactory.getLogger(Oanda.class);
 
     private final SimulatorClock clock;
-    private final ForexMarket forexMarket;
+    private final MarketEngine marketEngine;
     private final List<ForexTrader> traders;
     private final Map<String, ForexPortfolio> portfoliosByAccountNumber = new HashMap<>();
     private Simulation simulation;
 
-    public Oanda(SimulatorClock clock, ForexMarket forexMarket, List<ForexTrader> traders) {
+    public Oanda(SimulatorClock clock, MarketEngine marketEngine, List<ForexTrader> traders) {
         this.clock = clock;
-        this.forexMarket = forexMarket;
+        this.marketEngine = marketEngine;
         this.traders = traders;
     }
 
@@ -44,18 +43,25 @@ class Oanda implements ForexBroker {
     public void init(Simulation simulation) {
         this.simulation = simulation;
 
+        marketEngine.init(simulation);
+
         portfoliosByAccountNumber.clear();
         traders.forEach(it -> portfoliosByAccountNumber.put(it.getAccountNumber(),
                 new ForexPortfolio(simulation.portfolioDollars, Collections.emptySet())));
     }
 
     @Override
-    public void processUpdates(MarketEngine marketEngine) {
+    public void processUpdates() {
 
-        LOG.info("\tCheck pending orders");
-        LOG.info("\tProcess transactions");
 
-        traders.forEach(it -> it.processUpdates(this));
+        marketEngine.processUpdates();
+
+        if (isOpen()) {
+            LOG.info("\tCheck pending orders");
+            LOG.info("\tProcess transactions");
+
+            traders.forEach(it -> it.processUpdates(this));
+        }
     }
 
     @Override
@@ -65,7 +71,7 @@ class Oanda implements ForexBroker {
         Set<Position> positions = portfolio.getPositions();
         Set<PositionValue> positionValues = positions.stream()
                 .map(it -> {
-                    double price = forexMarket.getPrice(it.getInstrument());
+                    double price = marketEngine.getPrice(it.getInstrument());
                     return new ForexPositionValue(it, price);
                 })
                 .collect(Collectors.toSet());
@@ -75,7 +81,7 @@ class Oanda implements ForexBroker {
 
     @Override
     public Quote getQuote(Instrument pair) {
-        double price = forexMarket.getPrice(pair);
+        double price = marketEngine.getPrice(pair);
         double halfSpread = (simulation.pipSpread * pair.getPip()) / 2;
 
         return new BidAsk(price - halfSpread, price + halfSpread);
@@ -85,4 +91,11 @@ class Oanda implements ForexBroker {
     public void orderFilled(OrderRequest filled) {
 
     }
+
+    @Override
+    public boolean isOpen() {
+        return marketEngine.isAvailable();
+    }
+
+
 }
