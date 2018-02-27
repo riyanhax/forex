@@ -84,22 +84,28 @@ class Oanda implements ForexBroker {
     @Override
     public Quote getQuote(Instrument pair) {
         double price = marketEngine.getPrice(pair);
-        double halfSpread = (simulation.pipSpread * pair.getPip()) / 2;
+        double halfSpread = halfSpread(pair);
 
         return new BidAsk(price - halfSpread, price + halfSpread);
     }
 
+    private double halfSpread(Instrument pair) {
+        return (simulation.pipSpread * pair.getPip()) / 2;
+    }
+
     @Override
     public void orderFilled(OrderRequest filled) {
-        double cashValue = filled.getExecutionPrice() * filled.getUnits();
+        Instrument instrument = filled.getInstrument();
+        double commission = (filled.isBuyOrder() ? -1 : 1) * halfSpread(instrument);
+        double cashValue = (filled.getExecutionPrice() + commission) * filled.getUnits();
 
         Trader trader = tradersByOrderId.get(filled.getId());
         ForexPortfolio oldPortfolio = portfoliosByAccountNumber.get(trader.getAccountNumber());
         HashSet<Position> newPositions = new HashSet<>(oldPortfolio.getPositions());
         if (filled.isSellOrder()) {
-            newPositions.removeIf(it -> it.getInstrument() == filled.getInstrument());
+            newPositions.removeIf(it -> it.getInstrument() == instrument);
         } else if(filled.isBuyOrder()) {
-            newPositions.add(new ForexPosition(filled.getInstrument(), filled.getUnits()));
+            newPositions.add(new ForexPosition(instrument, filled.getUnits()));
         }
 
         double cash = oldPortfolio.getCash() - cashValue;
