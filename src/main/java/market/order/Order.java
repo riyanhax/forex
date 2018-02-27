@@ -2,6 +2,8 @@ package market.order;
 
 import market.forex.Instrument;
 
+import java.util.Optional;
+
 public interface Order {
 
     Instrument getInstrument();
@@ -15,4 +17,10 @@ public interface Order {
     default boolean isBuyOrder() {
         return false;
     }
+
+    default boolean isLimit() {
+        return limit().isPresent();
+    }
+
+    Optional<Double> limit();
 }

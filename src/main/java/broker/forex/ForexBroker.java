@@ -11,7 +11,7 @@ public interface ForexBroker {
 
     void processUpdates();
 
-    ForexPortfolioValue getPortfolio(Trader trader);
+    ForexPortfolioValue getPortfolioValue(Trader trader);
 
     Quote getQuote(Instrument pair);
 

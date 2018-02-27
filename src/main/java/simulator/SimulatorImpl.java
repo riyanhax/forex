@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import trader.Trader;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -18,13 +19,16 @@ class SimulatorImpl implements Simulator {
     private static final Logger LOG = LoggerFactory.getLogger(SimulatorImpl.class);
 
     private final List<ForexBroker> brokers;
+    private final List<Trader> traders;
     private final SimulatorClockImpl clock;
 
     @Autowired
     public SimulatorImpl(SimulatorClockImpl clock,
-                         List<ForexBroker> brokers) {
+                         List<ForexBroker> brokers,
+                         List<Trader> traders) {
         this.clock = clock;
         this.brokers = brokers;
+        this.traders = traders;
     }
 
     @Override
@@ -39,6 +43,7 @@ class SimulatorImpl implements Simulator {
     void init(Simulation simulation) {
         clock.init(simulation.startTime);
         brokers.forEach(it -> it.init(simulation));
+        traders.forEach(it -> it.init(simulation));
         brokers.forEach(ForexBroker::processUpdates);
     }
 

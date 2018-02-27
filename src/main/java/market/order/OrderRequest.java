@@ -3,7 +3,9 @@ package market.order;
 import market.forex.Instrument;
 import simulator.SimulatorClock;
 
+import javax.annotation.Nullable;
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface OrderRequest extends Order {
@@ -18,11 +20,11 @@ public interface OrderRequest extends Order {
     LocalDateTime getProcessedDate();
 
     static OrderRequest open(Order order, SimulatorClock clock) {
-        return new OrderRequestImpl(order, UUID.randomUUID().toString(), clock.now());
+        return new OrderRequestImpl(order, UUID.randomUUID().toString(), clock.now(), null);
     }
 
     static OrderRequest executed(OrderRequest order, SimulatorClock clock, double price) {
-        return new OrderRequestImpl(order, order.getId(), clock.now(), OrderStatus.EXECUTED, clock.now(), price);
+        return new OrderRequestImpl(order, order.getId(), clock.now(), OrderStatus.EXECUTED, clock.now(), price, order.limit().orElse(null));
     }
 
     class OrderRequestImpl implements OrderRequest {
@@ -31,19 +33,21 @@ public interface OrderRequest extends Order {
         private final LocalDateTime submissionDate;
         private final LocalDateTime processedDate;
         private final double executionPrice;
-        private OrderStatus status;
+        private final OrderStatus status;
+        private final Double limit;
 
-        public OrderRequestImpl(Order order, String id, LocalDateTime submissionDate) {
-            this(order, id, submissionDate, OrderStatus.OPEN, null, -1);
+        public OrderRequestImpl(Order order, String id, LocalDateTime submissionDate, Double limit) {
+            this(order, id, submissionDate, OrderStatus.OPEN, null, -1, limit);
         }
 
-        public OrderRequestImpl(Order order, String id, LocalDateTime submissionDate, OrderStatus status, LocalDateTime processedDate, double executionPrice) {
+        public OrderRequestImpl(Order order, String id, LocalDateTime submissionDate, OrderStatus status, LocalDateTime processedDate, double executionPrice, @Nullable Double limit) {
             this.order = order;
             this.id = id;
             this.submissionDate = submissionDate;
             this.status = status;
             this.processedDate = processedDate;
             this.executionPrice = executionPrice;
+            this.limit = limit;
         }
 
         @Override
@@ -79,6 +83,11 @@ public interface OrderRequest extends Order {
         @Override
         public int getUnits() {
             return order.getUnits();
+        }
+
+        @Override
+        public Optional<Double> limit() {
+            return Optional.ofNullable(limit);
         }
     }
 }

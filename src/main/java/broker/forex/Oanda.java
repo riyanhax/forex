@@ -15,7 +15,6 @@ import simulator.SimulatorClock;
 import trader.Trader;
 import trader.forex.ForexTrader;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -31,7 +30,6 @@ class Oanda implements ForexBroker {
     private final SimulatorClock clock;
     private final MarketEngine marketEngine;
     private final List<ForexTrader> traders;
-    private final Map<String, ForexPortfolio> portfoliosByAccountNumber = new HashMap<>();
     private final Map<String, Trader> tradersByOrderId = new HashMap<>();
     private Simulation simulation;
 
@@ -48,9 +46,6 @@ class Oanda implements ForexBroker {
         marketEngine.init(simulation);
 
         tradersByOrderId.clear();
-        portfoliosByAccountNumber.clear();
-        traders.forEach(it -> portfoliosByAccountNumber.put(it.getAccountNumber(),
-                new ForexPortfolio(simulation.portfolioDollars, Collections.emptySet())));
     }
 
     @Override
@@ -67,8 +62,8 @@ class Oanda implements ForexBroker {
     }
 
     @Override
-    public ForexPortfolioValue getPortfolio(Trader trader) {
-        ForexPortfolio portfolio = portfoliosByAccountNumber.get(trader.getAccountNumber());
+    public ForexPortfolioValue getPortfolioValue(Trader trader) {
+        ForexPortfolio portfolio = trader.getPortfolio();
 
         Set<Position> positions = portfolio.getPositions();
         Set<PositionValue> positionValues = positions.stream()
@@ -100,7 +95,7 @@ class Oanda implements ForexBroker {
         double cashValue = (filled.getExecutionPrice() + commission) * filled.getUnits();
 
         Trader trader = tradersByOrderId.get(filled.getId());
-        ForexPortfolio oldPortfolio = portfoliosByAccountNumber.get(trader.getAccountNumber());
+        ForexPortfolio oldPortfolio = trader.getPortfolio();
         HashSet<Position> newPositions = new HashSet<>(oldPortfolio.getPositions());
         if (filled.isSellOrder()) {
             newPositions.removeIf(it -> it.getInstrument() == instrument);
@@ -111,7 +106,12 @@ class Oanda implements ForexBroker {
         double cash = oldPortfolio.getCash() - cashValue;
         ForexPortfolio portfolio = new ForexPortfolio(cash, newPositions);
 
-        portfoliosByAccountNumber.put(trader.getAccountNumber(), portfolio);
+        trader.setPortfolio(portfolio);
+    }
+
+    public void orderCancelled(OrderRequest cancelled) {
+        Trader trader = tradersByOrderId.get(cancelled.getId());
+        trader.cancelled(cancelled);
     }
 
     @Override
