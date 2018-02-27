@@ -1,12 +1,13 @@
 package trader;
 
-import broker.Position;
+import broker.PositionValue;
 import broker.Quote;
 import broker.forex.ForexBroker;
 import broker.forex.ForexPortfolio;
 import broker.forex.ForexPortfolioValue;
 import market.forex.Instrument;
 import market.order.OrderRequest;
+import market.order.Orders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,7 @@ class DoNothingTrader implements ForexTrader {
 
     private String accountNo = UUID.randomUUID().toString();
     private ForexPortfolio portfolio;
+    private double openedPositionValue;
 
     @Override
     public String getAccountNumber() {
@@ -37,16 +39,25 @@ class DoNothingTrader implements ForexTrader {
 
         ForexPortfolioValue portfolio = broker.getPortfolioValue(this);
         double cash = portfolio.getCash();
-        Set<Position> positions = portfolio.getPositions();
+        Set<PositionValue> positions = portfolio.getPositionValues();
 
         LOG.info("\tCash: {}", cash);
         LOG.info("\tPositions: {}", positions);
 
-        Instrument pair = Instrument.EURUSD;
-        Quote quote = broker.getQuote(pair);
-        LOG.info("\t{} bid: {}, ask: {}", pair.getName(), quote.getBid(), quote.getAsk());
+        if (positions.isEmpty()) {
+            Instrument pair = Instrument.EURUSD;
+            Quote quote = broker.getQuote(pair);
+            LOG.info("\t{} bid: {}, ask: {}", pair.getName(), quote.getBid(), quote.getAsk());
 
-        LOG.info("\tMaking orders");
+            this.openedPositionValue = portfolio.marketValue();
+
+            LOG.info("\tMaking orders");
+            broker.submit(this, Orders.buyMarketOrder(100, Instrument.EURUSD));
+        } else if (portfolio.marketValue() - this.openedPositionValue < -5) {
+            // Close once we've lost five dollars
+            broker.submit(this, Orders.sellMarketOrder(100, Instrument.EURUSD));
+        }
+
         LOG.info("\tClosing orders");
     }
 

@@ -69,7 +69,7 @@ public interface MarketEngine extends Market {
         public void processUpdates() {
 
             if (!market.isAvailable()) {
-                LoggerFactory.getLogger(MarketEngine.class).info("Broker is closed.");
+                LoggerFactory.getLogger(MarketEngine.class).info("Market is closed.");
                 return;
             }
 
@@ -105,8 +105,6 @@ public interface MarketEngine extends Market {
         private OrderRequest orderSubmitted(ForexBroker broker, Order order) {
             OrderRequest open = OrderRequest.open(order, clock);
             addOrder(broker, open);
-
-            processOrders();
 
             return open;
         }

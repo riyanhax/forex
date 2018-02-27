@@ -39,4 +39,9 @@ public abstract class PortfolioValueImpl implements PortfolioValue {
 
         return value;
     }
+
+    @Override
+    public Set<PositionValue> getPositionValues() {
+        return positionValues;
+    }
 }

@@ -6,7 +6,11 @@ import broker.PositionValue;
 import broker.Quote;
 import market.MarketEngine;
 import market.forex.Instrument;
+import market.order.BuyLimitOrder;
+import market.order.BuyMarketOrder;
 import market.order.OrderRequest;
+import market.order.SellLimitOrder;
+import market.order.SellMarketOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -59,6 +63,8 @@ class Oanda implements ForexBroker {
 
             traders.forEach(it -> it.processUpdates(this));
         }
+
+        marketEngine.processUpdates();
     }
 
     @Override
@@ -120,5 +126,37 @@ class Oanda implements ForexBroker {
         return marketEngine.isAvailable();
     }
 
+    @Override
+    public OrderRequest getOrder(OrderRequest order) {
+        return marketEngine.getOrder(order);
+    }
 
+    @Override
+    public OrderRequest submit(Trader trader, BuyMarketOrder order) {
+        OrderRequest submitted = marketEngine.submit(this, order);
+        return orderSubmitted(trader, submitted);
+    }
+
+    @Override
+    public OrderRequest submit(Trader trader, BuyLimitOrder order) {
+        OrderRequest submitted = marketEngine.submit(this, order);
+        return orderSubmitted(trader, submitted);
+    }
+
+    @Override
+    public OrderRequest submit(Trader trader, SellMarketOrder order) {
+        OrderRequest submitted = marketEngine.submit(this, order);
+        return orderSubmitted(trader, submitted);
+    }
+
+    @Override
+    public OrderRequest submit(Trader trader, SellLimitOrder order) {
+        OrderRequest submitted = marketEngine.submit(this, order);
+        return orderSubmitted(trader, submitted);
+    }
+
+    private OrderRequest orderSubmitted(Trader trader, OrderRequest submitted) {
+        tradersByOrderId.put(submitted.getId(), trader);
+        return submitted;
+    }
 }

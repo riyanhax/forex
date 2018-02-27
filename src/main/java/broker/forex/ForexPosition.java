@@ -1,6 +1,7 @@
 package broker.forex;
 
 import broker.Position;
+import com.google.common.base.MoreObjects;
 import market.forex.Instrument;
 
 import java.util.Objects;
@@ -37,5 +38,13 @@ public class ForexPosition implements Position {
     @Override
     public int hashCode() {
         return Objects.hash(pair, units);
+    }
+
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(this)
+                .add("pair", pair)
+                .add("units", units)
+                .toString();
     }
 }
