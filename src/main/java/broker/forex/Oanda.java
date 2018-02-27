@@ -17,6 +17,7 @@ import trader.forex.ForexTrader;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,6 +32,7 @@ class Oanda implements ForexBroker {
     private final MarketEngine marketEngine;
     private final List<ForexTrader> traders;
     private final Map<String, ForexPortfolio> portfoliosByAccountNumber = new HashMap<>();
+    private final Map<String, Trader> tradersByOrderId = new HashMap<>();
     private Simulation simulation;
 
     public Oanda(SimulatorClock clock, MarketEngine marketEngine, List<ForexTrader> traders) {
@@ -45,6 +47,7 @@ class Oanda implements ForexBroker {
 
         marketEngine.init(simulation);
 
+        tradersByOrderId.clear();
         portfoliosByAccountNumber.clear();
         traders.forEach(it -> portfoliosByAccountNumber.put(it.getAccountNumber(),
                 new ForexPortfolio(simulation.portfolioDollars, Collections.emptySet())));
@@ -52,7 +55,6 @@ class Oanda implements ForexBroker {
 
     @Override
     public void processUpdates() {
-
 
         marketEngine.processUpdates();
 
@@ -89,7 +91,21 @@ class Oanda implements ForexBroker {
 
     @Override
     public void orderFilled(OrderRequest filled) {
+        double cashValue = filled.getExecutionPrice() * filled.getUnits();
 
+        Trader trader = tradersByOrderId.get(filled.getId());
+        ForexPortfolio oldPortfolio = portfoliosByAccountNumber.get(trader.getAccountNumber());
+        HashSet<Position> newPositions = new HashSet<>(oldPortfolio.getPositions());
+        if (filled.isSellOrder()) {
+            newPositions.removeIf(it -> it.getInstrument() == filled.getInstrument());
+        } else if(filled.isBuyOrder()) {
+            newPositions.add(new ForexPosition(filled.getInstrument(), filled.getUnits()));
+        }
+
+        double cash = oldPortfolio.getCash() - cashValue;
+        ForexPortfolio portfolio = new ForexPortfolio(cash, newPositions);
+
+        portfoliosByAccountNumber.put(trader.getAccountNumber(), portfolio);
     }
 
     @Override
