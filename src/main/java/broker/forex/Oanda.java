@@ -23,6 +23,7 @@ import trader.Trader;
 import trader.forex.ForexTrader;
 
 import javax.annotation.Nullable;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -158,6 +159,11 @@ class Oanda implements ForexBroker {
     @Override
     public boolean isOpen() {
         return marketEngine.isAvailable();
+    }
+
+    @Override
+    public boolean isOpen(LocalDate time) {
+        return marketEngine.isAvailable(time);
     }
 
     @Override

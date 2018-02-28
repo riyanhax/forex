@@ -13,4 +13,8 @@ public abstract class SimulatorClock extends Clock {
     public LocalDate nowLocalDate() {
         return now().toLocalDate();
     }
+
+    public LocalDate tomorrow() {
+        return nowLocalDate().plusDays(1);
+    }
 }

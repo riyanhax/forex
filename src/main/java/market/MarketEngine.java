@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import simulator.Simulation;
 import simulator.SimulatorClock;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -58,6 +59,11 @@ public interface MarketEngine extends Market {
         @Override
         public boolean isAvailable() {
             return market.isAvailable();
+        }
+
+        @Override
+        public boolean isAvailable(LocalDate date) {
+            return market.isAvailable(date);
         }
 
         @Override

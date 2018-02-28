@@ -13,8 +13,6 @@ import simulator.Simulation;
 import simulator.SimulatorClock;
 import trader.forex.ForexTrader;
 
-import java.time.DayOfWeek;
-import java.time.LocalDateTime;
 import java.util.Random;
 import java.util.Set;
 import java.util.SortedSet;
@@ -48,22 +46,23 @@ class DoNothingTrader implements ForexTrader {
     public void processUpdates(ForexBroker broker) {
 
         ForexPortfolioValue portfolio = broker.getPortfolioValue(this);
-        double profit = portfolio.getPipsProfit();
         Set<ForexPositionValue> positions = portfolio.getPositionValues();
 
-        if (positions.isEmpty()) {
-            Instrument[] instruments = Instrument.values();
-            Instrument pair = instruments[random.nextInt(instruments.length)];
+        boolean stopTrading = clock.now().getHour() > 11 && !broker.isOpen(clock.tomorrow());
 
-            broker.openPosition(this, pair, null);
+        if (positions.isEmpty()) {
+            if (!stopTrading) {
+                Instrument[] instruments = Instrument.values();
+                Instrument pair = instruments[random.nextInt(instruments.length)];
+
+                broker.openPosition(this, pair, null);
+            }
         } else {
             ForexPositionValue positionValue = positions.iterator().next();
             double pipsProfit = positionValue.pips();
 
             // Close once we've lost or gained enough pips or if it's noon Friday
-            LocalDateTime now = clock.now();
-            boolean fridayAtNoon = now.getDayOfWeek() == DayOfWeek.FRIDAY && now.getHour() == 12;
-            if (pipsProfit < -30 || pipsProfit > 60 || fridayAtNoon) {
+            if (pipsProfit < -30 || pipsProfit > 60 || stopTrading) {
                 broker.closePosition(this, positionValue.getPosition(), null);
             }
         }

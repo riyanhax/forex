@@ -7,6 +7,7 @@ import simulator.Simulation;
 import trader.Trader;
 
 import javax.annotation.Nullable;
+import java.time.LocalDate;
 
 public interface ForexBroker {
     void init(Simulation simulation);
@@ -22,6 +23,8 @@ public interface ForexBroker {
     void orderFilled(OrderRequest filled);
 
     boolean isOpen();
+
+    boolean isOpen(LocalDate time);
 
     void openPosition(Trader trader, Instrument pair, @Nullable Double limit);
 

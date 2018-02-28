@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import simulator.Simulation;
 import simulator.SimulatorClock;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 @Service
@@ -53,5 +54,10 @@ class ForexMarketImpl implements ForexMarket {
     @Override
     public boolean isAvailable() {
         return currencyPairService.getData(Instrument.EURUSD, clock.now()).isPresent();
+    }
+
+    @Override
+    public boolean isAvailable(LocalDate date) {
+        return currencyPairService.getAvailableDays(Instrument.EURUSD, date.getYear()).contains(date);
     }
 }
