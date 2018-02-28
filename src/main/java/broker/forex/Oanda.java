@@ -24,6 +24,7 @@ import trader.forex.ForexTrader;
 import javax.annotation.Nullable;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -52,7 +53,7 @@ class Oanda implements ForexBroker {
     }
 
     @Override
-    public void init(Simulation simulation, List<ForexTrader> traders) {
+    public void init(Simulation simulation, Collection<ForexTrader> traders) {
         this.simulation = simulation;
 
         this.tradersByOrderId.clear();

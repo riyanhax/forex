@@ -8,10 +8,10 @@ import trader.forex.ForexTrader;
 
 import javax.annotation.Nullable;
 import java.time.LocalDate;
-import java.util.List;
+import java.util.Collection;
 
 public interface ForexBroker {
-    void init(Simulation simulation, List<ForexTrader> traders);
+    void init(Simulation simulation, Collection<ForexTrader> traders);
 
     void processUpdates();
 
