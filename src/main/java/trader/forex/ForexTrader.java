@@ -6,8 +6,6 @@ import broker.forex.ForexPortfolioValue;
 import market.order.OrderRequest;
 import simulator.Simulation;
 
-import java.util.SortedSet;
-
 public interface ForexTrader {
 
     String getAccountNumber();
@@ -24,5 +22,10 @@ public interface ForexTrader {
 
     void addPortfolioValueSnapshot(ForexPortfolioValue portfolioValue);
 
-    SortedSet<ForexPortfolioValue> portfolioSnapshots();
+    ForexPortfolioValue getDrawdownPortfolio();
+
+    ForexPortfolioValue getProfitPortfolio();
+
+    ForexPortfolioValue getMostRecentPortfolio();
+
 }

@@ -29,7 +29,10 @@ class OpenRandomPosition implements ForexTrader {
 
     private String accountNo = UUID.randomUUID().toString();
     private ForexPortfolio portfolio;
-    private SortedSet<ForexPortfolioValue> portfolioSnapshots = new TreeSet<>();
+
+    private ForexPortfolioValue drawdownPortfolio = null;
+    private ForexPortfolioValue profitPortfolio = null;
+    private ForexPortfolioValue mostRecentPortfolio = null;
 
     OpenRandomPosition(SimulatorClock clock) {
         this.clock = clock;
@@ -88,12 +91,24 @@ class OpenRandomPosition implements ForexTrader {
 
     @Override
     public void addPortfolioValueSnapshot(ForexPortfolioValue portfolioValue) {
-        portfolioSnapshots.add(portfolioValue);
+        if (drawdownPortfolio == null || drawdownPortfolio.pips() > portfolioValue.pips()) {
+            drawdownPortfolio = portfolioValue;
+        }
+        if (profitPortfolio == null || profitPortfolio.pips() < portfolioValue.pips()) {
+            profitPortfolio = portfolioValue;
+        }
+        mostRecentPortfolio = portfolioValue;
     }
 
-    @Override
-    public SortedSet<ForexPortfolioValue> portfolioSnapshots() {
-        return portfolioSnapshots;
+    public ForexPortfolioValue getDrawdownPortfolio() {
+        return drawdownPortfolio;
     }
 
+    public ForexPortfolioValue getProfitPortfolio() {
+        return profitPortfolio;
+    }
+
+    public ForexPortfolioValue getMostRecentPortfolio() {
+        return mostRecentPortfolio;
+    }
 }

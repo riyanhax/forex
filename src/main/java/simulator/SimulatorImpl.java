@@ -51,16 +51,12 @@ class SimulatorImpl implements Simulator {
         }
 
         traders.forEach(trader -> {
-            SortedSet<ForexPortfolioValue> snapshots = trader.portfolioSnapshots();
-            LOG.info("End: {}", snapshots.last());
+            ForexPortfolioValue end = trader.getMostRecentPortfolio();
+            LOG.info("End: {}", end);
 
-            SortedSet<ForexPortfolioValue> sortedByProfit = new TreeSet<>(Comparator.comparing(ForexPortfolioValue::pips));
-            sortedByProfit.addAll(snapshots);
+            LOG.info("Largest drawdown: {}", trader.getDrawdownPortfolio());
+            LOG.info("Highest profit: {}", trader.getProfitPortfolio());
 
-            LOG.info("Largest drawdown: {}", sortedByProfit.first());
-            LOG.info("Highest profit: {}", sortedByProfit.last());
-
-            ForexPortfolioValue end = snapshots.last();
             ForexPortfolio portfolio = end.getPortfolio();
 
             SortedSet<ForexPositionValue> tradesSortedByProfit = new TreeSet<>(Comparator.comparing(ForexPositionValue::pips));
