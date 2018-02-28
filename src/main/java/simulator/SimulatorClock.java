@@ -6,15 +6,9 @@ import java.time.LocalDateTime;
 
 public abstract class SimulatorClock extends Clock {
 
-    public LocalDateTime now() {
-        return LocalDateTime.now(this);
-    }
+    public abstract LocalDateTime now();
 
-    public LocalDate nowLocalDate() {
-        return now().toLocalDate();
-    }
+    public abstract LocalDate nowLocalDate();
 
-    public LocalDate tomorrow() {
-        return nowLocalDate().plusDays(1);
-    }
+    public abstract LocalDate tomorrow();
 }

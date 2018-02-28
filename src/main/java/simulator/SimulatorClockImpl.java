@@ -4,6 +4,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.TemporalUnit;
@@ -12,30 +13,54 @@ import java.time.temporal.TemporalUnit;
 class SimulatorClockImpl extends SimulatorClock {
 
     private static final ZoneId ZONE = ZoneId.of("America/Chicago");
-
-    private Clock clock;
+    private Instant instant;
+    private LocalDateTime now;
+    private LocalDate today;
+    private LocalDate tomorrow;
 
     void init(LocalDateTime startTime) {
-        Instant instant = startTime.atZone(ZONE).toInstant();
-        this.clock = Clock.fixed(instant, ZONE);
+        instant = startTime.atZone(ZONE).toInstant();
+        configure();
     }
 
     void advance(long amount, TemporalUnit unit) {
-        this.clock = Clock.fixed(instant().plus(amount, unit), clock.getZone());
+        instant = instant.plus(amount, unit);
+        configure();
+    }
+
+    private void configure() {
+        now = LocalDateTime.now(this);
+        today = now.toLocalDate();
+        tomorrow = today.plusDays(1);
     }
 
     @Override
     public ZoneId getZone() {
-        return clock.getZone();
+        return ZONE;
     }
 
     @Override
     public Clock withZone(ZoneId zone) {
-        return clock.withZone(zone);
+        return this.withZone(zone);
     }
 
     @Override
     public Instant instant() {
-        return clock.instant();
+        return instant;
+    }
+
+    @Override
+    public LocalDateTime now() {
+        return now;
+    }
+
+    @Override
+    public LocalDate nowLocalDate() {
+        return today;
+    }
+
+    @Override
+    public LocalDate tomorrow() {
+        return tomorrow;
     }
 }
