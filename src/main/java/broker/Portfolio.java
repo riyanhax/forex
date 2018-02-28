@@ -1,10 +1,12 @@
 package broker;
 
+import broker.forex.ForexPosition;
+
 import java.util.Set;
 
 public interface Portfolio {
 
-    double getCash();
+    double getPipsProfit();
 
-    Set<Position> getPositions();
+    Set<ForexPosition> getPositions();
 }

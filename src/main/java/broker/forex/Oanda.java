@@ -1,10 +1,11 @@
 package broker.forex;
 
 import broker.BidAsk;
-import broker.Position;
-import broker.PositionValue;
 import broker.Quote;
+import broker.Stance;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import market.MarketEngine;
 import market.forex.Instrument;
 import market.order.BuyLimitOrder;
@@ -26,6 +27,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -74,11 +76,11 @@ class Oanda implements ForexBroker {
     public ForexPortfolioValue getPortfolioValue(Trader trader) {
         ForexPortfolio portfolio = trader.getPortfolio();
 
-        Set<Position> positions = portfolio.getPositions();
-        Set<PositionValue> positionValues = positions.stream()
+        Set<ForexPosition> positions = portfolio.getPositions();
+        Set<ForexPositionValue> positionValues = positions.stream()
                 .map(it -> {
-                    double price = marketEngine.getPrice(it.getInstrument());
-                    return new ForexPositionValue(it, price);
+                    Quote quote = getQuote(it.getInstrument());
+                    return new ForexPositionValue(it, it.getStance() == Stance.LONG ? quote.getBid() : quote.getAsk());
                 })
                 .collect(Collectors.toSet());
 
@@ -101,19 +103,27 @@ class Oanda implements ForexBroker {
     public void orderFilled(OrderRequest filled) {
         Instrument instrument = filled.getInstrument();
         double commission = (filled.isBuyOrder() ? -1 : 1) * halfSpread(instrument);
-        double cashValue = (filled.getExecutionPrice().get() + commission) * filled.getUnits();
+        double price = filled.getExecutionPrice().get() + commission;
 
         Trader trader = tradersByOrderId.get(filled.getId());
         ForexPortfolio oldPortfolio = trader.getPortfolio();
-        HashSet<Position> newPositions = new HashSet<>(oldPortfolio.getPositions());
+        ImmutableMap<Instrument, ForexPosition> positionsByInstrument = Maps.uniqueIndex(oldPortfolio.getPositions(), ForexPosition::getInstrument);
+        Map<Instrument, ForexPosition> newPositions = new HashMap<>(positionsByInstrument);
+        ForexPosition existingPosition = positionsByInstrument.get(instrument);
+        double newPipsProfit = oldPortfolio.getPipsProfit();
+
         if (filled.isSellOrder()) {
-            newPositions.removeIf(it -> it.getInstrument() == instrument);
+            Objects.requireNonNull(existingPosition, "Go long on the inverse pair, instead of shorting the primary pair.");
+            newPipsProfit += existingPosition.pipsProfit(price);
+            newPositions.remove(instrument);
         } else if (filled.isBuyOrder()) {
-            newPositions.add(new ForexPosition(instrument, filled.getUnits()));
+            Preconditions.checkArgument(existingPosition == null, "Shouldn't have more than one position open for a pair at a time!");
+            Preconditions.checkArgument(!positionsByInstrument.containsKey(instrument.getOpposite()), "Shouldn't have more than one position open for a pair at a time!");
+
+            newPositions.put(instrument, new ForexPosition(instrument, Stance.LONG, price));
         }
 
-        double cash = oldPortfolio.getCash() - cashValue;
-        ForexPortfolio portfolio = new ForexPortfolio(cash, newPositions);
+        ForexPortfolio portfolio = new ForexPortfolio(newPipsProfit, new HashSet<>(newPositions.values()));
 
         trader.setPortfolio(portfolio);
     }
@@ -135,32 +145,31 @@ class Oanda implements ForexBroker {
     }
 
     @Override
-    public void openPosition(Trader trader, Instrument pair, int units, @Nullable Double limit) {
-        Preconditions.checkArgument(units > 0);
+    public void openPosition(Trader trader, Instrument pair, @Nullable Double limit) {
 
-        Set<Position> positions = trader.getPortfolio().getPositions();
+        Set<ForexPosition> positions = trader.getPortfolio().getPositions();
         Preconditions.checkArgument(positions.isEmpty(), "Currently only one open position is allowed at a time");
 
         // Open a long position on USD/EUR to simulate a short position for EUR/USD
         OrderRequest submitted;
         if (limit == null) {
-            BuyMarketOrder order = Orders.buyMarketOrder(units, pair);
+            BuyMarketOrder order = Orders.buyMarketOrder(1, pair);
             submitted = marketEngine.submit(this, order);
         } else {
-            BuyLimitOrder order = Orders.buyLimitOrder(units, pair, limit);
+            BuyLimitOrder order = Orders.buyLimitOrder(1, pair, limit);
             submitted = marketEngine.submit(this, order);
         }
         orderSubmitted(trader, submitted);
     }
 
     @Override
-    public void closePosition(Trader trader, Position position, @Nullable Double limit) {
+    public void closePosition(Trader trader, ForexPosition position, @Nullable Double limit) {
         OrderRequest submitted;
         if (limit == null) {
-            SellMarketOrder order = Orders.sellMarketOrder(position.getShares(), position.getInstrument());
+            SellMarketOrder order = Orders.sellMarketOrder(1, position.getInstrument());
             submitted = marketEngine.submit(this, order);
         } else {
-            SellLimitOrder order = Orders.sellLimitOrder(position.getShares(), position.getInstrument(), limit);
+            SellLimitOrder order = Orders.sellLimitOrder(1, position.getInstrument(), limit);
             submitted = marketEngine.submit(this, order);
         }
         orderSubmitted(trader, submitted);

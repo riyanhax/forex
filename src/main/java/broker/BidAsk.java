@@ -1,5 +1,7 @@
 package broker;
 
+import com.google.common.base.MoreObjects;
+
 public class BidAsk implements Quote {
 
     private final double bid;
@@ -18,5 +20,13 @@ public class BidAsk implements Quote {
     @Override
     public double getAsk() {
         return ask;
+    }
+
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(this)
+                .add("bid", bid)
+                .add("ask", ask)
+                .toString();
     }
 }

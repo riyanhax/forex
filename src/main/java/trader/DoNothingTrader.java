@@ -1,10 +1,10 @@
 package trader;
 
-import broker.PositionValue;
 import broker.Quote;
 import broker.forex.ForexBroker;
 import broker.forex.ForexPortfolio;
 import broker.forex.ForexPortfolioValue;
+import broker.forex.ForexPositionValue;
 import market.forex.Instrument;
 import market.order.OrderRequest;
 import org.slf4j.Logger;
@@ -37,26 +37,29 @@ class DoNothingTrader implements ForexTrader {
         LOG.info("\tChecking portfolio");
 
         ForexPortfolioValue portfolio = broker.getPortfolioValue(this);
-        double cash = portfolio.getCash();
-        Set<PositionValue> positions = portfolio.getPositionValues();
+        double profit = portfolio.getPipsProfit();
+        Set<ForexPositionValue> positions = portfolio.getPositionValues();
 
-        LOG.info("\tCash: {}", cash);
+        LOG.info("\tPips: {}", profit);
         LOG.info("\tPositions: {}", positions);
 
-        if (positions.isEmpty()) {
-            Instrument pair = Instrument.EURUSD;
-            Quote quote = broker.getQuote(pair);
-            LOG.info("\t{} bid: {}, ask: {}", pair.getName(), quote.getBid(), quote.getAsk());
+        Instrument pair = Instrument.EURUSD;
+        Quote quote = broker.getQuote(pair);
+        LOG.info("\t{} bid: {}, ask: {}", pair.getName(), quote.getBid(), quote.getAsk());
 
-            this.openedPositionValue = portfolio.marketValue();
+        if (positions.isEmpty()) {
+
+            this.openedPositionValue = quote.getAsk();
 
             LOG.info("\tMaking orders");
-            broker.openPosition(this, Instrument.EURUSD, 100000, null);
+            broker.openPosition(this, Instrument.EURUSD, null);
         } else {
-            double lostValue = portfolio.marketValue() - this.openedPositionValue;
-            if (lostValue < -5) {
-                // Close once we've lost five dollars
-                broker.closePosition(this, positions.iterator().next(), null);
+            ForexPositionValue positionValue = positions.iterator().next();
+            double pipsProfit = positionValue.pips();
+
+            // Close once we've lost or gained enough pips
+            if (pipsProfit < -30 || pipsProfit > 60) {
+                broker.closePosition(this, positionValue.getPosition(), null);
             }
         }
 
@@ -70,7 +73,7 @@ class DoNothingTrader implements ForexTrader {
 
     @Override
     public void init(Simulation simulation) {
-        this.portfolio = new ForexPortfolio(simulation.portfolioDollars, emptySet());
+        this.portfolio = new ForexPortfolio(0, emptySet());
     }
 
     @Override

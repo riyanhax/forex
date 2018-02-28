@@ -12,7 +12,6 @@ public class Simulation {
     public final LocalDateTime endTime;
     public final long millisDelayBetweenMinutes;
     public final double pipSpread = 2;
-    public final double portfolioDollars = 500;
 
     public Simulation() {
         this(of(2017, JANUARY, 1, 1, 0), of(2017, DECEMBER, 31, 23, 59), 0L);

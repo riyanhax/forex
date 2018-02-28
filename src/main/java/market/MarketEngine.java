@@ -69,7 +69,7 @@ public interface MarketEngine extends Market {
         public void processUpdates() {
 
             if (!market.isAvailable()) {
-                LoggerFactory.getLogger(MarketEngine.class).info("Market is closed.");
+                LoggerFactory.getLogger(MarketEngine.class).debug("Market is closed.");
                 return;
             }
 

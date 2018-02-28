@@ -1,6 +1,5 @@
 package broker.forex;
 
-import broker.Position;
 import broker.Quote;
 import market.forex.Instrument;
 import market.order.OrderRequest;
@@ -24,9 +23,9 @@ public interface ForexBroker {
 
     boolean isOpen();
 
-    void openPosition(Trader trader, Instrument pair, int units, @Nullable Double limit);
+    void openPosition(Trader trader, Instrument pair, @Nullable Double limit);
 
-    void closePosition(Trader trader, Position position, @Nullable Double limit);
+    void closePosition(Trader trader, ForexPosition position, @Nullable Double limit);
 
     OrderRequest getOrder(OrderRequest order);
 }

@@ -1,40 +1,39 @@
 package broker.forex;
 
-import broker.Position;
-import broker.PositionValue;
+import broker.Stance;
 import com.google.common.base.MoreObjects;
 import market.forex.Instrument;
 
 import java.util.Objects;
 
-public class ForexPositionValue implements PositionValue {
+public class ForexPositionValue {
 
-    private final Position position;
-    private final double price;
+    private final ForexPosition position;
+    private final double currentPrice;
 
-    ForexPositionValue(Position position, double price) {
+    ForexPositionValue(ForexPosition position, double currentPrice) {
         this.position = position;
-        this.price = price;
+        this.currentPrice = currentPrice;
     }
 
-    @Override
-    public Position getPosition() {
+    public ForexPosition getPosition() {
         return position;
     }
 
-    @Override
-    public double value() {
-        return price * getShares();
+    public double pips() {
+        return position.pipsProfit(currentPrice);
     }
 
-    @Override
     public Instrument getInstrument() {
         return position.getInstrument();
     }
 
-    @Override
-    public int getShares() {
-        return position.getShares();
+    public Stance getStance() {
+        return position.getStance();
+    }
+
+    public double getPrice() {
+        return position.getPrice();
     }
 
     @Override
@@ -42,20 +41,20 @@ public class ForexPositionValue implements PositionValue {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ForexPositionValue that = (ForexPositionValue) o;
-        return Double.compare(that.price, price) == 0 &&
+        return Double.compare(that.currentPrice, currentPrice) == 0 &&
                 Objects.equals(position, that.position);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(position, price);
+        return Objects.hash(position, currentPrice);
     }
 
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
                 .add("position", position)
-                .add("price", price)
+                .add("currentPrice", currentPrice)
                 .toString();
     }
 }
