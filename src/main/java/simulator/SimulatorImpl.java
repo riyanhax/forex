@@ -12,7 +12,6 @@ import trader.forex.ForexTrader;
 import trader.forex.ForexTraderFactory;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -20,6 +19,8 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import static java.time.temporal.ChronoUnit.MINUTES;
+import static simulator.SimulatorClock.formatRange;
+import static simulator.SimulatorClock.formatTimestamp;
 
 @Service
 class SimulatorImpl implements Simulator {
@@ -52,17 +53,23 @@ class SimulatorImpl implements Simulator {
 
         traders.forEach(trader -> {
             ForexPortfolioValue end = trader.getMostRecentPortfolio();
-            LOG.info("End: {}", end);
+            LOG.info("End: {} pips at {}", end.pips(), formatTimestamp(end.getTimestamp()));
 
-            LOG.info("Largest drawdown: {}", trader.getDrawdownPortfolio());
-            LOG.info("Highest profit: {}", trader.getProfitPortfolio());
+            ForexPortfolioValue drawdownPortfolio = trader.getDrawdownPortfolio();
+            ForexPortfolioValue profitPortfolio = trader.getProfitPortfolio();
+
+            LOG.info("Largest drawdown: {} pips at {}", drawdownPortfolio.pips(), formatTimestamp(drawdownPortfolio.getTimestamp()));
+            LOG.info("Highest profit: {} pips at {}", profitPortfolio.pips(), formatTimestamp(profitPortfolio.getTimestamp()));
 
             ForexPortfolio portfolio = end.getPortfolio();
 
             SortedSet<ForexPositionValue> tradesSortedByProfit = new TreeSet<>(Comparator.comparing(ForexPositionValue::pips));
             tradesSortedByProfit.addAll(portfolio.getClosedTrades());
-            LOG.info("Worst trade: {}", tradesSortedByProfit.first());
-            LOG.info("Best trade: {}", tradesSortedByProfit.last());
+            ForexPositionValue worstTrade = tradesSortedByProfit.first();
+            ForexPositionValue bestTrade = tradesSortedByProfit.last();
+
+            LOG.info("Worst trade: {} pips from {}", worstTrade.pips(), formatRange(worstTrade.getPosition().getOpened(), worstTrade.getTimestamp()));
+            LOG.info("Best trade: {} pips from {}", bestTrade.pips(), formatRange(bestTrade.getPosition().getOpened(), bestTrade.getTimestamp()));
         });
     }
 
@@ -84,10 +91,10 @@ class SimulatorImpl implements Simulator {
 
         LocalDateTime now = clock.now();
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Time: {}", now.format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm")));
+            LOG.debug("Time: {}", formatTimestamp(now));
         } else {
             if (now.getHour() == 0 && now.getMinute() == 0 && now.getSecond() == 0) {
-                LOG.info("Time: {}", now.format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm")));
+                LOG.info("Time: {}", formatTimestamp(now));
             }
         }
 
