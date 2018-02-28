@@ -1,6 +1,28 @@
 package trader.forex;
 
-import trader.Trader;
+import broker.forex.ForexBroker;
+import broker.forex.ForexPortfolio;
+import broker.forex.ForexPortfolioValue;
+import market.order.OrderRequest;
+import simulator.Simulation;
 
-public interface ForexTrader extends Trader {
+import java.util.SortedSet;
+
+public interface ForexTrader {
+
+    String getAccountNumber();
+
+    void processUpdates(ForexBroker broker);
+
+    void cancelled(OrderRequest cancelled);
+
+    void init(Simulation simulation);
+
+    ForexPortfolio getPortfolio();
+
+    void setPortfolio(ForexPortfolio portfolio);
+
+    void addPortfolioValueSnapshot(ForexPortfolioValue portfolioValue);
+
+    SortedSet<ForexPortfolioValue> portfolioSnapshots();
 }

@@ -8,10 +8,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import trader.Trader;
+import trader.forex.ForexTrader;
+import trader.forex.ForexTraderFactory;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.SortedSet;
@@ -25,21 +27,24 @@ class SimulatorImpl implements Simulator {
     private static final Logger LOG = LoggerFactory.getLogger(SimulatorImpl.class);
 
     private final List<ForexBroker> brokers;
-    private final List<Trader> traders;
+    private final List<ForexTraderFactory> traderFactories;
     private final SimulatorClockImpl clock;
 
     @Autowired
     public SimulatorImpl(SimulatorClockImpl clock,
                          List<ForexBroker> brokers,
-                         List<Trader> traders) {
+                         List<ForexTraderFactory> traderFactories) {
         this.clock = clock;
         this.brokers = brokers;
-        this.traders = traders;
+        this.traderFactories = traderFactories;
     }
 
     @Override
     public void run(Simulation simulation) {
-        init(simulation);
+        List<ForexTrader> traders = new ArrayList<>();
+        traderFactories.forEach(it -> traders.addAll(it.createInstances(simulation)));
+
+        init(simulation, traders);
 
         while (clock.now().isBefore(simulation.endTime)) {
             nextMinute(simulation);
@@ -65,9 +70,10 @@ class SimulatorImpl implements Simulator {
         });
     }
 
-    void init(Simulation simulation) {
+    void init(Simulation simulation, List<ForexTrader> traders) {
         clock.init(simulation.startTime);
-        brokers.forEach(it -> it.init(simulation));
+
+        brokers.forEach(it -> it.init(simulation, traders));
         traders.forEach(it -> it.init(simulation));
         brokers.forEach(ForexBroker::processUpdates);
     }

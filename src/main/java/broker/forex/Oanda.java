@@ -19,11 +19,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import simulator.Simulation;
 import simulator.SimulatorClock;
-import trader.Trader;
 import trader.forex.ForexTrader;
 
 import javax.annotation.Nullable;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -41,23 +41,26 @@ class Oanda implements ForexBroker {
 
     private final SimulatorClock clock;
     private final MarketEngine marketEngine;
-    private final List<ForexTrader> traders;
-    private final Map<String, Trader> tradersByOrderId = new HashMap<>();
+    private final Map<String, ForexTrader> tradersByOrderId = new HashMap<>();
+    private final List<ForexTrader> traders = new ArrayList<>();
+
     private Simulation simulation;
 
-    public Oanda(SimulatorClock clock, MarketEngine marketEngine, List<ForexTrader> traders) {
+    public Oanda(SimulatorClock clock, MarketEngine marketEngine) {
         this.clock = clock;
         this.marketEngine = marketEngine;
-        this.traders = traders;
     }
 
     @Override
-    public void init(Simulation simulation) {
+    public void init(Simulation simulation, List<ForexTrader> traders) {
         this.simulation = simulation;
+
+        this.tradersByOrderId.clear();
+        this.traders.clear();
+        this.traders.addAll(traders);
 
         marketEngine.init(simulation);
 
-        tradersByOrderId.clear();
     }
 
     @Override
@@ -81,7 +84,7 @@ class Oanda implements ForexBroker {
     }
 
     @Override
-    public ForexPortfolioValue getPortfolioValue(Trader trader) {
+    public ForexPortfolioValue getPortfolioValue(ForexTrader trader) {
         ForexPortfolio portfolio = trader.getPortfolio();
         return portfolioValue(portfolio);
     }
@@ -122,7 +125,7 @@ class Oanda implements ForexBroker {
         double commission = (filled.isBuyOrder() ? -1 : 1) * halfSpread(instrument);
         double price = filled.getExecutionPrice().get() + commission;
 
-        Trader trader = tradersByOrderId.get(filled.getId());
+        ForexTrader trader = tradersByOrderId.get(filled.getId());
         ForexPortfolio oldPortfolio = trader.getPortfolio();
         ImmutableMap<Instrument, ForexPosition> positionsByInstrument = Maps.uniqueIndex(oldPortfolio.getPositions(), ForexPosition::getInstrument);
         Map<Instrument, ForexPosition> newPositions = new HashMap<>(positionsByInstrument);
@@ -152,7 +155,7 @@ class Oanda implements ForexBroker {
 
     @Override
     public void orderCancelled(OrderRequest cancelled) {
-        Trader trader = tradersByOrderId.get(cancelled.getId());
+        ForexTrader trader = tradersByOrderId.get(cancelled.getId());
         trader.cancelled(cancelled);
     }
 
@@ -172,7 +175,7 @@ class Oanda implements ForexBroker {
     }
 
     @Override
-    public void openPosition(Trader trader, Instrument pair, @Nullable Double limit) {
+    public void openPosition(ForexTrader trader, Instrument pair, @Nullable Double limit) {
 
         Set<ForexPosition> positions = trader.getPortfolio().getPositions();
         Preconditions.checkArgument(positions.isEmpty(), "Currently only one open position is allowed at a time");
@@ -190,7 +193,7 @@ class Oanda implements ForexBroker {
     }
 
     @Override
-    public void closePosition(Trader trader, ForexPosition position, @Nullable Double limit) {
+    public void closePosition(ForexTrader trader, ForexPosition position, @Nullable Double limit) {
         OrderRequest submitted;
         if (limit == null) {
             SellMarketOrder order = Orders.sellMarketOrder(1, position.getInstrument());
@@ -202,7 +205,7 @@ class Oanda implements ForexBroker {
         orderSubmitted(trader, submitted);
     }
 
-    private OrderRequest orderSubmitted(Trader trader, OrderRequest submitted) {
+    private OrderRequest orderSubmitted(ForexTrader trader, OrderRequest submitted) {
         tradersByOrderId.put(submitted.getId(), trader);
         return submitted;
     }

@@ -4,17 +4,18 @@ import broker.Quote;
 import market.forex.Instrument;
 import market.order.OrderRequest;
 import simulator.Simulation;
-import trader.Trader;
+import trader.forex.ForexTrader;
 
 import javax.annotation.Nullable;
 import java.time.LocalDate;
+import java.util.List;
 
 public interface ForexBroker {
-    void init(Simulation simulation);
+    void init(Simulation simulation, List<ForexTrader> traders);
 
     void processUpdates();
 
-    ForexPortfolioValue getPortfolioValue(Trader trader);
+    ForexPortfolioValue getPortfolioValue(ForexTrader trader);
 
     Quote getQuote(Instrument pair);
 
@@ -26,9 +27,9 @@ public interface ForexBroker {
 
     boolean isOpen(LocalDate time);
 
-    void openPosition(Trader trader, Instrument pair, @Nullable Double limit);
+    void openPosition(ForexTrader trader, Instrument pair, @Nullable Double limit);
 
-    void closePosition(Trader trader, ForexPosition position, @Nullable Double limit);
+    void closePosition(ForexTrader trader, ForexPosition position, @Nullable Double limit);
 
     OrderRequest getOrder(OrderRequest order);
 }

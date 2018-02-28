@@ -8,7 +8,6 @@ import market.forex.Instrument;
 import market.order.OrderRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import simulator.Simulation;
 import simulator.SimulatorClock;
 import trader.forex.ForexTrader;
@@ -22,9 +21,9 @@ import java.util.UUID;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.emptySortedSet;
 
-class DoNothingTrader implements ForexTrader {
+class OpenRandomPosition implements ForexTrader {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DoNothingTrader.class);
+    private static final Logger LOG = LoggerFactory.getLogger(OpenRandomPosition.class);
     private final SimulatorClock clock;
     private final Random random = new Random();
 
@@ -32,8 +31,7 @@ class DoNothingTrader implements ForexTrader {
     private ForexPortfolio portfolio;
     private SortedSet<ForexPortfolioValue> portfolioSnapshots = new TreeSet<>();
 
-    @Autowired
-    public DoNothingTrader(SimulatorClock clock) {
+    OpenRandomPosition(SimulatorClock clock) {
         this.clock = clock;
     }
 
