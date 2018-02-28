@@ -1,6 +1,9 @@
 package simulator;
 
 import broker.forex.ForexBroker;
+import broker.forex.ForexPortfolio;
+import broker.forex.ForexPortfolioValue;
+import broker.forex.ForexPositionValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,7 +12,10 @@ import trader.Trader;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import static java.time.temporal.ChronoUnit.MINUTES;
 
@@ -38,6 +44,25 @@ class SimulatorImpl implements Simulator {
         while (clock.now().isBefore(simulation.endTime)) {
             nextMinute(simulation);
         }
+
+        traders.forEach(trader -> {
+            SortedSet<ForexPortfolioValue> snapshots = trader.portfolioSnapshots();
+            LOG.info("End: {}", snapshots.last());
+
+            SortedSet<ForexPortfolioValue> sortedByProfit = new TreeSet<>(Comparator.comparing(ForexPortfolioValue::pips));
+            sortedByProfit.addAll(snapshots);
+
+            LOG.info("Largest drawdown: {}", sortedByProfit.first());
+            LOG.info("Highest profit: {}", sortedByProfit.last());
+
+            ForexPortfolioValue end = snapshots.last();
+            ForexPortfolio portfolio = end.getPortfolio();
+
+            SortedSet<ForexPositionValue> tradesSortedByProfit = new TreeSet<>(Comparator.comparing(ForexPositionValue::pips));
+            tradesSortedByProfit.addAll(portfolio.getClosedTrades());
+            LOG.info("Worst trade: {}", tradesSortedByProfit.first());
+            LOG.info("Best trade: {}", tradesSortedByProfit.last());
+        });
     }
 
     void init(Simulation simulation) {

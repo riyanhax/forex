@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 @Service
@@ -60,31 +62,45 @@ class Oanda implements ForexBroker {
     @Override
     public void processUpdates() {
 
-        marketEngine.processUpdates();
-
-        if (isOpen()) {
-            LOG.info("\tCheck pending orders");
-            LOG.info("\tProcess transactions");
-
-            traders.forEach(it -> it.processUpdates(this));
+        if (!isOpen()) {
+            return;
         }
 
+        // Update prices and process any limit/stop orders
         marketEngine.processUpdates();
+
+        // Allow traders to make/close positions
+        traders.forEach(it -> it.processUpdates(this));
+
+        // Process any submitted orders
+        marketEngine.processUpdates();
+
+        // Update portfolio snapshots
+        traders.forEach(it -> it.addPortfolioValueSnapshot(getPortfolioValue(it)));
     }
 
     @Override
     public ForexPortfolioValue getPortfolioValue(Trader trader) {
         ForexPortfolio portfolio = trader.getPortfolio();
+        return portfolioValue(portfolio);
+    }
 
+    private ForexPortfolioValue portfolioValue(ForexPortfolio portfolio) {
         Set<ForexPosition> positions = portfolio.getPositions();
-        Set<ForexPositionValue> positionValues = positions.stream()
-                .map(it -> {
-                    Quote quote = getQuote(it.getInstrument());
-                    return new ForexPositionValue(it, it.getStance() == Stance.LONG ? quote.getBid() : quote.getAsk());
-                })
-                .collect(Collectors.toSet());
+        Set<ForexPositionValue> positionValues = positionValues(positions);
 
         return new ForexPortfolioValue(portfolio, clock.now(), positionValues);
+    }
+
+    private Set<ForexPositionValue> positionValues(Set<ForexPosition> positions) {
+        return positions.stream()
+                .map(this::positionValue)
+                .collect(Collectors.toSet());
+    }
+
+    private ForexPositionValue positionValue(ForexPosition position) {
+        Quote quote = getQuote(position.getInstrument());
+        return new ForexPositionValue(position, clock.now(), position.getStance() == Stance.LONG ? quote.getBid() : quote.getAsk());
     }
 
     @Override
@@ -111,19 +127,24 @@ class Oanda implements ForexBroker {
         Map<Instrument, ForexPosition> newPositions = new HashMap<>(positionsByInstrument);
         ForexPosition existingPosition = positionsByInstrument.get(instrument);
         double newPipsProfit = oldPortfolio.getPipsProfit();
+        SortedSet<ForexPositionValue> closedTrades = new TreeSet<>(oldPortfolio.getClosedTrades());
 
         if (filled.isSellOrder()) {
             Objects.requireNonNull(existingPosition, "Go long on the inverse pair, instead of shorting the primary pair.");
-            newPipsProfit += existingPosition.pipsProfit(price);
+
+            ForexPositionValue closedTrade = positionValue(existingPosition);
+            newPipsProfit += closedTrade.pips();
+
             newPositions.remove(instrument);
+            closedTrades.add(closedTrade);
         } else if (filled.isBuyOrder()) {
             Preconditions.checkArgument(existingPosition == null, "Shouldn't have more than one position open for a pair at a time!");
             Preconditions.checkArgument(!positionsByInstrument.containsKey(instrument.getOpposite()), "Shouldn't have more than one position open for a pair at a time!");
 
-            newPositions.put(instrument, new ForexPosition(instrument, Stance.LONG, price));
+            newPositions.put(instrument, new ForexPosition(clock.now(), instrument, Stance.LONG, price));
         }
 
-        ForexPortfolio portfolio = new ForexPortfolio(newPipsProfit, new HashSet<>(newPositions.values()));
+        ForexPortfolio portfolio = new ForexPortfolio(newPipsProfit, new HashSet<>(newPositions.values()), closedTrades);
 
         trader.setPortfolio(portfolio);
     }
