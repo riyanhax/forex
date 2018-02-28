@@ -80,7 +80,14 @@ class SimulatorImpl implements Simulator {
 
         clock.advance(1, MINUTES);
 
-        LOG.info("Time: {}", clock.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm")));
+        LocalDateTime now = clock.now();
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Time: {}", now.format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm")));
+        } else {
+            if (now.getHour() == 0 && now.getMinute() == 0 && now.getSecond() == 0) {
+                LOG.info("Time: {}", now.format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm")));
+            }
+        }
 
         brokers.forEach(ForexBroker::processUpdates);
 

@@ -31,14 +31,16 @@ class ForexMarketImpl implements ForexMarket {
     @Override
     public void processUpdates() {
 
-        LOG.info("\tUpdating instrument quote data");
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("\tUpdating instrument quote data");
 
-        Optional<CurrencyPairHistory> history = currencyPairService.getData(Instrument.EURUSD, clock.now());
-        history.ifPresent(h -> {
-            OHLC data = h.getOHLC();
+            Optional<CurrencyPairHistory> history = currencyPairService.getData(Instrument.EURUSD, clock.now());
+            history.ifPresent(h -> {
+                OHLC data = h.getOHLC();
 
-            LOG.info("\tEUR/USD Open: {}, High: {}, Low: {}, Close: {}", data.open, data.high, data.low, data.close);
-        });
+                LOG.debug("\tEUR/USD Open: {}, High: {}, Low: {}, Close: {}", data.open, data.high, data.low, data.close);
+            });
+        }
     }
 
     @Override
