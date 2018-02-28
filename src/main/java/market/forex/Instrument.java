@@ -1,14 +1,26 @@
 package market.forex;
 
 public enum Instrument {
-    EURUSD("EURUSD", "EUR/USD");
+    EURUSD("EURUSD", "EUR/USD", false) {
+        @Override
+        public Instrument getOpposite() {
+            return USDEUR;
+        }
+    }, USDEUR("USDEUR", "USD/EUR", true) {
+        @Override
+        public Instrument getOpposite() {
+            return EURUSD;
+        }
+    };
 
     private final String symbol;
     private final String name;
+    private final boolean inverse;
 
-    Instrument(String symbol, String name) {
+    Instrument(String symbol, String name, boolean inverse) {
         this.symbol = symbol;
         this.name = name;
+        this.inverse = inverse;
     }
 
     public String getSymbol() {
@@ -19,7 +31,13 @@ public enum Instrument {
         return name;
     }
 
+    public boolean isInverse() {
+        return inverse;
+    }
+
     public double getPip() {
         return 0.0001d;
     }
+
+    public abstract Instrument getOpposite();
 }

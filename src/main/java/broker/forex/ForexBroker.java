@@ -1,14 +1,13 @@
 package broker.forex;
 
+import broker.Position;
 import broker.Quote;
 import market.forex.Instrument;
-import market.order.BuyLimitOrder;
-import market.order.BuyMarketOrder;
 import market.order.OrderRequest;
-import market.order.SellLimitOrder;
-import market.order.SellMarketOrder;
 import simulator.Simulation;
 import trader.Trader;
+
+import javax.annotation.Nullable;
 
 public interface ForexBroker {
     void init(Simulation simulation);
@@ -25,13 +24,9 @@ public interface ForexBroker {
 
     boolean isOpen();
 
+    void openPosition(Trader trader, Instrument pair, int units, @Nullable Double limit);
+
+    void closePosition(Trader trader, Position position, @Nullable Double limit);
+
     OrderRequest getOrder(OrderRequest order);
-
-    OrderRequest submit(Trader trader, BuyMarketOrder order);
-
-    OrderRequest submit(Trader trader, BuyLimitOrder order);
-
-    OrderRequest submit(Trader trader, SellMarketOrder order);
-
-    OrderRequest submit(Trader trader, SellLimitOrder order);
 }

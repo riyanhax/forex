@@ -118,11 +118,16 @@ class HistoryDataCurrencyPairService implements CurrencyPairHistoryService {
 
     @Override
     public Optional<CurrencyPairHistory> getData(Instrument pair, LocalDateTime time) {
+        boolean inverse = pair.isInverse();
         OHLC ohlc = null;
         int year = time.getYear();
+        Instrument lookupInstrument = inverse ? pair.getOpposite() : pair;
         try {
-            NavigableMap<LocalDateTime, OHLC> yearData = cache.get(new CurrencyPairYear(pair, year));
+            NavigableMap<LocalDateTime, OHLC> yearData = cache.get(new CurrencyPairYear(lookupInstrument, year));
             ohlc = yearData.get(time);
+            if (inverse && ohlc != null) {
+                ohlc = ohlc.inverse();
+            }
         } catch (ExecutionException e) {
             e.printStackTrace();
         }

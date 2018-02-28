@@ -52,10 +52,10 @@ class DoNothingTrader implements ForexTrader {
             this.openedPositionValue = portfolio.marketValue();
 
             LOG.info("\tMaking orders");
-            broker.submit(this, Orders.buyMarketOrder(100, Instrument.EURUSD));
+            broker.openPosition(this, Instrument.EURUSD, 100, null);
         } else if (portfolio.marketValue() - this.openedPositionValue < -5) {
             // Close once we've lost five dollars
-            broker.submit(this, Orders.sellMarketOrder(100, Instrument.EURUSD));
+            broker.closePosition(this, positions.iterator().next(), null);
         }
 
         LOG.info("\tClosing orders");

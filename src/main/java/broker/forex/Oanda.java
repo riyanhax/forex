@@ -9,6 +9,7 @@ import market.forex.Instrument;
 import market.order.BuyLimitOrder;
 import market.order.BuyMarketOrder;
 import market.order.OrderRequest;
+import market.order.Orders;
 import market.order.SellLimitOrder;
 import market.order.SellMarketOrder;
 import org.slf4j.Logger;
@@ -19,6 +20,7 @@ import simulator.SimulatorClock;
 import trader.Trader;
 import trader.forex.ForexTrader;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -105,7 +107,7 @@ class Oanda implements ForexBroker {
         HashSet<Position> newPositions = new HashSet<>(oldPortfolio.getPositions());
         if (filled.isSellOrder()) {
             newPositions.removeIf(it -> it.getInstrument() == instrument);
-        } else if(filled.isBuyOrder()) {
+        } else if (filled.isBuyOrder()) {
             newPositions.add(new ForexPosition(instrument, filled.getUnits()));
         }
 
@@ -132,27 +134,29 @@ class Oanda implements ForexBroker {
     }
 
     @Override
-    public OrderRequest submit(Trader trader, BuyMarketOrder order) {
-        OrderRequest submitted = marketEngine.submit(this, order);
-        return orderSubmitted(trader, submitted);
+    public void openPosition(Trader trader, Instrument pair, int units, @Nullable Double limit) {
+        OrderRequest submitted;
+        if (limit == null) {
+            BuyMarketOrder order = Orders.buyMarketOrder(units, pair);
+            submitted = marketEngine.submit(this, order);
+        } else {
+            BuyLimitOrder order = Orders.buyLimitOrder(units, pair, limit);
+            submitted = marketEngine.submit(this, order);
+        }
+        orderSubmitted(trader, submitted);
     }
 
     @Override
-    public OrderRequest submit(Trader trader, BuyLimitOrder order) {
-        OrderRequest submitted = marketEngine.submit(this, order);
-        return orderSubmitted(trader, submitted);
-    }
-
-    @Override
-    public OrderRequest submit(Trader trader, SellMarketOrder order) {
-        OrderRequest submitted = marketEngine.submit(this, order);
-        return orderSubmitted(trader, submitted);
-    }
-
-    @Override
-    public OrderRequest submit(Trader trader, SellLimitOrder order) {
-        OrderRequest submitted = marketEngine.submit(this, order);
-        return orderSubmitted(trader, submitted);
+    public void closePosition(Trader trader, Position position, @Nullable Double limit) {
+        OrderRequest submitted;
+        if (limit == null) {
+            SellMarketOrder order = Orders.sellMarketOrder(position.getShares(), position.getInstrument());
+            submitted = marketEngine.submit(this, order);
+        } else {
+            SellLimitOrder order = Orders.sellLimitOrder(position.getShares(), position.getInstrument(), limit);
+            submitted = marketEngine.submit(this, order);
+        }
+        orderSubmitted(trader, submitted);
     }
 
     private OrderRequest orderSubmitted(Trader trader, OrderRequest submitted) {

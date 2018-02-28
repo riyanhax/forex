@@ -12,4 +12,8 @@ public class OHLC {
         this.low = low;
         this.close = close;
     }
+
+    public OHLC inverse() {
+        return new OHLC(1 / open, 1 / high, 1 / close, 1 / low);
+    }
 }
