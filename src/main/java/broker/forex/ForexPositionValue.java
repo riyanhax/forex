@@ -65,6 +65,7 @@ public class ForexPositionValue implements Comparable<ForexPositionValue> {
                 .add("position", position)
                 .add("timestamp", timestamp)
                 .add("currentPrice", currentPrice)
+                .add("pips", pips())
                 .toString();
     }
 

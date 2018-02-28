@@ -14,8 +14,10 @@ import org.slf4j.LoggerFactory;
 import simulator.Simulation;
 import simulator.SimulatorClock;
 
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -39,6 +41,7 @@ public interface MarketEngine extends Market {
 
         private final ForexMarket market;
         private final SimulatorClock clock;
+        private final List<String> openOrders = new ArrayList<>();
         private final Map<String, OrderRequest> ordersById = new HashMap<>();
         private final Map<String, ForexBroker> brokersByOrder = new HashMap<>();
 
@@ -110,44 +113,47 @@ public interface MarketEngine extends Market {
         }
 
         private void processOrders() {
-            Collection<OrderRequest> orders = ordersById.values();
-            for (OrderRequest order : orders) {
-                if (order.getStatus() == OrderStatus.OPEN) {
-                    String orderId = order.getId();
-                    final OrderRequest updated;
+            for (Iterator<String> iter = openOrders.iterator(); iter.hasNext(); ) {
+                String orderId = iter.next();
+                OrderRequest order = ordersById.get(orderId);
 
-                    if (order.isExpired(clock.now())) {
-                        updated = OrderRequest.cancelled(order, clock);
-                    } else {
-                        double price = getPrice(order.getInstrument());
-                        Optional<Double> limit = order.limit();
-                        if (limit.isPresent()) {
-                            double limitPrice = limit.get();
-                            if ((order.isBuyOrder() && price > limitPrice) ||
-                                    (order.isSellOrder() && price < limitPrice)) {
-                                continue; // Limit not met
-                            }
+                final OrderRequest updated;
+
+                if (order.isExpired(clock.now())) {
+                    updated = OrderRequest.cancelled(order, clock);
+                } else {
+                    double price = getPrice(order.getInstrument());
+                    Optional<Double> limit = order.limit();
+                    if (limit.isPresent()) {
+                        double limitPrice = limit.get();
+                        if ((order.isBuyOrder() && price > limitPrice) ||
+                                (order.isSellOrder() && price < limitPrice)) {
+                            continue; // Limit not met
                         }
-
-                        updated = OrderRequest.executed(order, clock, price);
                     }
 
-                    ordersById.put(orderId, updated);
+                    updated = OrderRequest.executed(order, clock, price);
+                }
 
-                    ForexBroker broker = brokersByOrder.get(orderId);
+                ordersById.put(orderId, updated);
+                iter.remove();
 
-                    if (updated.getStatus() == OrderStatus.CANCELLED) {
-                        broker.orderCancelled(updated);
-                    } else {
-                        broker.orderFilled(updated);
-                    }
+                ForexBroker broker = brokersByOrder.get(orderId);
+
+                if (updated.getStatus() == OrderStatus.CANCELLED) {
+                    broker.orderCancelled(updated);
+                } else {
+                    broker.orderFilled(updated);
                 }
             }
         }
 
         private void addOrder(ForexBroker broker, OrderRequest order) {
-            ordersById.put(order.getId(), order);
-            brokersByOrder.put(order.getId(), broker);
+            String id = order.getId();
+
+            openOrders.add(id);
+            ordersById.put(id, order);
+            brokersByOrder.put(id, broker);
         }
     }
 }
