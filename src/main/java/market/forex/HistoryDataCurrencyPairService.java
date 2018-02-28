@@ -5,10 +5,9 @@ import com.google.common.base.Stopwatch;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.io.CharStreams;
 import com.google.common.io.LineProcessor;
+import market.CandleTimeFrame;
 import market.OHLC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,14 +23,20 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
+import java.util.NavigableMap;
+import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+
+import static market.CandleTimeFrame.FIFTEEN_MINUTE;
+import static market.CandleTimeFrame.FIVE_MINUTE;
+import static market.CandleTimeFrame.ONE_MINUTE;
 
 @Service
 class HistoryDataCurrencyPairService implements CurrencyPairHistoryService {
@@ -71,12 +76,14 @@ class HistoryDataCurrencyPairService implements CurrencyPairHistoryService {
     }
 
     private static class CurrencyData {
-        final ImmutableMap<LocalDateTime, OHLC> ohlcData;
-        final ImmutableSet<LocalDate> availableDates;
+        final CandleTimeFrame timeFrame;
+        final NavigableMap<LocalDateTime, OHLC> ohlcData;
+        final NavigableSet<LocalDate> availableDates;
 
-        public CurrencyData(Map<LocalDateTime, OHLC> ohlcData, Set<LocalDate> availableDates) {
-            this.ohlcData = ImmutableMap.copyOf(ohlcData);
-            this.availableDates = ImmutableSet.copyOf(availableDates);
+        public CurrencyData(CandleTimeFrame timeFrame, NavigableMap<LocalDateTime, OHLC> ohlcData, NavigableSet<LocalDate> availableDates) {
+            this.timeFrame = timeFrame;
+            this.ohlcData = ohlcData;
+            this.availableDates = availableDates;
         }
     }
 
@@ -91,8 +98,8 @@ class HistoryDataCurrencyPairService implements CurrencyPairHistoryService {
                     String path = String.format("/history/DAT_ASCII_%s_M1_%d.csv", pairYear.pair.getSymbol(), pairYear.year);
                     try (InputStreamReader is = new InputStreamReader(HistoryDataCurrencyPairService.class.getResourceAsStream(path))) {
 
-                        Map<LocalDateTime, OHLC> result = CharStreams.readLines(is, new LineProcessor<Map<LocalDateTime, OHLC>>() {
-                            Map<LocalDateTime, OHLC> values = new HashMap<>();
+                        NavigableMap<LocalDateTime, OHLC> result = CharStreams.readLines(is, new LineProcessor<NavigableMap<LocalDateTime, OHLC>>() {
+                            NavigableMap<LocalDateTime, OHLC> values = new TreeMap<>();
 
                             @Override
                             public boolean processLine(String line) throws IOException {
@@ -114,19 +121,53 @@ class HistoryDataCurrencyPairService implements CurrencyPairHistoryService {
                             }
 
                             @Override
-                            public Map<LocalDateTime, OHLC> getResult() {
+                            public NavigableMap<LocalDateTime, OHLC> getResult() {
                                 return values;
                             }
                         });
 
-                        Set<LocalDate> availableDates = result.keySet().stream()
+                        NavigableSet<LocalDate> availableDates = result.keySet().stream()
                                 .map(LocalDateTime::toLocalDate)
-                                .collect(Collectors.toCollection(HashSet::new));
+                                .collect(Collectors.toCollection(TreeSet::new));
 
                         LOG.info("Loaded {} in {}", pairYear, timer);
 
-                        return new CurrencyData(result, availableDates);
+                        return new CurrencyData(ONE_MINUTE, result, availableDates);
                     }
+                }
+            });
+
+    private final LoadingCache<CurrencyPairYear, CurrencyData> fiveMinuteCache = CacheBuilder.newBuilder()
+            .build(new CacheLoader<CurrencyPairYear, CurrencyData>() {
+                @Override
+                public CurrencyData load(CurrencyPairYear pairYear) throws Exception {
+
+                    Stopwatch timer = Stopwatch.createStarted();
+
+                    CurrencyData currencyData = cache.get(pairYear);
+
+                    NavigableMap<LocalDateTime, OHLC> result = FIVE_MINUTE.aggregate(currencyData.ohlcData);
+
+                    LOG.info("Loaded {} in {}", pairYear, timer);
+
+                    return new CurrencyData(FIVE_MINUTE, result, currencyData.availableDates);
+                }
+            });
+
+    private final LoadingCache<CurrencyPairYear, CurrencyData> fifteenMinuteCache = CacheBuilder.newBuilder()
+            .build(new CacheLoader<CurrencyPairYear, CurrencyData>() {
+                @Override
+                public CurrencyData load(CurrencyPairYear pairYear) throws Exception {
+
+                    Stopwatch timer = Stopwatch.createStarted();
+
+                    CurrencyData currencyData = fiveMinuteCache.get(pairYear);
+
+                    NavigableMap<LocalDateTime, OHLC> result = FIFTEEN_MINUTE.aggregate(currencyData.ohlcData);
+
+                    LOG.info("Loaded {} in {}", pairYear, timer);
+
+                    return new CurrencyData(FIFTEEN_MINUTE, result, currencyData.availableDates);
                 }
             });
 
