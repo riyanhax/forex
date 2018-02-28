@@ -4,6 +4,7 @@ import broker.BidAsk;
 import broker.Position;
 import broker.PositionValue;
 import broker.Quote;
+import com.google.common.base.Preconditions;
 import market.MarketEngine;
 import market.forex.Instrument;
 import market.order.BuyLimitOrder;
@@ -135,6 +136,12 @@ class Oanda implements ForexBroker {
 
     @Override
     public void openPosition(Trader trader, Instrument pair, int units, @Nullable Double limit) {
+        Preconditions.checkArgument(units > 0);
+
+        Set<Position> positions = trader.getPortfolio().getPositions();
+        Preconditions.checkArgument(positions.isEmpty(), "Currently only one open position is allowed at a time");
+
+        // Open a long position on USD/EUR to simulate a short position for EUR/USD
         OrderRequest submitted;
         if (limit == null) {
             BuyMarketOrder order = Orders.buyMarketOrder(units, pair);

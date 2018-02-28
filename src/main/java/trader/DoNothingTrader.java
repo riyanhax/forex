@@ -7,7 +7,6 @@ import broker.forex.ForexPortfolio;
 import broker.forex.ForexPortfolioValue;
 import market.forex.Instrument;
 import market.order.OrderRequest;
-import market.order.Orders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -52,10 +51,13 @@ class DoNothingTrader implements ForexTrader {
             this.openedPositionValue = portfolio.marketValue();
 
             LOG.info("\tMaking orders");
-            broker.openPosition(this, Instrument.EURUSD, 100, null);
-        } else if (portfolio.marketValue() - this.openedPositionValue < -5) {
-            // Close once we've lost five dollars
-            broker.closePosition(this, positions.iterator().next(), null);
+            broker.openPosition(this, Instrument.EURUSD, 100000, null);
+        } else {
+            double lostValue = portfolio.marketValue() - this.openedPositionValue;
+            if (lostValue < -5) {
+                // Close once we've lost five dollars
+                broker.closePosition(this, positions.iterator().next(), null);
+            }
         }
 
         LOG.info("\tClosing orders");
