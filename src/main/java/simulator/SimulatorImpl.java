@@ -77,7 +77,6 @@ class SimulatorImpl implements Simulator {
         clock.init(simulation.startTime);
 
         brokers.forEach(it -> it.init(simulation, traders));
-        traders.forEach(it -> it.init(simulation));
         brokers.forEach(ForexBroker::processUpdates);
     }
 

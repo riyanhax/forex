@@ -61,6 +61,7 @@ class Oanda implements ForexBroker {
 
         marketEngine.init(simulation);
 
+        traders.forEach(it -> it.init(simulation));
     }
 
     @Override
