@@ -1,6 +1,5 @@
 package trader;
 
-import broker.Quote;
 import broker.forex.ForexBroker;
 import broker.forex.ForexPortfolio;
 import broker.forex.ForexPortfolioValue;
@@ -10,13 +9,13 @@ import market.order.OrderRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 import simulator.Simulation;
 import simulator.SimulatorClock;
 import trader.forex.ForexTrader;
 
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
+import java.util.Random;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -25,11 +24,11 @@ import java.util.UUID;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.emptySortedSet;
 
-@Service
 class DoNothingTrader implements ForexTrader {
 
     private static final Logger LOG = LoggerFactory.getLogger(DoNothingTrader.class);
     private final SimulatorClock clock;
+    private final Random random = new Random();
 
     private String accountNo = UUID.randomUUID().toString();
     private ForexPortfolio portfolio;
@@ -47,22 +46,15 @@ class DoNothingTrader implements ForexTrader {
 
     @Override
     public void processUpdates(ForexBroker broker) {
-        LOG.info("\tChecking portfolio");
 
         ForexPortfolioValue portfolio = broker.getPortfolioValue(this);
         double profit = portfolio.getPipsProfit();
         Set<ForexPositionValue> positions = portfolio.getPositionValues();
 
-        LOG.info("\tPips: {}", profit);
-        LOG.info("\tPositions: {}", positions);
-
-        Instrument pair = Instrument.EURUSD;
-        Quote quote = broker.getQuote(pair);
-        LOG.info("\t{} bid: {}, ask: {}", pair.getName(), quote.getBid(), quote.getAsk());
-
         if (positions.isEmpty()) {
+            Instrument[] instruments = Instrument.values();
+            Instrument pair = instruments[random.nextInt(instruments.length)];
 
-            LOG.info("\tMaking orders");
             broker.openPosition(this, pair, null);
         } else {
             ForexPositionValue positionValue = positions.iterator().next();
@@ -75,8 +67,6 @@ class DoNothingTrader implements ForexTrader {
                 broker.closePosition(this, positionValue.getPosition(), null);
             }
         }
-
-        LOG.info("\tClosing orders");
     }
 
     @Override
