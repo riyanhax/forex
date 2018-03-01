@@ -25,10 +25,14 @@ class SmarterRandomPosition extends BaseTrader {
 
     @Override
     Optional<Instrument> shouldOpenPosition(SimulatorClock clock, InstrumentHistoryService instrumentHistoryService) {
+        LocalDateTime now = clock.now();
+        if (!(now.getMinute() == 30)) {
+            return Optional.empty();
+        }
+
         Instrument[] instruments = Instrument.values();
         Instrument pair = instruments[random.nextInt(instruments.length)];
 
-        LocalDateTime now = clock.now();
         NavigableMap<LocalDateTime, OHLC> oneWeekCandles = instrumentHistoryService.getOHLC(CandleTimeFrame.ONE_DAY, pair, Range.closed(now.minusDays(10), now));
 
         NavigableMap<LocalDateTime, OHLC> oneWeekCandlesDescending = oneWeekCandles.descendingMap();
