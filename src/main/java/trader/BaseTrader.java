@@ -50,7 +50,7 @@ abstract class BaseTrader implements ForexTrader {
 
         if (positions.isEmpty()) {
             if (!stopTrading) {
-                Optional<Instrument> toOpen = shouldOpenPosition(instrumentHistoryService);
+                Optional<Instrument> toOpen = shouldOpenPosition(clock, instrumentHistoryService);
                 toOpen.ifPresent(pair -> broker.openPosition(this, pair, null));
             }
         } else {
@@ -64,7 +64,7 @@ abstract class BaseTrader implements ForexTrader {
         }
     }
 
-    abstract Optional<Instrument> shouldOpenPosition(InstrumentHistoryService instrumentHistoryService);
+    abstract Optional<Instrument> shouldOpenPosition(SimulatorClock clock, InstrumentHistoryService instrumentHistoryService);
 
     @Override
     public void cancelled(OrderRequest cancelled) {

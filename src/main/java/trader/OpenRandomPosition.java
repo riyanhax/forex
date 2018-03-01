@@ -16,7 +16,7 @@ class OpenRandomPosition extends BaseTrader {
     }
 
     @Override
-    Optional<Instrument> shouldOpenPosition(InstrumentHistoryService instrumentHistoryService) {
+    Optional<Instrument> shouldOpenPosition(SimulatorClock clock, InstrumentHistoryService instrumentHistoryService) {
         Instrument[] instruments = Instrument.values();
         Instrument pair = instruments[random.nextInt(instruments.length)];
 

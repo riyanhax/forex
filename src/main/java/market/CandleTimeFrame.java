@@ -15,7 +15,7 @@ public enum CandleTimeFrame {
         }
 
         @Override
-        LocalDateTime calculateStart(LocalDateTime firstTime) {
+        public LocalDateTime calculateStart(LocalDateTime firstTime) {
             return firstTime.withSecond(0).withNano(0);
         }
     }, FIVE_MINUTE {
@@ -25,7 +25,7 @@ public enum CandleTimeFrame {
         }
 
         @Override
-        LocalDateTime calculateStart(LocalDateTime firstTime) {
+        public LocalDateTime calculateStart(LocalDateTime firstTime) {
             return ONE_MINUTE.calculateStart(firstTime.minusMinutes(firstTime.getMinute() % 5));
         }
     }, FIFTEEN_MINUTE {
@@ -35,7 +35,7 @@ public enum CandleTimeFrame {
         }
 
         @Override
-        LocalDateTime calculateStart(LocalDateTime firstTime) {
+        public LocalDateTime calculateStart(LocalDateTime firstTime) {
             return ONE_MINUTE.calculateStart(firstTime.minusMinutes(firstTime.getMinute() % 15));
         }
     }, THIRTY_MINUTE {
@@ -45,7 +45,7 @@ public enum CandleTimeFrame {
         }
 
         @Override
-        LocalDateTime calculateStart(LocalDateTime firstTime) {
+        public LocalDateTime calculateStart(LocalDateTime firstTime) {
             return ONE_MINUTE.calculateStart(firstTime.minusMinutes(firstTime.getMinute() % 30));
         }
     }, ONE_HOUR {
@@ -55,7 +55,7 @@ public enum CandleTimeFrame {
         }
 
         @Override
-        LocalDateTime calculateStart(LocalDateTime firstTime) {
+        public LocalDateTime calculateStart(LocalDateTime firstTime) {
             return ONE_MINUTE.calculateStart(firstTime.withMinute(0));
         }
     }, FOUR_HOURS {
@@ -65,7 +65,7 @@ public enum CandleTimeFrame {
         }
 
         @Override
-        LocalDateTime calculateStart(LocalDateTime firstTime) {
+        public LocalDateTime calculateStart(LocalDateTime firstTime) {
             return ONE_HOUR.calculateStart(firstTime.minusHours(firstTime.getHour() % 4));
         }
     }, ONE_DAY {
@@ -75,7 +75,7 @@ public enum CandleTimeFrame {
         }
 
         @Override
-        LocalDateTime calculateStart(LocalDateTime firstTime) {
+        public LocalDateTime calculateStart(LocalDateTime firstTime) {
             return firstTime.toLocalDate().atStartOfDay();
         }
     }, ONE_WEEK {
@@ -85,7 +85,7 @@ public enum CandleTimeFrame {
         }
 
         @Override
-        LocalDateTime calculateStart(LocalDateTime firstTime) {
+        public LocalDateTime calculateStart(LocalDateTime firstTime) {
             return ONE_DAY.calculateStart(firstTime.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)));
         }
     }, ONE_MONTH {
@@ -95,7 +95,7 @@ public enum CandleTimeFrame {
         }
 
         @Override
-        LocalDateTime calculateStart(LocalDateTime firstTime) {
+        public LocalDateTime calculateStart(LocalDateTime firstTime) {
             return ONE_DAY.calculateStart(firstTime.with(TemporalAdjusters.firstDayOfMonth()));
         }
     };
@@ -120,5 +120,5 @@ public enum CandleTimeFrame {
 
     abstract LocalDateTime nextCandle(LocalDateTime current);
 
-    abstract LocalDateTime calculateStart(LocalDateTime firstTime);
+    public abstract LocalDateTime calculateStart(LocalDateTime firstTime);
 }

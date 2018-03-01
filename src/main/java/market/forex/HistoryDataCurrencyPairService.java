@@ -24,6 +24,7 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
@@ -173,12 +174,11 @@ class HistoryDataCurrencyPairService implements CurrencyPairHistoryService {
     @Override
     public Optional<CurrencyPairHistory> getData(Instrument pair, LocalDateTime time) {
         boolean inverse = pair.isInverse();
-        OHLC ohlc = null;
         int year = time.getYear();
         Instrument lookupInstrument = inverse ? pair.getOpposite() : pair;
         CurrencyData currencyData = cache.getUnchecked(new CurrencyPairYear(lookupInstrument, year));
         Map<LocalDateTime, OHLC> yearData = currencyData.ohlcData;
-        ohlc = yearData.get(time);
+        OHLC ohlc = yearData.get(time);
         if (inverse && ohlc != null) {
             ohlc = ohlc.inverse();
         }
@@ -198,17 +198,28 @@ class HistoryDataCurrencyPairService implements CurrencyPairHistoryService {
     @Override
     public NavigableMap<LocalDateTime, OHLC> getOHLC(CandleTimeFrame timeFrame, Instrument pair, Range<LocalDateTime> between) {
         NavigableMap<LocalDateTime, OHLC> result = new TreeMap<>();
-        LocalDateTime start = between.lowerEndpoint();
-        LocalDateTime end = between.upperEndpoint();
+        LocalDateTime start = timeFrame.calculateStart(between.lowerEndpoint());
+        LocalDateTime end = timeFrame.calculateStart(between.upperEndpoint());
 
         int startYear = start.getYear();
         int endYear = end.getYear();
 
+        boolean inverse = pair.isInverse();
+        Instrument lookupInstrument = inverse ? pair.getOpposite() : pair;
+
         for (int year = startYear; year <= endYear; year++) {
-            result.putAll(caches.get(timeFrame).getUnchecked(new CurrencyPairYear(pair, year)).ohlcData);
+            result.putAll(caches.get(timeFrame).getUnchecked(new CurrencyPairYear(lookupInstrument, year)).ohlcData);
         }
 
-        return new TreeMap<>(result.subMap(start, end));
+        result = new TreeMap<>(result.subMap(start, end));
+
+        if (inverse && !result.isEmpty()) {
+            for (LocalDateTime time : new ArrayList<>(result.keySet())) {
+                OHLC ohlc = result.get(time);
+                result.put(time, ohlc.inverse());
+            }
+        }
+        return result;
     }
 
     private static LoadingCache<CurrencyPairYear, CurrencyData> timeFrameAggregateCache(LoadingCache<CurrencyPairYear, CurrencyData> delegate, CandleTimeFrame timeFrame) {
