@@ -1,27 +1,13 @@
 package simulator;
 
-import market.forex.ForexPortfolio;
-import market.forex.ForexPortfolioValue;
-import market.forex.ForexPositionValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import trader.forex.ForexTrader;
-import trader.forex.ForexTraderFactory;
 
 import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.SortedSet;
-import java.util.TreeSet;
 
 import static java.time.temporal.ChronoUnit.MINUTES;
-import static java.util.stream.Collectors.toList;
-import static market.MarketTime.formatRange;
 import static market.MarketTime.formatTimestamp;
 
 @Service
@@ -30,74 +16,30 @@ class SimulatorImpl implements Simulator {
     private static final Logger LOG = LoggerFactory.getLogger(SimulatorImpl.class);
 
     private final SimulatorForexBroker broker;
-    private final List<ForexTraderFactory> traderFactories;
     private final SimulatorClockImpl clock;
 
     @Autowired
     public SimulatorImpl(SimulatorClockImpl clock,
-                         SimulatorForexBroker broker,
-                         List<ForexTraderFactory> traderFactories) {
+                         SimulatorForexBroker broker) {
         this.clock = clock;
         this.broker = broker;
-        this.traderFactories = traderFactories;
     }
 
     @Override
     public void run(Simulation simulation) {
-        Map<ForexTraderFactory, Collection<ForexTrader>> tradersByFactory = new IdentityHashMap<>();
-        traderFactories.forEach(it -> tradersByFactory.put(it, it.createInstances(simulation)));
-
-        List<ForexTrader> allTraders = tradersByFactory.values().stream().flatMap(Collection::stream).collect(toList());
-        init(simulation, allTraders);
+        init(simulation);
 
         while (clock.now().isBefore(simulation.endTime)) {
             nextMinute(simulation);
         }
 
-        tradersByFactory.forEach((factory, traders) -> {
-
-            LOG.info("\n\n{}:", factory.getClass().getName());
-
-            double averageProfit = 0d;
-
-            SortedSet<ForexPortfolioValue> portfolios = new TreeSet<>(Comparator.comparing(ForexPortfolioValue::pips));
-            SortedSet<ForexPositionValue> tradesSortedByProfit = new TreeSet<>(Comparator.comparing(ForexPositionValue::pips));
-
-            for (ForexTrader trader : traders) {
-                ForexPortfolioValue end = trader.getMostRecentPortfolio();
-                double endPips = end.pips();
-                LOG.info("End: {} pips at {}", endPips, formatTimestamp(end.getTimestamp()));
-
-                averageProfit += endPips;
-
-                portfolios.add(trader.getDrawdownPortfolio());
-                portfolios.add(trader.getProfitPortfolio());
-
-                ForexPortfolio portfolio = end.getPortfolio();
-                tradesSortedByProfit.addAll(portfolio.getClosedTrades());
-            }
-
-            averageProfit /= traders.size();
-
-            ForexPositionValue worstTrade = tradesSortedByProfit.first();
-            ForexPositionValue bestTrade = tradesSortedByProfit.last();
-
-            ForexPortfolioValue drawdownPortfolio = portfolios.first();
-            ForexPortfolioValue profitPortfolio = portfolios.last();
-
-            LOG.info("Worst trade: {} pips from {}", worstTrade.pips(), formatRange(worstTrade.getPosition().getOpened(), worstTrade.getTimestamp()));
-            LOG.info("Best trade: {} pips from {}", bestTrade.pips(), formatRange(bestTrade.getPosition().getOpened(), bestTrade.getTimestamp()));
-            LOG.info("Profitable trades: {}/{}", tradesSortedByProfit.stream().filter(it -> it.pips() > 0).count(), tradesSortedByProfit.size());
-            LOG.info("Highest drawdown: {} pips at {}", drawdownPortfolio.pips(), formatTimestamp(drawdownPortfolio.getTimestamp()));
-            LOG.info("Highest profit: {} pips at {}", profitPortfolio.pips(), formatTimestamp(profitPortfolio.getTimestamp()));
-            LOG.info("Average profit: {} pips from {}", averageProfit, formatRange(simulation.startTime, simulation.endTime));
-        });
+        broker.done();
     }
 
-    void init(Simulation simulation, Collection<ForexTrader> traders) {
+    void init(Simulation simulation) {
         clock.init(simulation.startTime);
 
-        broker.init(simulation, traders);
+        broker.init(simulation);
         broker.processUpdates();
     }
 

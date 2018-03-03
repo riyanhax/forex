@@ -23,13 +23,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import trader.forex.ForexTrader;
+import trader.forex.ForexTraderFactory;
 
 import javax.annotation.Nullable;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -37,6 +39,9 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+
+import static market.MarketTime.formatRange;
+import static market.MarketTime.formatTimestamp;
 
 @Service
 class HistoryDataForexBroker implements SimulatorForexBroker {
@@ -46,24 +51,32 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
     private final MarketTime clock;
     private final MarketEngine marketEngine;
     private final Map<String, ForexTrader> tradersByOrderId = new HashMap<>();
-    private final List<ForexTrader> traders = new ArrayList<>();
+    private final Map<ForexTraderFactory, Collection<ForexTrader>> tradersByFactory = new IdentityHashMap<>();
+    private final List<ForexTraderFactory> traderFactories;
+    private List<ForexTrader> traders;
 
     private Simulation simulation;
 
-    public HistoryDataForexBroker(MarketTime clock, MarketEngine marketEngine) {
+    public HistoryDataForexBroker(MarketTime clock, MarketEngine marketEngine,
+                                  List<ForexTraderFactory> traderFactories) {
         this.clock = clock;
         this.marketEngine = marketEngine;
+        this.traderFactories = traderFactories;
     }
 
     @Override
-    public void init(Simulation simulation, Collection<ForexTrader> traders) {
+    public void init(Simulation simulation) {
         this.simulation = simulation;
 
         this.tradersByOrderId.clear();
-        this.traders.clear();
-        this.traders.addAll(traders);
+        this.tradersByFactory.clear();
 
         marketEngine.init(simulation);
+
+        traderFactories.forEach(it -> tradersByFactory.put(it, it.createInstances(simulation)));
+        this.traders = tradersByFactory.entrySet().stream()
+                .map(Map.Entry::getValue).flatMap(Collection::stream)
+                .collect(Collectors.toList());
 
         traders.forEach(it -> it.init(simulation));
     }
@@ -86,6 +99,49 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
 
         // Update portfolio snapshots
         traders.forEach(it -> it.addPortfolioValueSnapshot(getPortfolioValue(it)));
+    }
+
+    @Override
+    public void done() {
+
+        tradersByFactory.forEach((factory, traders) -> {
+
+            LOG.info("\n\n{}:", factory.getClass().getName());
+
+            double averageProfit = 0d;
+
+            SortedSet<ForexPortfolioValue> portfolios = new TreeSet<>(Comparator.comparing(ForexPortfolioValue::pips));
+            SortedSet<ForexPositionValue> tradesSortedByProfit = new TreeSet<>(Comparator.comparing(ForexPositionValue::pips));
+
+            for (ForexTrader trader : traders) {
+                ForexPortfolioValue end = trader.getMostRecentPortfolio();
+                double endPips = end.pips();
+                LOG.info("End: {} pips at {}", endPips, formatTimestamp(end.getTimestamp()));
+
+                averageProfit += endPips;
+
+                portfolios.add(trader.getDrawdownPortfolio());
+                portfolios.add(trader.getProfitPortfolio());
+
+                ForexPortfolio portfolio = end.getPortfolio();
+                tradesSortedByProfit.addAll(portfolio.getClosedTrades());
+            }
+
+            averageProfit /= traders.size();
+
+            ForexPositionValue worstTrade = tradesSortedByProfit.first();
+            ForexPositionValue bestTrade = tradesSortedByProfit.last();
+
+            ForexPortfolioValue drawdownPortfolio = portfolios.first();
+            ForexPortfolioValue profitPortfolio = portfolios.last();
+
+            LOG.info("Worst trade: {} pips from {}", worstTrade.pips(), formatRange(worstTrade.getPosition().getOpened(), worstTrade.getTimestamp()));
+            LOG.info("Best trade: {} pips from {}", bestTrade.pips(), formatRange(bestTrade.getPosition().getOpened(), bestTrade.getTimestamp()));
+            LOG.info("Profitable trades: {}/{}", tradesSortedByProfit.stream().filter(it -> it.pips() > 0).count(), tradesSortedByProfit.size());
+            LOG.info("Highest drawdown: {} pips at {}", drawdownPortfolio.pips(), formatTimestamp(drawdownPortfolio.getTimestamp()));
+            LOG.info("Highest profit: {} pips at {}", profitPortfolio.pips(), formatTimestamp(profitPortfolio.getTimestamp()));
+            LOG.info("Average profit: {} pips from {}", averageProfit, formatRange(simulation.startTime, simulation.endTime));
+        });
     }
 
     @Override

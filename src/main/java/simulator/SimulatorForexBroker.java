@@ -2,16 +2,15 @@ package simulator;
 
 import broker.ForexBroker;
 import market.order.OrderRequest;
-import trader.forex.ForexTrader;
-
-import java.util.Collection;
 
 public interface SimulatorForexBroker extends ForexBroker {
-    void init(Simulation simulation, Collection<ForexTrader> traders);
+    void init(Simulation simulation);
 
     void processUpdates();
 
     void orderCancelled(OrderRequest filled);
+
+    void done();
 
     void orderFilled(OrderRequest filled);
 
