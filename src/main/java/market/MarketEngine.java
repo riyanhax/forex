@@ -12,7 +12,7 @@ import market.order.SellLimitOrder;
 import market.order.SellMarketOrder;
 import org.slf4j.LoggerFactory;
 import simulator.Simulation;
-import simulator.SimulatorClock;
+import simulator.AppClock;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -34,19 +34,19 @@ public interface MarketEngine extends Market {
 
     OrderRequest submit(ForexBroker broker, SellLimitOrder p);
 
-    static MarketEngine create(ForexMarket market, SimulatorClock clock) {
+    static MarketEngine create(ForexMarket market, AppClock clock) {
         return new MarketEngineImpl(market, clock);
     }
 
     class MarketEngineImpl implements MarketEngine {
 
         private final ForexMarket market;
-        private final SimulatorClock clock;
+        private final AppClock clock;
         private final List<String> openOrders = new ArrayList<>();
         private final Map<String, OrderRequest> ordersById = new HashMap<>();
         private final Map<String, ForexBroker> brokersByOrder = new HashMap<>();
 
-        MarketEngineImpl(ForexMarket market, SimulatorClock clock) {
+        MarketEngineImpl(ForexMarket market, AppClock clock) {
             this.market = market;
             this.clock = clock;
         }

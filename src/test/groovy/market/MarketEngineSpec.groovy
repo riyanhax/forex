@@ -4,7 +4,7 @@ import broker.forex.ForexBroker
 import market.forex.ForexMarket
 import market.order.OrderRequest
 import market.order.OrderStatus
-import simulator.SimulatorClock
+import simulator.AppClock
 import simulator.TestClock
 import spock.lang.Specification
 import spock.lang.Unroll
@@ -17,7 +17,7 @@ import static market.order.Orders.*
 
 class MarketEngineSpec extends Specification {
 
-    SimulatorClock clock = new TestClock(LocalDateTime.of(2017, Month.JANUARY, 17, 12, 31))
+    AppClock clock = new TestClock(LocalDateTime.of(2017, Month.JANUARY, 17, 12, 31))
     ForexBroker broker = Mock()
     ForexMarket market = Mock()
 
@@ -30,7 +30,11 @@ class MarketEngineSpec extends Specification {
         when: 'a market order is submitted'
         OrderRequest submittedOrder = marketEngine.submit(broker, order)
 
+        and: 'orders are processed'
+        marketEngine.processUpdates()
+
         then: 'the order is filled at market price'
+        1 * market.isAvailable() >> true
         1 * market.getPrice(EURUSD) >> marketPrice
 
         and: 'the proper response is returned'
@@ -63,7 +67,11 @@ class MarketEngineSpec extends Specification {
         when: 'a limit order is submitted'
         OrderRequest submittedOrder = marketEngine.submit(broker, order)
 
+        and: 'orders are processed'
+        marketEngine.processUpdates()
+
         then: 'the order cannot be filled at market price'
+        1 * market.isAvailable() >> true
         1 * market.getPrice(EURUSD) >> marketPrice
 
         and: 'the proper response is returned'

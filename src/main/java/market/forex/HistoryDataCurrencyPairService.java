@@ -15,7 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import simulator.SimulatorClock;
+import simulator.AppClock;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -164,10 +164,10 @@ class HistoryDataCurrencyPairService implements CurrencyPairHistoryService {
             .put(ONE_MONTH, oneMonthCache)
             .build();
 
-    private final SimulatorClock clock;
+    private final AppClock clock;
 
     @Autowired
-    HistoryDataCurrencyPairService(SimulatorClock clock) {
+    HistoryDataCurrencyPairService(AppClock clock) {
         this.clock = clock;
     }
 

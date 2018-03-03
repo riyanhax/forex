@@ -5,7 +5,7 @@ import market.CandleTimeFrame;
 import market.InstrumentHistoryService;
 import market.OHLC;
 import market.forex.Instrument;
-import simulator.SimulatorClock;
+import simulator.AppClock;
 
 import java.time.LocalDateTime;
 import java.util.Iterator;
@@ -19,12 +19,12 @@ class SmarterRandomPosition extends BaseTrader {
 
     private final Random random = new Random();
 
-    SmarterRandomPosition(SimulatorClock clock, InstrumentHistoryService instrumentHistoryService) {
+    SmarterRandomPosition(AppClock clock, InstrumentHistoryService instrumentHistoryService) {
         super(clock, instrumentHistoryService);
     }
 
     @Override
-    Optional<Instrument> shouldOpenPosition(SimulatorClock clock, InstrumentHistoryService instrumentHistoryService) {
+    Optional<Instrument> shouldOpenPosition(AppClock clock, InstrumentHistoryService instrumentHistoryService) {
         LocalDateTime now = clock.now();
         if (!(now.getMinute() == 30)) {
             return Optional.empty();

@@ -18,7 +18,7 @@ class SimulatorImplSpec extends Specification {
         def end = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 37)
 
         Simulation simulation = new Simulation(start, end, 0L);
-        simulator.init(simulation)
+        simulator.init(simulation, [])
 
         def times = []
 

@@ -8,7 +8,7 @@ import market.InstrumentHistoryService;
 import market.forex.Instrument;
 import market.order.OrderRequest;
 import simulator.Simulation;
-import simulator.SimulatorClock;
+import simulator.AppClock;
 import trader.forex.ForexTrader;
 
 import java.util.Optional;
@@ -20,7 +20,7 @@ import static java.util.Collections.emptySortedSet;
 
 abstract class BaseTrader implements ForexTrader {
 
-    private final SimulatorClock clock;
+    private final AppClock clock;
     private final InstrumentHistoryService instrumentHistoryService;
 
     private String accountNo = UUID.randomUUID().toString();
@@ -30,7 +30,7 @@ abstract class BaseTrader implements ForexTrader {
     private ForexPortfolioValue profitPortfolio = null;
     private ForexPortfolioValue mostRecentPortfolio = null;
 
-    BaseTrader(SimulatorClock clock, InstrumentHistoryService instrumentHistoryService) {
+    BaseTrader(AppClock clock, InstrumentHistoryService instrumentHistoryService) {
         this.clock = clock;
         this.instrumentHistoryService = instrumentHistoryService;
     }
@@ -64,7 +64,7 @@ abstract class BaseTrader implements ForexTrader {
         }
     }
 
-    abstract Optional<Instrument> shouldOpenPosition(SimulatorClock clock, InstrumentHistoryService instrumentHistoryService);
+    abstract Optional<Instrument> shouldOpenPosition(AppClock clock, InstrumentHistoryService instrumentHistoryService);
 
     @Override
     public void cancelled(OrderRequest cancelled) {

@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import simulator.Simulation;
-import simulator.SimulatorClock;
+import simulator.AppClock;
 
 import java.time.LocalDate;
 import java.util.Optional;
@@ -16,11 +16,11 @@ class ForexMarketImpl implements ForexMarket {
 
     private static final Logger LOG = LoggerFactory.getLogger(ForexMarketImpl.class);
 
-    private final SimulatorClock clock;
+    private final AppClock clock;
     private final CurrencyPairHistoryService currencyPairService;
 
     @Autowired
-    public ForexMarketImpl(SimulatorClock clock, CurrencyPairHistoryService currencyPairService) {
+    public ForexMarketImpl(AppClock clock, CurrencyPairHistoryService currencyPairService) {
         this.clock = clock;
         this.currencyPairService = currencyPairService;
     }

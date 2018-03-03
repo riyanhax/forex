@@ -22,8 +22,8 @@ import java.util.TreeSet;
 
 import static java.time.temporal.ChronoUnit.MINUTES;
 import static java.util.stream.Collectors.toList;
-import static simulator.SimulatorClock.formatRange;
-import static simulator.SimulatorClock.formatTimestamp;
+import static simulator.AppClock.formatRange;
+import static simulator.AppClock.formatTimestamp;
 
 @Service
 class SimulatorImpl implements Simulator {

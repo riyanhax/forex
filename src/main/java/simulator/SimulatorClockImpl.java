@@ -10,13 +10,13 @@ import java.time.ZoneId;
 import java.time.temporal.TemporalUnit;
 
 @Service
-class SimulatorClockImpl extends SimulatorClock {
+class SimulatorClockImpl implements AppClock {
 
-    private static final ZoneId ZONE = ZoneId.of("America/Chicago");
     private Instant instant;
     private LocalDateTime now;
     private LocalDate today;
     private LocalDate tomorrow;
+    private Clock clock;
 
     void init(LocalDateTime startTime) {
         instant = startTime.atZone(ZONE).toInstant();
@@ -29,7 +29,8 @@ class SimulatorClockImpl extends SimulatorClock {
     }
 
     private void configure() {
-        now = LocalDateTime.now(this);
+        clock = Clock.fixed(instant, ZONE);
+        now = LocalDateTime.now(clock);
         today = now.toLocalDate();
         tomorrow = today.plusDays(1);
     }
@@ -37,16 +38,6 @@ class SimulatorClockImpl extends SimulatorClock {
     @Override
     public ZoneId getZone() {
         return ZONE;
-    }
-
-    @Override
-    public Clock withZone(ZoneId zone) {
-        return this.withZone(zone);
-    }
-
-    @Override
-    public Instant instant() {
-        return instant;
     }
 
     @Override

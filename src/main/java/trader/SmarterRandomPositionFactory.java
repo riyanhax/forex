@@ -3,18 +3,18 @@ package trader;
 import market.InstrumentHistoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import simulator.SimulatorClock;
+import simulator.AppClock;
 import trader.forex.ForexTrader;
 import trader.forex.ForexTraderFactory;
 
 @Service
 public class SmarterRandomPositionFactory implements ForexTraderFactory {
 
-    private final SimulatorClock clock;
+    private final AppClock clock;
     private final InstrumentHistoryService instrumentHistoryService;
 
     @Autowired
-    public SmarterRandomPositionFactory(SimulatorClock clock, InstrumentHistoryService instrumentHistoryService) {
+    public SmarterRandomPositionFactory(AppClock clock, InstrumentHistoryService instrumentHistoryService) {
         this.clock = clock;
         this.instrumentHistoryService = instrumentHistoryService;
     }
