@@ -18,7 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import simulator.Simulation;
-import simulator.AppClock;
+import market.MarketTime;
 import trader.forex.ForexTrader;
 
 import javax.annotation.Nullable;
@@ -40,14 +40,14 @@ class Oanda implements ForexBroker {
 
     private static final Logger LOG = LoggerFactory.getLogger(Oanda.class);
 
-    private final AppClock clock;
+    private final MarketTime clock;
     private final MarketEngine marketEngine;
     private final Map<String, ForexTrader> tradersByOrderId = new HashMap<>();
     private final List<ForexTrader> traders = new ArrayList<>();
 
     private Simulation simulation;
 
-    public Oanda(AppClock clock, MarketEngine marketEngine) {
+    public Oanda(MarketTime clock, MarketEngine marketEngine) {
         this.clock = clock;
         this.marketEngine = marketEngine;
     }

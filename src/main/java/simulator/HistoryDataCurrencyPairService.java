@@ -1,4 +1,4 @@
-package market.forex;
+package simulator;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Stopwatch;
@@ -11,11 +11,14 @@ import com.google.common.io.CharStreams;
 import com.google.common.io.LineProcessor;
 import market.CandleTimeFrame;
 import market.OHLC;
+import market.forex.CurrencyPairHistory;
+import market.forex.CurrencyPairHistoryService;
+import market.forex.Instrument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import simulator.AppClock;
+import market.MarketTime;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -164,10 +167,10 @@ class HistoryDataCurrencyPairService implements CurrencyPairHistoryService {
             .put(ONE_MONTH, oneMonthCache)
             .build();
 
-    private final AppClock clock;
+    private final MarketTime clock;
 
     @Autowired
-    HistoryDataCurrencyPairService(AppClock clock) {
+    HistoryDataCurrencyPairService(MarketTime clock) {
         this.clock = clock;
     }
 

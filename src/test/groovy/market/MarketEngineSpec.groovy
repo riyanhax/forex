@@ -4,7 +4,6 @@ import broker.forex.ForexBroker
 import market.forex.ForexMarket
 import market.order.OrderRequest
 import market.order.OrderStatus
-import simulator.AppClock
 import simulator.TestClock
 import spock.lang.Specification
 import spock.lang.Unroll
@@ -17,7 +16,7 @@ import static market.order.Orders.*
 
 class MarketEngineSpec extends Specification {
 
-    AppClock clock = new TestClock(LocalDateTime.of(2017, Month.JANUARY, 17, 12, 31))
+    MarketTime clock = new TestClock(LocalDateTime.of(2017, Month.JANUARY, 17, 12, 31))
     ForexBroker broker = Mock()
     ForexMarket market = Mock()
 

@@ -2,7 +2,7 @@ package market.order;
 
 import broker.Expiry;
 import market.forex.Instrument;
-import simulator.AppClock;
+import market.MarketTime;
 
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
@@ -25,15 +25,15 @@ public interface OrderRequest extends Order {
         return expiry.isPresent() && !expiry.get().getExpiration(getSubmissionDate()).isAfter(now);
     }
 
-    static OrderRequest open(Order order, AppClock clock) {
+    static OrderRequest open(Order order, MarketTime clock) {
         return new OrderRequestImpl(order, UUID.randomUUID().toString(), clock.now());
     }
 
-    static OrderRequest executed(OrderRequest order, AppClock clock, double price) {
+    static OrderRequest executed(OrderRequest order, MarketTime clock, double price) {
         return new OrderRequestImpl(order, order.getId(), clock.now(), OrderStatus.EXECUTED, clock.now(), price);
     }
 
-    static OrderRequest cancelled(OrderRequest order, AppClock clock) {
+    static OrderRequest cancelled(OrderRequest order, MarketTime clock) {
         return new OrderRequestImpl(order, order.getId(), clock.now(), OrderStatus.CANCELLED, clock.now(), null);
     }
 

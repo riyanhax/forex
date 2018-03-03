@@ -4,14 +4,13 @@ import market.forex.ForexMarket;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import simulator.AppClock;
 
 @Configuration
 @ComponentScan
 public class MarketConfig {
 
     @Bean
-    public MarketEngine forexEngine(ForexMarket market, AppClock clock) {
+    public MarketEngine forexEngine(ForexMarket market, MarketTime clock) {
         return MarketEngine.create(market, clock);
     }
 

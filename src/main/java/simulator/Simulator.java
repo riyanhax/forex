@@ -1,5 +1,5 @@
 package simulator;
 
-public interface Simulator {
+interface Simulator {
     void run(Simulation simulation);
 }

@@ -1,11 +1,11 @@
-package simulator;
+package market;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
-public interface AppClock {
+public interface MarketTime {
 
     ZoneId ZONE = ZoneId.of("America/Chicago");
 

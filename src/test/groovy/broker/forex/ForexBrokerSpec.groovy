@@ -1,7 +1,7 @@
 package broker.forex
 
 import market.MarketEngine
-import simulator.AppClock
+import market.MarketTime
 import simulator.TestClock
 import spock.lang.Specification
 import trader.forex.ForexTrader
@@ -10,7 +10,7 @@ import static java.time.LocalDateTime.now
 
 class ForexBrokerSpec extends Specification {
 
-    AppClock clock = new TestClock(now())
+    MarketTime clock = new TestClock(now())
     MarketEngine marketEngine = Mock()
     ForexTrader trader = Mock()
 
