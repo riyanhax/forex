@@ -1,8 +1,7 @@
-package broker.forex;
+package market.forex;
 
 import broker.Stance;
 import com.google.common.base.MoreObjects;
-import market.forex.Instrument;
 
 import java.time.LocalDateTime;
 import java.util.Objects;

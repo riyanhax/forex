@@ -7,7 +7,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.temporal.TemporalUnit;
 
 @Service
@@ -34,11 +33,6 @@ class SimulatorClockImpl implements MarketTime {
         now = LocalDateTime.now(clock);
         today = now.toLocalDate();
         tomorrow = today.plusDays(1);
-    }
-
-    @Override
-    public ZoneId getZone() {
-        return ZONE;
     }
 
     @Override

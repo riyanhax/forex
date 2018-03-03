@@ -1,9 +1,9 @@
 package trader;
 
 import broker.forex.ForexBroker;
-import broker.forex.ForexPortfolio;
-import broker.forex.ForexPortfolioValue;
-import broker.forex.ForexPositionValue;
+import market.forex.ForexPortfolio;
+import market.forex.ForexPortfolioValue;
+import market.forex.ForexPositionValue;
 import market.InstrumentHistoryService;
 import market.forex.Instrument;
 import market.order.OrderRequest;

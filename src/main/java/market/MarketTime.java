@@ -15,7 +15,9 @@ public interface MarketTime {
 
     LocalDate nowLocalDate();
 
-    LocalDate tomorrow();
+    default LocalDate tomorrow() {
+        return nowLocalDate().plusDays(1);
+    }
 
     static String formatTimestamp(LocalDateTime time) {
         return TIMESTAMP_FORMATTER.format(time);
@@ -24,5 +26,7 @@ public interface MarketTime {
         return formatTimestamp(start) + " - " + formatTimestamp(end);
     }
 
-    ZoneId getZone();
+    default ZoneId getZone() {
+        return ZONE;
+    }
 }

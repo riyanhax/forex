@@ -2,6 +2,7 @@ package broker.forex
 
 import market.MarketEngine
 import market.MarketTime
+import simulator.HistoryDataForexBroker
 import simulator.TestClock
 import spock.lang.Specification
 import trader.forex.ForexTrader
@@ -14,7 +15,7 @@ class ForexBrokerSpec extends Specification {
     MarketEngine marketEngine = Mock()
     ForexTrader trader = Mock()
 
-    Oanda broker = new Oanda(clock, marketEngine, [trader])
+    HistoryDataForexBroker broker = new HistoryDataForexBroker(clock, marketEngine, [trader])
 
 //    @Unroll
 //    def 'should close existing position when buying/selling the same instrument'() {

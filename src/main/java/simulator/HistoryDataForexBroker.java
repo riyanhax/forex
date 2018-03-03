@@ -1,8 +1,13 @@
-package broker.forex;
+package simulator;
 
 import broker.BidAsk;
 import broker.Quote;
 import broker.Stance;
+import broker.forex.ForexBroker;
+import market.forex.ForexPortfolio;
+import market.forex.ForexPortfolioValue;
+import market.forex.ForexPosition;
+import market.forex.ForexPositionValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -17,7 +22,6 @@ import market.order.SellMarketOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import simulator.Simulation;
 import market.MarketTime;
 import trader.forex.ForexTrader;
 
@@ -36,9 +40,9 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 @Service
-class Oanda implements ForexBroker {
+class HistoryDataForexBroker implements ForexBroker {
 
-    private static final Logger LOG = LoggerFactory.getLogger(Oanda.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HistoryDataForexBroker.class);
 
     private final MarketTime clock;
     private final MarketEngine marketEngine;
@@ -47,7 +51,7 @@ class Oanda implements ForexBroker {
 
     private Simulation simulation;
 
-    public Oanda(MarketTime clock, MarketEngine marketEngine) {
+    public HistoryDataForexBroker(MarketTime clock, MarketEngine marketEngine) {
         this.clock = clock;
         this.marketEngine = marketEngine;
     }

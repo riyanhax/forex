@@ -1,6 +1,8 @@
 package broker.forex;
 
 import broker.Quote;
+import market.forex.ForexPortfolioValue;
+import market.forex.ForexPosition;
 import market.forex.Instrument;
 import market.order.OrderRequest;
 import simulator.Simulation;

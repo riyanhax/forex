@@ -1,11 +1,14 @@
-package market.forex;
+package simulator;
 
 import market.OHLC;
+import market.forex.CurrencyPairHistory;
+import market.forex.CurrencyPairHistoryService;
+import market.forex.ForexMarket;
+import market.forex.Instrument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import simulator.Simulation;
 import market.MarketTime;
 
 import java.time.LocalDate;

@@ -1,9 +1,9 @@
 package simulator;
 
 import broker.forex.ForexBroker;
-import broker.forex.ForexPortfolio;
-import broker.forex.ForexPortfolioValue;
-import broker.forex.ForexPositionValue;
+import market.forex.ForexPortfolio;
+import market.forex.ForexPortfolioValue;
+import market.forex.ForexPositionValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
