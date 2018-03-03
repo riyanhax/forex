@@ -1,6 +1,5 @@
 package simulator;
 
-import broker.forex.ForexBroker;
 import market.forex.ForexPortfolio;
 import market.forex.ForexPortfolioValue;
 import market.forex.ForexPositionValue;
@@ -30,16 +29,16 @@ class SimulatorImpl implements Simulator {
 
     private static final Logger LOG = LoggerFactory.getLogger(SimulatorImpl.class);
 
-    private final List<ForexBroker> brokers;
+    private final SimulatorForexBroker broker;
     private final List<ForexTraderFactory> traderFactories;
     private final SimulatorClockImpl clock;
 
     @Autowired
     public SimulatorImpl(SimulatorClockImpl clock,
-                         List<ForexBroker> brokers,
+                         SimulatorForexBroker broker,
                          List<ForexTraderFactory> traderFactories) {
         this.clock = clock;
-        this.brokers = brokers;
+        this.broker = broker;
         this.traderFactories = traderFactories;
     }
 
@@ -98,8 +97,8 @@ class SimulatorImpl implements Simulator {
     void init(Simulation simulation, Collection<ForexTrader> traders) {
         clock.init(simulation.startTime);
 
-        brokers.forEach(it -> it.init(simulation, traders));
-        brokers.forEach(ForexBroker::processUpdates);
+        broker.init(simulation, traders);
+        broker.processUpdates();
     }
 
     void nextMinute(Simulation simulation) {
@@ -119,7 +118,7 @@ class SimulatorImpl implements Simulator {
             }
         }
 
-        brokers.forEach(ForexBroker::processUpdates);
+        broker.processUpdates();
 
         if (simulation.millisDelayBetweenMinutes > 0) {
             try {

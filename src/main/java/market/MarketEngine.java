@@ -1,6 +1,5 @@
 package market;
 
-import broker.forex.ForexBroker;
 import market.forex.ForexMarket;
 import market.forex.Instrument;
 import market.order.BuyLimitOrder;
@@ -12,6 +11,7 @@ import market.order.SellLimitOrder;
 import market.order.SellMarketOrder;
 import org.slf4j.LoggerFactory;
 import simulator.Simulation;
+import simulator.SimulatorForexBroker;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -25,13 +25,13 @@ public interface MarketEngine extends Market {
 
     OrderRequest getOrder(OrderRequest order);
 
-    OrderRequest submit(ForexBroker broker, BuyMarketOrder p);
+    OrderRequest submit(SimulatorForexBroker broker, BuyMarketOrder p);
 
-    OrderRequest submit(ForexBroker broker, SellMarketOrder p);
+    OrderRequest submit(SimulatorForexBroker broker, SellMarketOrder p);
 
-    OrderRequest submit(ForexBroker broker, BuyLimitOrder p);
+    OrderRequest submit(SimulatorForexBroker broker, BuyLimitOrder p);
 
-    OrderRequest submit(ForexBroker broker, SellLimitOrder p);
+    OrderRequest submit(SimulatorForexBroker broker, SellLimitOrder p);
 
     static MarketEngine create(ForexMarket market, MarketTime clock) {
         return new MarketEngineImpl(market, clock);
@@ -43,7 +43,7 @@ public interface MarketEngine extends Market {
         private final MarketTime clock;
         private final List<String> openOrders = new ArrayList<>();
         private final Map<String, OrderRequest> ordersById = new HashMap<>();
-        private final Map<String, ForexBroker> brokersByOrder = new HashMap<>();
+        private final Map<String, SimulatorForexBroker> brokersByOrder = new HashMap<>();
 
         MarketEngineImpl(ForexMarket market, MarketTime clock) {
             this.market = market;
@@ -91,26 +91,26 @@ public interface MarketEngine extends Market {
         }
 
         @Override
-        public OrderRequest submit(ForexBroker broker, BuyMarketOrder order) {
+        public OrderRequest submit(SimulatorForexBroker broker, BuyMarketOrder order) {
             return orderSubmitted(broker, order);
         }
 
         @Override
-        public OrderRequest submit(ForexBroker broker, BuyLimitOrder order) {
+        public OrderRequest submit(SimulatorForexBroker broker, BuyLimitOrder order) {
             return orderSubmitted(broker, order);
         }
 
         @Override
-        public OrderRequest submit(ForexBroker broker, SellMarketOrder order) {
+        public OrderRequest submit(SimulatorForexBroker broker, SellMarketOrder order) {
             return orderSubmitted(broker, order);
         }
 
         @Override
-        public OrderRequest submit(ForexBroker broker, SellLimitOrder order) {
+        public OrderRequest submit(SimulatorForexBroker broker, SellLimitOrder order) {
             return orderSubmitted(broker, order);
         }
 
-        private OrderRequest orderSubmitted(ForexBroker broker, Order order) {
+        private OrderRequest orderSubmitted(SimulatorForexBroker broker, Order order) {
             OrderRequest open = OrderRequest.open(order, clock);
             addOrder(broker, open);
 
@@ -143,7 +143,7 @@ public interface MarketEngine extends Market {
                 ordersById.put(orderId, updated);
                 iter.remove();
 
-                ForexBroker broker = brokersByOrder.get(orderId);
+                SimulatorForexBroker broker = brokersByOrder.get(orderId);
 
                 if (updated.getStatus() == OrderStatus.CANCELLED) {
                     broker.orderCancelled(updated);
@@ -153,7 +153,7 @@ public interface MarketEngine extends Market {
             }
         }
 
-        private void addOrder(ForexBroker broker, OrderRequest order) {
+        private void addOrder(SimulatorForexBroker broker, OrderRequest order) {
             String id = order.getId();
 
             openOrders.add(id);

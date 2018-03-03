@@ -1,6 +1,5 @@
 package simulator
 
-import broker.forex.ForexBroker
 import spock.lang.Specification
 
 import java.time.LocalDateTime
@@ -8,10 +7,12 @@ import java.time.Month
 
 class SimulatorImplSpec extends Specification {
 
-    def 'should run simulation from start to end time'() {
-        def clock = new SimulatorClockImpl()
+    def clock = new SimulatorClockImpl()
+    def broker = Mock(SimulatorForexBroker)
 
-        SimulatorImpl simulator = new SimulatorImpl(clock, [], [])
+    def 'should run simulation from start to end time'() {
+
+        SimulatorImpl simulator = new SimulatorImpl(clock, broker, [])
 
         given: 'a simulation with a start and end timestamp'
         def start = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 30)
@@ -47,7 +48,7 @@ class SimulatorImplSpec extends Specification {
         def end = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 32)
 
         Simulation simulation = new Simulation(start, end, 0L);
-        SimulatorImpl simulator = new SimulatorImpl(new SimulatorClockImpl(), [], [])
+        SimulatorImpl simulator = new SimulatorImpl(clock, broker, [])
 
         when: 'the simulation is over'
         simulator.run(simulation)
@@ -60,14 +61,13 @@ class SimulatorImplSpec extends Specification {
     }
 
     def 'should notify broker at each interval'() {
-        ForexBroker broker = Mock()
 
         given: 'a simulation with a start and end timestamp'
         def start = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 30)
         def end = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 32)
 
         Simulation simulation = new Simulation(start, end, 0L);
-        SimulatorImpl simulator = new SimulatorImpl(new SimulatorClockImpl(), [broker], [])
+        SimulatorImpl simulator = new SimulatorImpl(clock, broker, [])
 
         when: 'the simulation is ran'
         simulator.run(simulation)

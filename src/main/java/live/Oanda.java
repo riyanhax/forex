@@ -1,52 +1,45 @@
 package live;
 
-import market.forex.ForexMarket;
+import broker.Quote;
+import broker.ForexBroker;
+import market.forex.ForexPortfolioValue;
+import market.forex.ForexPosition;
 import market.forex.Instrument;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import simulator.Simulation;
+import trader.forex.ForexTrader;
 
+import javax.annotation.Nullable;
 import java.time.LocalDate;
 
-import static market.MarketTime.formatTimestamp;
-
 @Service
-class Oanda implements ForexMarket {
-
-    private static final Logger LOG = LoggerFactory.getLogger(Oanda.class);
-
+class Oanda implements ForexBroker {
     @Override
-    public double getPrice(Instrument instrument) {
-        LOG.info("*** Retrieving price for {} from Oanda", instrument);
-
-        return 0;
+    public ForexPortfolioValue getPortfolioValue(ForexTrader trader) {
+        return null;
     }
 
     @Override
-    public boolean isAvailable() {
-        LOG.info("*** Checking if Oanda is available");
+    public Quote getQuote(Instrument pair) {
+        return null;
+    }
 
+    @Override
+    public boolean isOpen() {
         return false;
     }
 
     @Override
-    public boolean isAvailable(LocalDate date) {
-        // TODO: Should only be in the simulator
-        LOG.info("*** Checking if Oanda is available on {}", formatTimestamp(date.atStartOfDay()));
-
+    public boolean isOpen(LocalDate time) {
         return false;
     }
 
     @Override
-    public void processUpdates() {
-        LOG.info("*** Processing updates");
+    public void openPosition(ForexTrader trader, Instrument pair, @Nullable Double limit) {
 
     }
 
     @Override
-    public void init(Simulation simulation) {
-        // TODO: Should only be in the simulator
-        LOG.info("*** Init simulation");
+    public void closePosition(ForexTrader trader, ForexPosition position, @Nullable Double limit) {
+
     }
 }
