@@ -5,6 +5,7 @@ import broker.OpenPositionRequest;
 import broker.Quote;
 import broker.Stance;
 import com.oanda.v20.Context;
+import com.oanda.v20.RequestException;
 import com.oanda.v20.account.AccountID;
 import com.oanda.v20.account.AccountSummary;
 import com.oanda.v20.order.MarketOrderRequest;
@@ -26,6 +27,8 @@ import org.springframework.stereotype.Service;
 import trader.ForexTrader;
 
 import javax.annotation.Nullable;
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -44,6 +47,10 @@ class Oanda implements ForexBroker {
     private final ForexTrader trader;
     private final Context ctx;
     private final AccountID accountId;
+    private static final DecimalFormat decimalFormat = new DecimalFormat("#.#####");
+    static {
+        decimalFormat.setRoundingMode(RoundingMode.CEILING);
+    }
 
     public Oanda(OandaProperties properties, ForexTrader trader) {
         this.ctx = new Context(properties.getApi().getEndpoint(), properties.getApi().getToken());
@@ -69,7 +76,7 @@ class Oanda implements ForexBroker {
             }
             return new ForexPortfolioValue(portfolio, LocalDateTime.now(), closedTrades);
         } catch (Exception e) {
-           throw e;
+            throw e;
         }
     }
 
@@ -98,14 +105,22 @@ class Oanda implements ForexBroker {
 
     @Override
     public boolean isClosed(LocalDate time) {
-        return true;
+        return false;
     }
 
     @Override
     public void openPosition(ForexTrader trader, OpenPositionRequest request) throws Exception {
         Instrument pair = request.getPair();
+
+        boolean shorting = pair.isInverse();
+        if (shorting) {
+            pair = pair.getOpposite();
+        }
+
         Quote quote = getQuote(pair);
         String symbol = pair.getSymbol();
+        double basePrice = shorting ? quote.getAsk() : quote.getBid();
+        double pip = pair.getPip();
 
         MarketOrderRequest marketOrderRequest = new MarketOrderRequest();
         marketOrderRequest.setInstrument(symbol);
@@ -113,21 +128,25 @@ class Oanda implements ForexBroker {
 
         request.getStopLoss().ifPresent(stop -> {
             StopLossDetails stopLoss = new StopLossDetails();
-            stopLoss.setPrice(quote.getBid() - stop);
+            stopLoss.setPrice(roundToFiveDecimalPlaces(basePrice - stop * pip * (shorting ? -1 : 1)));
             marketOrderRequest.setStopLossOnFill(stopLoss);
         });
 
         request.getTakeProfit().ifPresent(profit -> {
             TakeProfitDetails takeProfit = new TakeProfitDetails();
-            takeProfit.setPrice(quote.getBid() + profit);
+            takeProfit.setPrice(roundToFiveDecimalPlaces(basePrice + profit * pip * (shorting ? -1 : 1)));
             marketOrderRequest.setTakeProfitOnFill(takeProfit);
         });
 
         OrderCreateRequest orderCreateRequest = new OrderCreateRequest(accountId);
         orderCreateRequest.setOrder(marketOrderRequest);
 
-        OrderCreateResponse orderCreateResponse = ctx.order.create(orderCreateRequest);
-        LOG.info(orderCreateResponse.toString());
+        try {
+            OrderCreateResponse orderCreateResponse = ctx.order.create(orderCreateRequest);
+            LOG.info(orderCreateResponse.toString());
+        } catch (RequestException e) {
+            throw new Exception(e.getErrorMessage(), e);
+        }
     }
 
     @Override
@@ -143,5 +162,9 @@ class Oanda implements ForexBroker {
         }
 
         trader.processUpdates(this);
+    }
+
+    private static String roundToFiveDecimalPlaces(double value) {
+        return decimalFormat.format(value);
     }
 }
