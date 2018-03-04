@@ -49,27 +49,26 @@ class Oanda implements ForexBroker {
     private final ForexTrader trader;
     private final Context ctx;
     private final AccountID accountId;
-    private Account account;
     private static final DecimalFormat decimalFormat = new DecimalFormat("#.#####");
 
     static {
         decimalFormat.setRoundingMode(RoundingMode.CEILING);
     }
 
-
     public Oanda(OandaProperties properties, ForexTrader trader) throws ExecuteException, RequestException {
         this.ctx = new Context(properties.getApi().getEndpoint(), properties.getApi().getToken());
         this.accountId = new AccountID(properties.getApi().getAccount());
-        this.account = ctx.account.get(this.accountId).getAccount();
         this.trader = trader;
     }
 
     @Override
     public ForexPortfolioValue getPortfolioValue(ForexTrader trader) throws Exception {
         try {
+            Account account = ctx.account.get(this.accountId).getAccount();
+
             Set<ForexPosition> positions = account.getPositions().stream()
-                    .filter(it -> it.getLong().getUnits().doubleValue() > 0d ||
-                            it.getShort().getUnits().doubleValue() > 0d)
+                    .filter(it -> it.getLong().getUnits().doubleValue() != 0d ||
+                            it.getShort().getUnits().doubleValue() != 0d)
                     .map(it -> {
                         Instrument pair = Instrument.bySymbol.get(it.getInstrument().toString());
                         PositionSide positionSide = it.getLong();
@@ -148,7 +147,7 @@ class Oanda implements ForexBroker {
 
         MarketOrderRequest marketOrderRequest = new MarketOrderRequest();
         marketOrderRequest.setInstrument(symbol);
-        marketOrderRequest.setUnits(1);
+        marketOrderRequest.setUnits(shorting ? -1 : 1);
 
         request.getStopLoss().ifPresent(stop -> {
             StopLossDetails stopLoss = new StopLossDetails();

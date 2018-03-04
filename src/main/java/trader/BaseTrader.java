@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import simulator.Simulation;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -52,12 +53,14 @@ abstract class BaseTrader implements ForexTrader {
         ForexPortfolioValue portfolio = broker.getPortfolioValue(this);
         Set<ForexPositionValue> positions = portfolio.getPositionValues();
 
-        boolean stopTrading = clock.now().getHour() > 11 && broker.isClosed(clock.tomorrow());
+        LocalDateTime now = clock.now();
+        boolean stopTrading = now.getHour() > 11 && broker.isClosed(clock.tomorrow());
 
         if (positions.isEmpty()) {
             if (!stopTrading) {
                 Optional<OpenPositionRequest> toOpen = shouldOpenPosition(clock, instrumentHistoryService);
                 toOpen.ifPresent(request -> {
+                    LOG.info("Opening position: {}", request);
                     try {
                         broker.openPosition(this, request);
                     } catch (Exception e) {
@@ -68,8 +71,12 @@ abstract class BaseTrader implements ForexTrader {
         } else {
             ForexPositionValue positionValue = positions.iterator().next();
 
+            LOG.info("Existing position: {}", positionValue);
+
             // Close if it's noon Friday
             if (stopTrading) {
+                LOG.info("Closing position since it's {}", MarketTime.formatTimestamp(now));
+
                 broker.closePosition(this, positionValue.getPosition(), null);
             }
         }

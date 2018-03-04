@@ -29,7 +29,7 @@ dependencies {
     compile "com.google.guava:guava:$guavaVersion"
     compile "com.oanda.v20:v20:$oandaVersion"
 
-    testCompile "org.codehaus.groovy:groovy-all:$groovyVersion"
+    compile "org.codehaus.groovy:groovy-all:$groovyVersion"
     testCompile("org.spockframework:spock-core:$spockVersion") {
         exclude group: 'org.codehaus.groovy'
     }

@@ -1,5 +1,6 @@
 package broker;
 
+import com.google.common.base.MoreObjects;
 import market.Instrument;
 
 import javax.annotation.Nullable;
@@ -32,5 +33,15 @@ public class OpenPositionRequest {
 
     public Optional<Double> getTakeProfit() {
         return Optional.ofNullable(takeProfit);
+    }
+
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(this)
+                .add("pair", pair)
+                .add("limit", limit)
+                .add("stopLoss", stopLoss)
+                .add("takeProfit", takeProfit)
+                .toString();
     }
 }

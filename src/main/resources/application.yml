@@ -1,3 +1,4 @@
+spring.main.web-environment: false
 logging.file: app.log
 
 oanda:
