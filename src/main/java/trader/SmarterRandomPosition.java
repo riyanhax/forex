@@ -2,10 +2,10 @@ package trader;
 
 import com.google.common.collect.Range;
 import market.CandleTimeFrame;
-import market.InstrumentHistoryService;
-import market.OHLC;
 import market.Instrument;
+import market.InstrumentHistoryService;
 import market.MarketTime;
+import market.OHLC;
 
 import java.time.LocalDateTime;
 import java.util.Iterator;

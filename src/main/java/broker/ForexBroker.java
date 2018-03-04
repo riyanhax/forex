@@ -9,17 +9,17 @@ import javax.annotation.Nullable;
 import java.time.LocalDate;
 
 public interface ForexBroker {
-    void processUpdates();
+    void processUpdates() throws Exception;
 
-    ForexPortfolioValue getPortfolioValue(ForexTrader trader);
+    ForexPortfolioValue getPortfolioValue(ForexTrader trader) throws Exception;
 
-    Quote getQuote(Instrument pair);
+    Quote getQuote(Instrument pair) throws Exception;
 
-    boolean isOpen();
+    boolean isClosed();
 
-    boolean isOpen(LocalDate time);
+    boolean isClosed(LocalDate time);
 
-    void openPosition(ForexTrader trader, Instrument pair, @Nullable Double limit);
+    void openPosition(ForexTrader trader, Instrument pair, @Nullable Double limit) throws Exception;
 
     void closePosition(ForexTrader trader, ForexPosition position, @Nullable Double limit);
 

@@ -4,11 +4,13 @@ import broker.ForexBroker;
 import market.ForexPortfolio;
 import market.ForexPortfolioValue;
 import market.ForexPositionValue;
-import market.InstrumentHistoryService;
 import market.Instrument;
-import market.order.OrderRequest;
-import simulator.Simulation;
+import market.InstrumentHistoryService;
 import market.MarketTime;
+import market.order.OrderRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import simulator.Simulation;
 
 import java.util.Optional;
 import java.util.Set;
@@ -18,6 +20,8 @@ import static java.util.Collections.emptySet;
 import static java.util.Collections.emptySortedSet;
 
 abstract class BaseTrader implements ForexTrader {
+
+    private static final Logger LOG = LoggerFactory.getLogger(BaseTrader.class);
 
     private final MarketTime clock;
     private final InstrumentHistoryService instrumentHistoryService;
@@ -40,17 +44,23 @@ abstract class BaseTrader implements ForexTrader {
     }
 
     @Override
-    public void processUpdates(ForexBroker broker) {
+    public void processUpdates(ForexBroker broker) throws Exception {
 
         ForexPortfolioValue portfolio = broker.getPortfolioValue(this);
         Set<ForexPositionValue> positions = portfolio.getPositionValues();
 
-        boolean stopTrading = clock.now().getHour() > 11 && !broker.isOpen(clock.tomorrow());
+        boolean stopTrading = clock.now().getHour() > 11 && broker.isClosed(clock.tomorrow());
 
         if (positions.isEmpty()) {
             if (!stopTrading) {
                 Optional<Instrument> toOpen = shouldOpenPosition(clock, instrumentHistoryService);
-                toOpen.ifPresent(pair -> broker.openPosition(this, pair, null));
+                toOpen.ifPresent(pair -> {
+                    try {
+                        broker.openPosition(this, pair, null);
+                    } catch (Exception e) {
+                        LOG.error("Unable to open position!", e);
+                    }
+                });
             }
         } else {
             ForexPositionValue positionValue = positions.iterator().next();

@@ -1,1 +1,11 @@
 logging.file: app.log
+
+oanda:
+  api:
+    account: '101-001-1775714-001'
+    endpoint: 'https://api-fxpractice.oanda.com'
+    token: 'inserted from properties'
+
+environments:
+  prod:
+    endpoint: 'https://api-fxtrade.oanda.com/'

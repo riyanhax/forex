@@ -2,10 +2,10 @@ package live;
 
 import com.google.common.collect.Range;
 import market.CandleTimeFrame;
-import market.OHLC;
 import market.CurrencyPairHistory;
 import market.CurrencyPairHistoryService;
 import market.Instrument;
+import market.OHLC;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;

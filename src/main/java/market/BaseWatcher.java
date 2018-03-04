@@ -22,7 +22,7 @@ public abstract class BaseWatcher<CLOCK extends MarketTime, BROKER extends Forex
     }
 
     @Override
-    public void run() {
+    public void run() throws Exception {
         init();
 
         while (keepGoing(clock.now())) {
@@ -30,11 +30,11 @@ public abstract class BaseWatcher<CLOCK extends MarketTime, BROKER extends Forex
         }
     }
 
-    protected void init() {
+    protected void init() throws Exception {
         broker.processUpdates();
     }
 
-    protected void nextMinute() {
+    protected void nextMinute() throws Exception {
 
         LocalDateTime now = clock.now();
         if (logTime(now)) {

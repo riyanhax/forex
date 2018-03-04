@@ -1,12 +1,12 @@
 package market;
 
 public enum Instrument {
-    EURUSD("EURUSD", "EUR/USD", false) {
+    EURUSD("EUR_USD", "EUR/USD", false) {
         @Override
         public Instrument getOpposite() {
             return USDEUR;
         }
-    }, USDEUR("USDEUR", "USD/EUR", true) {
+    }, USDEUR("USD_EUR", "USD/EUR", true) {
         @Override
         public Instrument getOpposite() {
             return EURUSD;

@@ -1,9 +1,9 @@
 package trader;
 
 import market.InstrumentHistoryService;
+import market.MarketTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import market.MarketTime;
 
 @Service
 public class OpenRandomPositionFactory implements ForexTraderFactory {

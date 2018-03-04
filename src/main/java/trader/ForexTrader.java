@@ -10,7 +10,7 @@ public interface ForexTrader {
 
     String getAccountNumber();
 
-    void processUpdates(ForexBroker broker);
+    void processUpdates(ForexBroker broker) throws Exception;
 
     void cancelled(OrderRequest cancelled);
 

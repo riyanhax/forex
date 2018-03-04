@@ -14,6 +14,7 @@ repositories {
 ext {
     groovyVersion = '2.4.8'
     guavaVersion = '24.0-jre'
+    oandaVersion = '3.0.21'
     slf4jVersion = '1.7.25'
     spockVersion = '1.1-groovy-2.4-rc-3'
     springVersion = '4.3.3.RELEASE'
@@ -26,6 +27,7 @@ dependencies {
     compile "org.slf4j:slf4j-api:$slf4jVersion"
     compile "org.springframework.boot:spring-boot-starter-web"
     compile "com.google.guava:guava:$guavaVersion"
+    compile "com.oanda.v20:v20:$oandaVersion"
 
     testCompile "org.codehaus.groovy:groovy-all:$groovyVersion"
     testCompile("org.spockframework:spock-core:$spockVersion") {

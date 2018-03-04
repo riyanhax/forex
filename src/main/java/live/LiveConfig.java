@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import trader.ForexTrader;
-import trader.SmarterRandomPositionFactory;
+import trader.OpenRandomPositionFactory;
 
 @Configuration
 @ComponentScan
@@ -18,7 +18,8 @@ public class LiveConfig {
 
     @Bean
     ForexTrader trader(MarketTime clock, InstrumentHistoryService instrumentHistoryService) {
-        ForexTrader trader = new SmarterRandomPositionFactory(clock, instrumentHistoryService).create();
+        // TODO: Use a better trader when possible
+        ForexTrader trader = new OpenRandomPositionFactory(clock, instrumentHistoryService).create();
 
         LOG.info("Using trader: {}", trader.getClass().getName());
 

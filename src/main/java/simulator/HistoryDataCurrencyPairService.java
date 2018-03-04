@@ -10,15 +10,15 @@ import com.google.common.collect.Range;
 import com.google.common.io.CharStreams;
 import com.google.common.io.LineProcessor;
 import market.CandleTimeFrame;
-import market.OHLC;
 import market.CurrencyPairHistory;
 import market.CurrencyPairHistoryService;
 import market.Instrument;
+import market.MarketTime;
+import market.OHLC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import market.MarketTime;
 
 import java.io.IOException;
 import java.io.InputStreamReader;

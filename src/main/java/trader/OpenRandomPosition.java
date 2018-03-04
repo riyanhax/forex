@@ -1,7 +1,7 @@
 package trader;
 
-import market.InstrumentHistoryService;
 import market.Instrument;
+import market.InstrumentHistoryService;
 import market.MarketTime;
 
 import java.util.Optional;

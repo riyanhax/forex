@@ -6,13 +6,13 @@ import broker.Stance;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import market.MarketEngine;
-import market.MarketTime;
 import market.ForexPortfolio;
 import market.ForexPortfolioValue;
 import market.ForexPosition;
 import market.ForexPositionValue;
 import market.Instrument;
+import market.MarketEngine;
+import market.MarketTime;
 import market.order.BuyLimitOrder;
 import market.order.BuyMarketOrder;
 import market.order.OrderRequest;
@@ -82,9 +82,9 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
     }
 
     @Override
-    public void processUpdates() {
+    public void processUpdates() throws Exception {
 
-        if (!isOpen()) {
+        if (isClosed()) {
             return;
         }
 
@@ -92,7 +92,9 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
         marketEngine.processUpdates();
 
         // Allow traders to make/close positions
-        traders.forEach(it -> it.processUpdates(this));
+        for (ForexTrader trader : traders) {
+            trader.processUpdates(this);
+        }
 
         // Process any submitted orders
         marketEngine.processUpdates();
@@ -164,12 +166,17 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
     }
 
     private ForexPositionValue positionValue(ForexPosition position) {
-        Quote quote = getQuote(position.getInstrument());
+        Quote quote = null;
+        try {
+            quote = getQuote(position.getInstrument());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return new ForexPositionValue(position, clock.now(), position.getStance() == Stance.LONG ? quote.getBid() : quote.getAsk());
     }
 
     @Override
-    public Quote getQuote(Instrument pair) {
+    public Quote getQuote(Instrument pair) throws Exception {
         double price = marketEngine.getPrice(pair);
         double halfSpread = halfSpread(pair);
 
@@ -221,13 +228,13 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
     }
 
     @Override
-    public boolean isOpen() {
-        return marketEngine.isAvailable();
+    public boolean isClosed() {
+        return !marketEngine.isAvailable();
     }
 
     @Override
-    public boolean isOpen(LocalDate time) {
-        return marketEngine.isAvailable(time);
+    public boolean isClosed(LocalDate time) {
+        return !marketEngine.isAvailable(time);
     }
 
     @Override

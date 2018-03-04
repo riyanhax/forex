@@ -3,7 +3,7 @@ package market;
 import java.time.LocalDateTime;
 
 public interface Watcher {
-    void run();
+    void run() throws Exception;
 
     boolean keepGoing(LocalDateTime now);
 
