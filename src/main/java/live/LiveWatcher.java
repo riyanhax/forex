@@ -1,10 +1,25 @@
 package live;
 
+import market.BaseWatcher;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.concurrent.TimeUnit;
+
 @Service
-class LiveWatcher {
-    public void run() {
-        System.out.println("*** Ran live watcher");
+class LiveWatcher extends BaseWatcher<SystemTime, Oanda> {
+
+    public LiveWatcher(SystemTime marketTime, Oanda broker) {
+        super(marketTime, broker);
+    }
+
+    @Override
+    public boolean keepGoing(LocalDateTime now) {
+        return true;
+    }
+
+    @Override
+    public long millisUntilNextInterval() {
+        return TimeUnit.MINUTES.toMillis(1);
     }
 }

@@ -13,6 +13,7 @@ import java.time.LocalDate;
 
 @Service
 class Oanda implements ForexBroker {
+
     @Override
     public ForexPortfolioValue getPortfolioValue(ForexTrader trader) {
         return null;
@@ -40,6 +41,11 @@ class Oanda implements ForexBroker {
 
     @Override
     public void closePosition(ForexTrader trader, ForexPosition position, @Nullable Double limit) {
+
+    }
+
+    @Override
+    public void processUpdates() {
 
     }
 }

@@ -6,8 +6,6 @@ import market.order.OrderRequest;
 public interface SimulatorForexBroker extends ForexBroker {
     void init(Simulation simulation);
 
-    void processUpdates();
-
     void orderCancelled(OrderRequest filled);
 
     void done();

@@ -2,13 +2,14 @@ package simulator;
 
 import broker.BrokerConfig;
 import market.MarketConfig;
+import market.Watcher;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import trader.TraderConfig;
 
-@SpringBootApplication(scanBasePackageClasses = {Simulator.class, MarketConfig.class,
+@SpringBootApplication(scanBasePackageClasses = {SimulatorForexBroker.class, MarketConfig.class,
         BrokerConfig.class, TraderConfig.class})
 public class SimulatorApplication {
 
@@ -17,8 +18,8 @@ public class SimulatorApplication {
     }
 
     @Bean
-    public CommandLineRunner commandLineRunner(Simulator simulator) {
-        return args -> simulator.run(new Simulation());
+    public CommandLineRunner commandLineRunner(Watcher watcher) {
+        return args -> watcher.run();
     }
 
 }
