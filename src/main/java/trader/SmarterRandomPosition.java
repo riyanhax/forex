@@ -4,7 +4,7 @@ import com.google.common.collect.Range;
 import market.CandleTimeFrame;
 import market.InstrumentHistoryService;
 import market.OHLC;
-import market.forex.Instrument;
+import market.Instrument;
 import market.MarketTime;
 
 import java.time.LocalDateTime;

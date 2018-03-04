@@ -8,4 +8,6 @@ public interface Watcher {
     boolean keepGoing(LocalDateTime now);
 
     long millisUntilNextInterval();
+
+    boolean logTime(LocalDateTime now);
 }

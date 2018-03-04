@@ -5,7 +5,7 @@ import market.MarketTime
 import simulator.HistoryDataForexBroker
 import simulator.TestClock
 import spock.lang.Specification
-import trader.forex.ForexTrader
+import trader.ForexTrader
 
 import static java.time.LocalDateTime.now
 

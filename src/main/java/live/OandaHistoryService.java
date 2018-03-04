@@ -3,9 +3,9 @@ package live;
 import com.google.common.collect.Range;
 import market.CandleTimeFrame;
 import market.OHLC;
-import market.forex.CurrencyPairHistory;
-import market.forex.CurrencyPairHistoryService;
-import market.forex.Instrument;
+import market.CurrencyPairHistory;
+import market.CurrencyPairHistoryService;
+import market.Instrument;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;

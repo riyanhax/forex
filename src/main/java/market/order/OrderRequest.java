@@ -1,7 +1,7 @@
 package market.order;
 
 import broker.Expiry;
-import market.forex.Instrument;
+import market.Instrument;
 import market.MarketTime;
 
 import javax.annotation.Nullable;

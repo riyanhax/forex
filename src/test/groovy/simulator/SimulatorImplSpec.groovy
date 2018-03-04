@@ -12,14 +12,14 @@ class SimulatorImplSpec extends Specification {
 
     def 'should run simulation from start to end time'() {
 
-        SimulatorImpl simulator = new SimulatorImpl(clock, broker, [])
 
         given: 'a simulation with a start and end timestamp'
         def start = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 30)
         def end = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 37)
-
         Simulation simulation = new Simulation(start, end, 0L);
-        simulator.init(simulation, [])
+
+        SimulatorImpl simulator = new SimulatorImpl(simulation, clock, broker)
+        simulator.init()
 
         def times = []
 
@@ -27,7 +27,7 @@ class SimulatorImplSpec extends Specification {
         while (clock.now().isBefore(end)) {
             times += clock.now()
 
-            simulator.nextMinute(simulation)
+            simulator.nextMinute()
         }
 
         then: 'we processed each minute'
@@ -48,13 +48,13 @@ class SimulatorImplSpec extends Specification {
         def end = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 32)
 
         Simulation simulation = new Simulation(start, end, 0L);
-        SimulatorImpl simulator = new SimulatorImpl(clock, broker, [])
+        SimulatorImpl simulator = new SimulatorImpl(simulation, clock, broker)
 
         when: 'the simulation is over'
-        simulator.run(simulation)
+        simulator.run()
 
         and: 'we try to go further'
-        simulator.nextMinute(simulation)
+        simulator.nextMinute()
 
         then: 'an exception is thrown'
         thrown IllegalStateException
@@ -67,10 +67,10 @@ class SimulatorImplSpec extends Specification {
         def end = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 32)
 
         Simulation simulation = new Simulation(start, end, 0L);
-        SimulatorImpl simulator = new SimulatorImpl(clock, broker, [])
+        SimulatorImpl simulator = new SimulatorImpl(simulation, clock, broker)
 
         when: 'the simulation is ran'
-        simulator.run(simulation)
+        simulator.run()
 
         then: 'the marketEngine was notified of each minute'
         3 * broker.processUpdates()

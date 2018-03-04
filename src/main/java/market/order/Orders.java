@@ -1,6 +1,6 @@
 package market.order;
 
-import market.forex.Instrument;
+import market.Instrument;
 
 import java.util.Optional;
 

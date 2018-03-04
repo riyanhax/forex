@@ -1,7 +1,7 @@
 package trader;
 
 import market.InstrumentHistoryService;
-import market.forex.Instrument;
+import market.Instrument;
 import market.MarketTime;
 
 import java.util.Optional;

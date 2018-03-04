@@ -1,4 +1,4 @@
-package market.forex;
+package market;
 
 import broker.Stance;
 import com.google.common.base.MoreObjects;

@@ -1,18 +1,27 @@
 package live;
 
-import broker.Quote;
 import broker.ForexBroker;
-import market.forex.ForexPortfolioValue;
-import market.forex.ForexPosition;
-import market.forex.Instrument;
+import broker.Quote;
+import market.ForexPortfolioValue;
+import market.ForexPosition;
+import market.Instrument;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import trader.forex.ForexTrader;
+import trader.ForexTrader;
 
 import javax.annotation.Nullable;
 import java.time.LocalDate;
 
 @Service
 class Oanda implements ForexBroker {
+
+    public static final Logger LOG = LoggerFactory.getLogger(Oanda.class);
+    private ForexTrader trader;
+
+    public Oanda(ForexTrader trader) {
+        this.trader = trader;
+    }
 
     @Override
     public ForexPortfolioValue getPortfolioValue(ForexTrader trader) {
@@ -46,6 +55,11 @@ class Oanda implements ForexBroker {
 
     @Override
     public void processUpdates() {
+        if (!isOpen()) {
+            LOG.info("Market is closed.");
+            return;
+        }
 
+        trader.processUpdates(this);
     }
 }

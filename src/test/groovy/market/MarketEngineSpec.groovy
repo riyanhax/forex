@@ -1,6 +1,5 @@
 package market
 
-import market.forex.ForexMarket
 import market.order.OrderRequest
 import market.order.OrderStatus
 import simulator.SimulatorForexBroker
@@ -11,7 +10,7 @@ import spock.lang.Unroll
 import java.time.LocalDateTime
 import java.time.Month
 
-import static market.forex.Instrument.EURUSD
+import static Instrument.EURUSD
 import static market.order.Orders.*
 
 class MarketEngineSpec extends Specification {

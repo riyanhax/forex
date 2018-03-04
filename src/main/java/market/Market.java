@@ -1,6 +1,5 @@
 package market;
 
-import market.forex.Instrument;
 import simulator.SimulationAware;
 
 import java.time.LocalDate;

@@ -1,4 +1,4 @@
-package market.forex;
+package market;
 
 import com.google.common.base.MoreObjects;
 

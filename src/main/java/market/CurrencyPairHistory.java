@@ -1,7 +1,4 @@
-package market.forex;
-
-import market.InstrumentHistoryImpl;
-import market.OHLC;
+package market;
 
 import java.time.LocalDateTime;
 

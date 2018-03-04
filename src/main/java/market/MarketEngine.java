@@ -1,7 +1,5 @@
 package market;
 
-import market.forex.ForexMarket;
-import market.forex.Instrument;
 import market.order.BuyLimitOrder;
 import market.order.BuyMarketOrder;
 import market.order.Order;

@@ -8,7 +8,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import trader.TraderConfig;
 
-@SpringBootApplication(scanBasePackageClasses = {LiveApplication.class, MarketConfig.class,
+@SpringBootApplication(scanBasePackageClasses = {LiveConfig.class, MarketConfig.class,
         BrokerConfig.class, TraderConfig.class})
 public class LiveApplication {
 

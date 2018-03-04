@@ -22,4 +22,9 @@ class LiveWatcher extends BaseWatcher<SystemTime, Oanda> {
     public long millisUntilNextInterval() {
         return TimeUnit.MINUTES.toMillis(1);
     }
+
+    @Override
+    public boolean logTime(LocalDateTime now) {
+        return true;
+    }
 }

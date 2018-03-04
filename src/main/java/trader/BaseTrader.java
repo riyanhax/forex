@@ -1,15 +1,14 @@
 package trader;
 
 import broker.ForexBroker;
-import market.forex.ForexPortfolio;
-import market.forex.ForexPortfolioValue;
-import market.forex.ForexPositionValue;
+import market.ForexPortfolio;
+import market.ForexPortfolioValue;
+import market.ForexPositionValue;
 import market.InstrumentHistoryService;
-import market.forex.Instrument;
+import market.Instrument;
 import market.order.OrderRequest;
 import simulator.Simulation;
 import market.MarketTime;
-import trader.forex.ForexTrader;
 
 import java.util.Optional;
 import java.util.Set;

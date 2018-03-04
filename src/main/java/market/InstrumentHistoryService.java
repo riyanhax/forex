@@ -1,8 +1,6 @@
 package market;
 
 import com.google.common.collect.Range;
-import market.forex.CurrencyPairHistory;
-import market.forex.Instrument;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

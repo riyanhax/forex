@@ -4,8 +4,6 @@ import market.InstrumentHistoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import market.MarketTime;
-import trader.forex.ForexTrader;
-import trader.forex.ForexTraderFactory;
 
 @Service
 public class OpenRandomPositionFactory implements ForexTraderFactory {

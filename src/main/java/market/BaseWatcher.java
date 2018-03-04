@@ -37,13 +37,9 @@ public abstract class BaseWatcher<CLOCK extends MarketTime, BROKER extends Forex
     protected void nextMinute() {
 
         LocalDateTime now = clock.now();
-//        if (LOG.isDebugEnabled()) {
-//            LOG.debug("Time: {}", formatTimestamp(now));
-//        } else {
-//            if (now.getHour() == 0 && now.getMinute() == 0 && now.getSecond() == 0) {
-                LOG.info("Time: {}", formatTimestamp(now));
-//            }
-//        }
+        if (logTime(now)) {
+            LOG.info("Time: {}", formatTimestamp(now));
+        }
 
         broker.processUpdates();
 

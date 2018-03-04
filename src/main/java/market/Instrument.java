@@ -1,4 +1,4 @@
-package market.forex;
+package market;
 
 public enum Instrument {
     EURUSD("EURUSD", "EUR/USD", false) {

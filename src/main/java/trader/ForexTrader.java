@@ -1,8 +1,8 @@
-package trader.forex;
+package trader;
 
 import broker.ForexBroker;
-import market.forex.ForexPortfolio;
-import market.forex.ForexPortfolioValue;
+import market.ForexPortfolio;
+import market.ForexPortfolioValue;
 import market.order.OrderRequest;
 import simulator.Simulation;
 

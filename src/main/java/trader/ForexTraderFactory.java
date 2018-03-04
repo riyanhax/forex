@@ -1,4 +1,4 @@
-package trader.forex;
+package trader;
 
 import simulator.Simulation;
 

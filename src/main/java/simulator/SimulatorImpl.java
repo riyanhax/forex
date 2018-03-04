@@ -1,8 +1,6 @@
 package simulator;
 
 import market.BaseWatcher;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,14 +11,20 @@ import static java.time.temporal.ChronoUnit.MINUTES;
 @Service
 class SimulatorImpl extends BaseWatcher<SimulatorClockImpl, SimulatorForexBroker> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SimulatorImpl.class);
-
-    private final Simulation simulation = new Simulation();
+    private final Simulation simulation;
 
     @Autowired
     public SimulatorImpl(SimulatorClockImpl clock,
                          SimulatorForexBroker broker) {
+        this(new Simulation(), clock, broker);
+    }
+
+    SimulatorImpl(Simulation simulation,
+                  SimulatorClockImpl clock,
+                  SimulatorForexBroker broker) {
         super(clock, broker);
+
+        this.simulation = simulation;
     }
 
     @Override
@@ -58,5 +62,10 @@ class SimulatorImpl extends BaseWatcher<SimulatorClockImpl, SimulatorForexBroker
         clock.advance(1, MINUTES);
 
         super.nextMinute();
+    }
+
+    @Override
+    public boolean logTime(LocalDateTime now) {
+        return now.getMinute() == 0 && now.getHour() == 0 && now.getSecond() == 0;
     }
 }
