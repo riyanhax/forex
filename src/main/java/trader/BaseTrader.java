@@ -1,10 +1,10 @@
 package trader;
 
 import broker.ForexBroker;
+import broker.OpenPositionRequest;
 import market.ForexPortfolio;
 import market.ForexPortfolioValue;
 import market.ForexPositionValue;
-import market.Instrument;
 import market.InstrumentHistoryService;
 import market.MarketTime;
 import market.order.OrderRequest;
@@ -33,6 +33,9 @@ abstract class BaseTrader implements ForexTrader {
     private ForexPortfolioValue profitPortfolio = null;
     private ForexPortfolioValue mostRecentPortfolio = null;
 
+    // This should be managed in the market
+    private OpenPositionRequest openedPosition;
+
     BaseTrader(MarketTime clock, InstrumentHistoryService instrumentHistoryService) {
         this.clock = clock;
         this.instrumentHistoryService = instrumentHistoryService;
@@ -53,10 +56,10 @@ abstract class BaseTrader implements ForexTrader {
 
         if (positions.isEmpty()) {
             if (!stopTrading) {
-                Optional<Instrument> toOpen = shouldOpenPosition(clock, instrumentHistoryService);
-                toOpen.ifPresent(pair -> {
+                Optional<OpenPositionRequest> toOpen = shouldOpenPosition(clock, instrumentHistoryService);
+                toOpen.ifPresent(request -> {
                     try {
-                        broker.openPosition(this, pair, null);
+                        broker.openPosition(this, request);
                     } catch (Exception e) {
                         LOG.error("Unable to open position!", e);
                     }
@@ -64,16 +67,15 @@ abstract class BaseTrader implements ForexTrader {
             }
         } else {
             ForexPositionValue positionValue = positions.iterator().next();
-            double pipsProfit = positionValue.pips();
 
-            // Close once we've lost or gained enough pips or if it's noon Friday
-            if (pipsProfit < -30 || pipsProfit > 60 || stopTrading) {
+            // Close if it's noon Friday
+            if (stopTrading) {
                 broker.closePosition(this, positionValue.getPosition(), null);
             }
         }
     }
 
-    abstract Optional<Instrument> shouldOpenPosition(MarketTime clock, InstrumentHistoryService instrumentHistoryService);
+    abstract Optional<OpenPositionRequest> shouldOpenPosition(MarketTime clock, InstrumentHistoryService instrumentHistoryService);
 
     @Override
     public void cancelled(OrderRequest cancelled) {
@@ -116,5 +118,15 @@ abstract class BaseTrader implements ForexTrader {
 
     public ForexPortfolioValue getMostRecentPortfolio() {
         return mostRecentPortfolio;
+    }
+
+    @Override
+    public OpenPositionRequest getOpenedPosition() {
+        return openedPosition;
+    }
+
+    @Override
+    public void setOpenedPosition(OpenPositionRequest positionRequest) {
+        this.openedPosition = positionRequest;
     }
 }

@@ -105,7 +105,7 @@ class HistoryDataCurrencyPairService implements CurrencyPairHistoryService {
 
                     Stopwatch timer = Stopwatch.createStarted();
 
-                    String path = String.format("/history/DAT_ASCII_%s_M1_%d.csv", pairYear.pair.getSymbol(), pairYear.year);
+                    String path = String.format("/history/DAT_ASCII_%s_M1_%d.csv", pairYear.pair.name(), pairYear.year);
                     try (InputStreamReader is = new InputStreamReader(HistoryDataCurrencyPairService.class.getResourceAsStream(path))) {
 
                         NavigableMap<LocalDateTime, OHLC> result = CharStreams.readLines(is, new LineProcessor<NavigableMap<LocalDateTime, OHLC>>() {

@@ -19,7 +19,7 @@ public interface ForexBroker {
 
     boolean isClosed(LocalDate time);
 
-    void openPosition(ForexTrader trader, Instrument pair, @Nullable Double limit) throws Exception;
+    void openPosition(ForexTrader trader, OpenPositionRequest request) throws Exception;
 
     void closePosition(ForexTrader trader, ForexPosition position, @Nullable Double limit);
 

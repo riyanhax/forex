@@ -1,6 +1,7 @@
 package trader;
 
 import broker.ForexBroker;
+import broker.OpenPositionRequest;
 import market.ForexPortfolio;
 import market.ForexPortfolioValue;
 import market.order.OrderRequest;
@@ -28,4 +29,7 @@ public interface ForexTrader {
 
     ForexPortfolioValue getMostRecentPortfolio();
 
+    OpenPositionRequest getOpenedPosition();
+
+    void setOpenedPosition(OpenPositionRequest positionRequest);
 }

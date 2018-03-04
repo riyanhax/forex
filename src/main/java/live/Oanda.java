@@ -1,6 +1,7 @@
 package live;
 
 import broker.ForexBroker;
+import broker.OpenPositionRequest;
 import broker.Quote;
 import broker.Stance;
 import com.oanda.v20.Context;
@@ -12,6 +13,8 @@ import com.oanda.v20.order.OrderCreateResponse;
 import com.oanda.v20.pricing.Price;
 import com.oanda.v20.pricing.PricingGetRequest;
 import com.oanda.v20.pricing.PricingGetResponse;
+import com.oanda.v20.transaction.StopLossDetails;
+import com.oanda.v20.transaction.TakeProfitDetails;
 import market.ForexPortfolio;
 import market.ForexPortfolioValue;
 import market.ForexPosition;
@@ -99,21 +102,26 @@ class Oanda implements ForexBroker {
     }
 
     @Override
-    public void openPosition(ForexTrader trader, Instrument pair, @Nullable Double limit) throws Exception {
-//        Quote quote = getQuote(pair);
+    public void openPosition(ForexTrader trader, OpenPositionRequest request) throws Exception {
+        Instrument pair = request.getPair();
+        Quote quote = getQuote(pair);
         String symbol = pair.getSymbol();
-
-//        StopLossDetails stopLoss = new StopLossDetails();
-//        stopLoss.setPrice(bid - STOP_LOSS);
-
-//        TakeProfitDetails takeProfit = new TakeProfitDetails();
-//        takeProfit.setPrice(bid + TAKE_PROFIT);
 
         MarketOrderRequest marketOrderRequest = new MarketOrderRequest();
         marketOrderRequest.setInstrument(symbol);
         marketOrderRequest.setUnits(1);
-//        marketOrderRequest.setStopLossOnFill(stopLoss);
-//        marketOrderRequest.setTakeProfitOnFill(takeProfit);
+
+        request.getStopLoss().ifPresent(stop -> {
+            StopLossDetails stopLoss = new StopLossDetails();
+            stopLoss.setPrice(quote.getBid() - stop);
+            marketOrderRequest.setStopLossOnFill(stopLoss);
+        });
+
+        request.getTakeProfit().ifPresent(profit -> {
+            TakeProfitDetails takeProfit = new TakeProfitDetails();
+            takeProfit.setPrice(quote.getBid() + profit);
+            marketOrderRequest.setTakeProfitOnFill(takeProfit);
+        });
 
         OrderCreateRequest orderCreateRequest = new OrderCreateRequest(accountId);
         orderCreateRequest.setOrder(marketOrderRequest);

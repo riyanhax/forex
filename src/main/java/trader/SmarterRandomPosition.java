@@ -1,5 +1,6 @@
 package trader;
 
+import broker.OpenPositionRequest;
 import com.google.common.collect.Range;
 import market.CandleTimeFrame;
 import market.Instrument;
@@ -24,7 +25,7 @@ class SmarterRandomPosition extends BaseTrader {
     }
 
     @Override
-    Optional<Instrument> shouldOpenPosition(MarketTime clock, InstrumentHistoryService instrumentHistoryService) {
+    Optional<OpenPositionRequest> shouldOpenPosition(MarketTime clock, InstrumentHistoryService instrumentHistoryService) {
         LocalDateTime now = clock.now();
         if (!(now.getMinute() == 30)) {
             return Optional.empty();
@@ -62,9 +63,9 @@ class SmarterRandomPosition extends BaseTrader {
 
             boolean openPosition = currentHigh > previousHigh && previousHigh > thirdHigh && thirdHigh < fourthHigh && fourthHigh < fifthHigh;
             if (openPosition) {
-                return Optional.of(pair);
+                return Optional.of(new OpenPositionRequest(pair, null, 30d, 60d));
             } else if (currentHigh < previousHigh && previousHigh < thirdHigh && thirdHigh > fourthHigh && fourthHigh > fifthHigh) {
-                return Optional.of(pair.getOpposite());
+                return Optional.of(new OpenPositionRequest(pair.getOpposite(), null, 30d, 60d));
             }
         }
 

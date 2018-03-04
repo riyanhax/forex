@@ -1,6 +1,7 @@
 package simulator;
 
 import broker.BidAsk;
+import broker.OpenPositionRequest;
 import broker.Quote;
 import broker.Stance;
 import com.google.common.base.Preconditions;
@@ -35,6 +36,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -91,8 +93,11 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
         // Update prices and process any limit/stop orders
         marketEngine.processUpdates();
 
-        // Allow traders to make/close positions
         for (ForexTrader trader : traders) {
+            // TODO: The market needs to manage stop loss/take profit orders
+            handleStopLossTakeProfits(trader);
+
+            // Allow traders to make/close positions
             trader.processUpdates(this);
         }
 
@@ -101,6 +106,38 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
 
         // Update portfolio snapshots
         traders.forEach(it -> it.addPortfolioValueSnapshot(getPortfolioValue(it)));
+    }
+
+    /*
+     * All of this logic should be moved to be handled with orders in the market.
+     * @param trader
+     */
+    private void handleStopLossTakeProfits(ForexTrader trader) {
+        OpenPositionRequest openedPosition = trader.getOpenedPosition();
+
+        if (openedPosition != null) {
+            ForexPortfolioValue portfolioValue = getPortfolioValue(trader);
+            Set<ForexPositionValue> positions = portfolioValue.getPositionValues();
+            if (positions.isEmpty()) {
+                // Not yet been filled
+                return;
+            }
+
+            ForexPositionValue positionValue = positions.iterator().next();
+            double pipsProfit = positionValue.pips();
+
+            // Close once we've lost or gained enough pips or if it's noon Friday
+            double stopLoss = openedPosition.getStopLoss().get();
+            double takeProfit = openedPosition.getTakeProfit().get();
+
+            if (pipsProfit < -stopLoss || pipsProfit > takeProfit) {
+                closePosition(trader, positionValue.getPosition(), null);
+
+                // Skipping trader because this was their theoretical action in the old format
+                // This may not be necessary in reality
+                trader.setOpenedPosition(null);
+            }
+        }
     }
 
     @Override
@@ -243,21 +280,25 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
     }
 
     @Override
-    public void openPosition(ForexTrader trader, Instrument pair, @Nullable Double limit) {
+    public void openPosition(ForexTrader trader, OpenPositionRequest request) {
 
         Set<ForexPosition> positions = trader.getPortfolio().getPositions();
         Preconditions.checkArgument(positions.isEmpty(), "Currently only one open position is allowed at a time");
 
         // Open a long position on USD/EUR to simulate a short position for EUR/USD
+        Instrument pair = request.getPair();
+        Optional<Double> limit = request.getLimit();
+
         OrderRequest submitted;
-        if (limit == null) {
-            BuyMarketOrder order = Orders.buyMarketOrder(1, pair);
+        if (limit.isPresent()) {
+            BuyLimitOrder order = Orders.buyLimitOrder(1, pair, limit.get());
             submitted = marketEngine.submit(this, order);
         } else {
-            BuyLimitOrder order = Orders.buyLimitOrder(1, pair, limit);
+            BuyMarketOrder order = Orders.buyMarketOrder(1, pair);
             submitted = marketEngine.submit(this, order);
         }
         orderSubmitted(trader, submitted);
+        trader.setOpenedPosition(request);
     }
 
     @Override
