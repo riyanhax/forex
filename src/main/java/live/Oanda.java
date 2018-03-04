@@ -5,12 +5,14 @@ import broker.OpenPositionRequest;
 import broker.Quote;
 import broker.Stance;
 import com.oanda.v20.Context;
+import com.oanda.v20.ExecuteException;
 import com.oanda.v20.RequestException;
+import com.oanda.v20.account.Account;
 import com.oanda.v20.account.AccountID;
-import com.oanda.v20.account.AccountSummary;
 import com.oanda.v20.order.MarketOrderRequest;
 import com.oanda.v20.order.OrderCreateRequest;
 import com.oanda.v20.order.OrderCreateResponse;
+import com.oanda.v20.position.PositionSide;
 import com.oanda.v20.pricing.Price;
 import com.oanda.v20.pricing.PricingGetRequest;
 import com.oanda.v20.pricing.PricingGetResponse;
@@ -36,8 +38,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
-import static java.util.Collections.emptySet;
 import static java.util.Collections.emptySortedSet;
 
 @Service
@@ -47,30 +49,52 @@ class Oanda implements ForexBroker {
     private final ForexTrader trader;
     private final Context ctx;
     private final AccountID accountId;
+    private Account account;
     private static final DecimalFormat decimalFormat = new DecimalFormat("#.#####");
+
     static {
         decimalFormat.setRoundingMode(RoundingMode.CEILING);
     }
 
-    public Oanda(OandaProperties properties, ForexTrader trader) {
+
+    public Oanda(OandaProperties properties, ForexTrader trader) throws ExecuteException, RequestException {
         this.ctx = new Context(properties.getApi().getEndpoint(), properties.getApi().getToken());
         this.accountId = new AccountID(properties.getApi().getAccount());
+        this.account = ctx.account.get(this.accountId).getAccount();
         this.trader = trader;
     }
 
     @Override
     public ForexPortfolioValue getPortfolioValue(ForexTrader trader) throws Exception {
         try {
-            AccountSummary summary = ctx.account.summary(accountId).getAccount();
-            LOG.info(summary.toString());
+            Set<ForexPosition> positions = account.getPositions().stream()
+                    .filter(it -> it.getLong().getUnits().doubleValue() > 0d ||
+                            it.getShort().getUnits().doubleValue() > 0d)
+                    .map(it -> {
+                        Instrument pair = Instrument.bySymbol.get(it.getInstrument().toString());
+                        PositionSide positionSide = it.getLong();
+                        boolean inverse = false;
 
-            Set<ForexPosition> positions = emptySet();
+                        if (positionSide.getUnits().doubleValue() == 0d) {
+                            positionSide = it.getShort();
+                            pair = pair.getOpposite();
+                            inverse = true;
+                        }
+
+                        double price = positionSide.getAveragePrice().doubleValue();
+                        if (inverse) {
+                            price = 1 / price;
+                        }
+
+                        // TODO: Parse real opened date
+                        LocalDateTime opened = LocalDateTime.now();
+                        return new ForexPosition(opened, pair, Stance.LONG, price);
+                    }).collect(Collectors.toSet());
+
             SortedSet<ForexPositionValue> closedTrades = emptySortedSet();
-            ForexPortfolio portfolio = new ForexPortfolio(0, positions, closedTrades);
+            ForexPortfolio portfolio = new ForexPortfolio(account.getPl().doubleValue(), positions, closedTrades);
 
-            // TODO: Make all of this stuff use actual position data
-            if (summary.getOpenTradeCount() != 0) {
-                positions = Collections.singleton(new ForexPosition(LocalDateTime.now(), Instrument.EURUSD, Stance.LONG, 0));
+            if (positions.size() != 0) {
                 closedTrades = new TreeSet<>();
                 closedTrades.add(new ForexPositionValue(positions.iterator().next(), LocalDateTime.now(), 0));
             }

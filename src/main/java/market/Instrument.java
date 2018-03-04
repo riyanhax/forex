@@ -1,5 +1,10 @@
 package market;
 
+import com.google.common.collect.Maps;
+
+import java.util.Arrays;
+import java.util.Map;
+
 public enum Instrument {
     EURUSD("EUR_USD", "EUR/USD", false) {
         @Override
@@ -40,4 +45,7 @@ public enum Instrument {
     }
 
     public abstract Instrument getOpposite();
+
+    public static final Map<String, Instrument> bySymbol = Maps.uniqueIndex(Arrays.asList(Instrument.values()),
+            Instrument::getSymbol);
 }
