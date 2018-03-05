@@ -5,7 +5,6 @@ import broker.OpenPositionRequest;
 import broker.Quote;
 import broker.Stance;
 import com.oanda.v20.Context;
-import com.oanda.v20.ExecuteException;
 import com.oanda.v20.RequestException;
 import com.oanda.v20.account.Account;
 import com.oanda.v20.account.AccountID;
@@ -39,7 +38,6 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -55,6 +53,7 @@ import static market.MarketTime.ZONE_UTC;
 class Oanda implements ForexBroker {
 
     private static final Logger LOG = LoggerFactory.getLogger(Oanda.class);
+    private final OandaHistoryService service;
     private final ForexTrader trader;
     private final Context ctx;
     private final AccountID accountId;
@@ -65,16 +64,18 @@ class Oanda implements ForexBroker {
         decimalFormat.setRoundingMode(RoundingMode.CEILING);
     }
 
-    public Oanda(SystemTime clock, OandaProperties properties, ForexTrader trader) throws ExecuteException, RequestException {
+
+    public Oanda(SystemTime clock, OandaProperties properties, OandaHistoryService service, ForexTrader trader) {
         this.clock = clock;
         this.ctx = new Context(properties.getApi().getEndpoint(), properties.getApi().getToken());
         this.accountId = new AccountID(properties.getApi().getAccount());
+        this.service = service;
         this.trader = trader;
     }
 
     @Override
     public ForexPortfolioValue getPortfolioValue(ForexTrader trader) throws Exception {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = clock.now();
         Account account = ctx.account.get(this.accountId).getAccount();
 
         Set<ForexPositionValue> positionValues = account.getTrades().stream()
@@ -92,8 +93,7 @@ class Oanda implements ForexBroker {
                     double pl = it.getUnrealizedPL().doubleValue();
                     double currentPrice = price + pl;
 
-                    ZonedDateTime utcOpened = ZonedDateTime.parse(it.getOpenTime().subSequence(0, 19) + "Z",
-                            DateTimeFormatter.ISO_INSTANT.withZone(ZONE_UTC));
+                    ZonedDateTime utcOpened = service.parseToZone(it.getOpenTime(), ZONE_UTC);
                     LocalDateTime localOpened = utcOpened.withZoneSameInstant(ZONE).toLocalDateTime();
 
                     ForexPosition position = new ForexPosition(localOpened, pair, Stance.LONG, price);

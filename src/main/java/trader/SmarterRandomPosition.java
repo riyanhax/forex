@@ -2,7 +2,6 @@ package trader;
 
 import broker.OpenPositionRequest;
 import com.google.common.collect.Range;
-import market.CandleTimeFrame;
 import market.Instrument;
 import market.InstrumentHistoryService;
 import market.MarketTime;
@@ -25,7 +24,7 @@ class SmarterRandomPosition extends BaseTrader {
     }
 
     @Override
-    Optional<OpenPositionRequest> shouldOpenPosition(MarketTime clock, InstrumentHistoryService instrumentHistoryService) {
+    Optional<OpenPositionRequest> shouldOpenPosition(MarketTime clock, InstrumentHistoryService instrumentHistoryService) throws Exception {
         LocalDateTime now = clock.now();
         if (!(now.getMinute() == 30)) {
             return Optional.empty();

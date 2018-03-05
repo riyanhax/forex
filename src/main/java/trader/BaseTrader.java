@@ -78,7 +78,7 @@ abstract class BaseTrader implements ForexTrader {
         }
     }
 
-    abstract Optional<OpenPositionRequest> shouldOpenPosition(MarketTime clock, InstrumentHistoryService instrumentHistoryService);
+    abstract Optional<OpenPositionRequest> shouldOpenPosition(MarketTime clock, InstrumentHistoryService instrumentHistoryService) throws Exception;
 
     @Override
     public void cancelled(OrderRequest cancelled) {
