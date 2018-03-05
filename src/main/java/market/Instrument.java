@@ -48,4 +48,8 @@ public enum Instrument {
 
     public static final Map<String, Instrument> bySymbol = Maps.uniqueIndex(Arrays.asList(Instrument.values()),
             Instrument::getSymbol);
+
+    public Instrument getBrokerInstrument() {
+        return inverse ? getOpposite() : this;
+    }
 }

@@ -178,7 +178,7 @@ class HistoryDataCurrencyPairService implements CurrencyPairHistoryService {
     public Optional<CurrencyPairHistory> getData(Instrument pair, LocalDateTime time) {
         boolean inverse = pair.isInverse();
         int year = time.getYear();
-        Instrument lookupInstrument = inverse ? pair.getOpposite() : pair;
+        Instrument lookupInstrument = pair.getBrokerInstrument();
         CurrencyData currencyData = cache.getUnchecked(new CurrencyPairYear(lookupInstrument, year));
         Map<LocalDateTime, OHLC> yearData = currencyData.ohlcData;
         OHLC ohlc = yearData.get(time);
@@ -191,9 +191,7 @@ class HistoryDataCurrencyPairService implements CurrencyPairHistoryService {
 
     @Override
     public Set<LocalDate> getAvailableDays(Instrument pair, int year) {
-        boolean inverse = pair.isInverse();
-        Instrument lookupInstrument = inverse ? pair.getOpposite() : pair;
-        CurrencyPairYear key = new CurrencyPairYear(lookupInstrument, year);
+        CurrencyPairYear key = new CurrencyPairYear(pair.getBrokerInstrument(), year);
         CurrencyData currencyData = cache.getUnchecked(key);
         return currencyData.availableDates;
     }
@@ -208,7 +206,7 @@ class HistoryDataCurrencyPairService implements CurrencyPairHistoryService {
         int endYear = end.getYear();
 
         boolean inverse = pair.isInverse();
-        Instrument lookupInstrument = inverse ? pair.getOpposite() : pair;
+        Instrument lookupInstrument = pair.getBrokerInstrument();
 
         for (int year = startYear; year <= endYear; year++) {
             result.putAll(caches.get(timeFrame).getUnchecked(new CurrencyPairYear(lookupInstrument, year)).ohlcData);

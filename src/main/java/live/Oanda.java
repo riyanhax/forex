@@ -12,10 +12,13 @@ import com.oanda.v20.account.AccountID;
 import com.oanda.v20.order.MarketOrderRequest;
 import com.oanda.v20.order.OrderCreateRequest;
 import com.oanda.v20.order.OrderCreateResponse;
-import com.oanda.v20.position.PositionSide;
 import com.oanda.v20.pricing.Price;
 import com.oanda.v20.pricing.PricingGetRequest;
 import com.oanda.v20.pricing.PricingGetResponse;
+import com.oanda.v20.trade.TradeCloseRequest;
+import com.oanda.v20.trade.TradeCloseResponse;
+import com.oanda.v20.trade.TradeSpecifier;
+import com.oanda.v20.trade.TradeSummary;
 import com.oanda.v20.transaction.StopLossDetails;
 import com.oanda.v20.transaction.TakeProfitDetails;
 import market.ForexPortfolio;
@@ -33,14 +36,18 @@ import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import static java.util.Collections.emptySortedSet;
+import static market.MarketTime.ZONE;
 
 @Service
 class Oanda implements ForexBroker {
@@ -63,44 +70,39 @@ class Oanda implements ForexBroker {
 
     @Override
     public ForexPortfolioValue getPortfolioValue(ForexTrader trader) throws Exception {
-        try {
-            Account account = ctx.account.get(this.accountId).getAccount();
+        LocalDateTime now = LocalDateTime.now();
+        Account account = ctx.account.get(this.accountId).getAccount();
 
-            Set<ForexPosition> positions = account.getPositions().stream()
-                    .filter(it -> it.getLong().getUnits().doubleValue() != 0d ||
-                            it.getShort().getUnits().doubleValue() != 0d)
-                    .map(it -> {
-                        Instrument pair = Instrument.bySymbol.get(it.getInstrument().toString());
-                        PositionSide positionSide = it.getLong();
-                        boolean inverse = false;
+        Set<ForexPositionValue> positionValues = account.getTrades().stream()
+                .map(it -> {
+                    Instrument pair = Instrument.bySymbol.get(it.getInstrument().toString());
+                    double units = it.getCurrentUnits().doubleValue();
+                    boolean inverse = false;
+                    double price = it.getPrice().doubleValue();
 
-                        if (positionSide.getUnits().doubleValue() == 0d) {
-                            positionSide = it.getShort();
-                            pair = pair.getOpposite();
-                            inverse = true;
-                        }
+                    if (units < 0d) {
+                        pair = pair.getOpposite();
+                        price = (1 / price);
+                    }
 
-                        double price = positionSide.getAveragePrice().doubleValue();
-                        if (inverse) {
-                            price = 1 / price;
-                        }
+                    double pl = it.getUnrealizedPL().doubleValue();
+                    double currentPrice = price + pl;
 
-                        // TODO: Parse real opened date
-                        LocalDateTime opened = LocalDateTime.now();
-                        return new ForexPosition(opened, pair, Stance.LONG, price);
-                    }).collect(Collectors.toSet());
+                    ZonedDateTime utcOpened = ZonedDateTime.parse(it.getOpenTime().subSequence(0, 19) + "Z",
+                            DateTimeFormatter.ISO_INSTANT.withZone(ZoneId.of("UTC")));
+                    LocalDateTime localOpened = utcOpened.withZoneSameInstant(ZONE).toLocalDateTime();
 
-            SortedSet<ForexPositionValue> closedTrades = emptySortedSet();
-            ForexPortfolio portfolio = new ForexPortfolio(account.getPl().doubleValue(), positions, closedTrades);
+                    ForexPosition position = new ForexPosition(localOpened, pair, Stance.LONG, price);
 
-            if (positions.size() != 0) {
-                closedTrades = new TreeSet<>();
-                closedTrades.add(new ForexPositionValue(positions.iterator().next(), LocalDateTime.now(), 0));
-            }
-            return new ForexPortfolioValue(portfolio, LocalDateTime.now(), closedTrades);
-        } catch (Exception e) {
-            throw e;
-        }
+                    return new ForexPositionValue(position, now, currentPrice);
+                }).collect(Collectors.toSet());
+
+        Set<ForexPosition> positions = positionValues.stream().map(ForexPositionValue::getPosition).collect(Collectors.toSet());
+        SortedSet<ForexPositionValue> closedTrades = emptySortedSet();
+
+        ForexPortfolio portfolio = new ForexPortfolio(account.getPl().doubleValue(), positions, closedTrades);
+
+        return new ForexPortfolioValue(portfolio, now, positionValues);
     }
 
     @Override
@@ -173,8 +175,30 @@ class Oanda implements ForexBroker {
     }
 
     @Override
-    public void closePosition(ForexTrader trader, ForexPosition position, @Nullable Double limit) {
+    public void closePosition(ForexTrader trader, ForexPosition position, @Nullable Double limit) throws Exception {
 
+        Instrument pair = position.getInstrument().getBrokerInstrument();
+        Account account = ctx.account.get(this.accountId).getAccount();
+        List<TradeSummary> trades = account.getTrades();
+
+        Optional<TradeSummary> tradeSummary = trades.stream()
+                .filter(it -> it.getInstrument().toString().equals(pair.getSymbol()))
+                .findFirst();
+
+        if (tradeSummary.isPresent()) {
+            TradeSpecifier tradeSpecifier = new TradeSpecifier(tradeSummary.get().getId());
+            TradeCloseRequest closeRequest = new TradeCloseRequest(accountId, tradeSpecifier);
+            closeRequest.setUnits("ALL");
+
+            try {
+                TradeCloseResponse response = ctx.trade.close(closeRequest);
+                LOG.info(response.toString());
+            } catch (RequestException e) {
+                throw new Exception(e.getErrorMessage(), e);
+            }
+        } else {
+            LOG.error("Didn't find a matching trade with Oanda! Position: {}  Oanda Trades: {}", position, trades);
+        }
     }
 
     @Override

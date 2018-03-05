@@ -21,6 +21,6 @@ public interface ForexBroker {
 
     void openPosition(ForexTrader trader, OpenPositionRequest request) throws Exception;
 
-    void closePosition(ForexTrader trader, ForexPosition position, @Nullable Double limit);
+    void closePosition(ForexTrader trader, ForexPosition position, @Nullable Double limit) throws Exception;
 
 }
