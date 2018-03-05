@@ -104,6 +104,11 @@ public interface OrderRequest extends Order {
         }
 
         @Override
+        public Optional<Double> stop() {
+            return order.stop();
+        }
+
+        @Override
         public boolean isSellOrder() {
             return order.isSellOrder();
         }

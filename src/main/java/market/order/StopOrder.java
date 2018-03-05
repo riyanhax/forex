@@ -4,7 +4,9 @@ import broker.Expiry;
 
 import java.util.Optional;
 
-public interface LimitOrder extends Order {
+public interface StopOrder extends Order {
+
+    Optional<Double> stop();
 
     @Override
     default Optional<Expiry> expiry() {
@@ -12,7 +14,7 @@ public interface LimitOrder extends Order {
     }
 
     @Override
-    default Optional<Double> stop() {
+    default Optional<Double> limit() {
         return Optional.empty();
     }
 }

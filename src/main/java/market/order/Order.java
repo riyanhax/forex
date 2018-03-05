@@ -15,6 +15,8 @@ public interface Order {
 
     Optional<Long> limit();
 
+    Optional<Double> stop();
+
     default boolean isSellOrder() {
         return false;
     }

@@ -46,6 +46,21 @@ public final class Orders {
         }
     }
 
+    private static class StopOrderImpl extends OrderImpl implements StopOrder {
+        private final double stop;
+
+        private StopOrderImpl(Instrument instrument, int units, double stop) {
+            super(instrument, units);
+
+            this.stop = stop;
+        }
+
+        @Override
+        public Optional<Double> stop() {
+            return Optional.of(stop);
+        }
+    }
+
     private static class BuyMarketOrderImpl extends MarketOrderImpl implements BuyMarketOrder {
         private BuyMarketOrderImpl(Instrument instrument, int units) {
             super(instrument, units);
@@ -70,6 +85,18 @@ public final class Orders {
         }
     }
 
+    private static class SellStopOrderImpl extends StopOrderImpl implements SellStopOrder {
+        private SellStopOrderImpl(Instrument instrument, int units, double stop) {
+            super(instrument, units, stop);
+        }
+    }
+
+    private static class BuyStopOrderImpl extends StopOrderImpl implements BuyStopOrder {
+        private BuyStopOrderImpl(Instrument instrument, int units, double stop) {
+            super(instrument, units, stop);
+        }
+    }
+
     private Orders() {
     }
 
@@ -87,5 +114,13 @@ public final class Orders {
 
     public static SellLimitOrder sellLimitOrder(int shares, Instrument instrument, long limit) {
         return new SellLimitOrderImpl(instrument, shares, limit);
+    }
+
+    public static BuyStopOrder buyStopOrder(int shares, Instrument instrument, double stop) {
+        return new BuyStopOrderImpl(instrument, shares, stop);
+    }
+
+    public static SellStopOrder sellStopOrder(int shares, Instrument instrument, double stop) {
+        return new SellStopOrderImpl(instrument, shares, stop);
     }
 }

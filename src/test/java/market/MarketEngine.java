@@ -2,11 +2,13 @@ package market;
 
 import market.order.BuyLimitOrder;
 import market.order.BuyMarketOrder;
+import market.order.BuyStopOrder;
 import market.order.Order;
 import market.order.OrderRequest;
 import market.order.OrderStatus;
 import market.order.SellLimitOrder;
 import market.order.SellMarketOrder;
+import market.order.SellStopOrder;
 import org.slf4j.LoggerFactory;
 import simulator.Simulation;
 import simulator.SimulatorForexBroker;
@@ -31,6 +33,10 @@ public interface MarketEngine extends Market {
 
     OrderRequest submit(SimulatorForexBroker broker, SellLimitOrder p);
 
+    OrderRequest submit(SimulatorForexBroker broker, BuyStopOrder order);
+
+    OrderRequest submit(SimulatorForexBroker broker, SellStopOrder p);
+
     static MarketEngine create(ForexMarket market, MarketTime clock) {
         return new MarketEngineImpl(market, clock);
     }
@@ -40,6 +46,7 @@ public interface MarketEngine extends Market {
         private final ForexMarket market;
         private final MarketTime clock;
         private final List<String> openOrders = new ArrayList<>();
+        private final List<String> stopOrders = new ArrayList<>();
         private final Map<String, OrderRequest> ordersById = new HashMap<>();
         private final Map<String, SimulatorForexBroker> brokersByOrder = new HashMap<>();
 
@@ -108,6 +115,16 @@ public interface MarketEngine extends Market {
             return orderSubmitted(broker, order);
         }
 
+        @Override
+        public OrderRequest submit(SimulatorForexBroker broker, BuyStopOrder order) {
+            return orderSubmitted(broker, order);
+        }
+
+        @Override
+        public OrderRequest submit(SimulatorForexBroker broker, SellStopOrder order) {
+            return orderSubmitted(broker, order);
+        }
+
         private OrderRequest orderSubmitted(SimulatorForexBroker broker, Order order) {
             OrderRequest open = OrderRequest.open(order, clock);
             addOrder(broker, open);
@@ -116,6 +133,18 @@ public interface MarketEngine extends Market {
         }
 
         private void processOrders() {
+            for (Iterator<String> iter = stopOrders.iterator(); iter.hasNext(); ) {
+                String orderId = iter.next();
+                OrderRequest order = ordersById.get(orderId);
+                double price = getPrice(order.getInstrument());
+
+                double stop = order.stop().get();
+                if (order.isSellOrder() && price <= stop || order.isBuyOrder() && price >= stop) {
+                    openOrders.add(orderId);
+                    iter.remove();
+                }
+            }
+
             for (Iterator<String> iter = openOrders.iterator(); iter.hasNext(); ) {
                 String orderId = iter.next();
                 OrderRequest order = ordersById.get(orderId);
@@ -154,7 +183,11 @@ public interface MarketEngine extends Market {
         private void addOrder(SimulatorForexBroker broker, OrderRequest order) {
             String id = order.getId();
 
-            openOrders.add(id);
+            if (order.stop().isPresent()) {
+                stopOrders.add(id);
+            } else {
+                openOrders.add(id);
+            }
             ordersById.put(id, order);
             brokersByOrder.put(id, broker);
         }

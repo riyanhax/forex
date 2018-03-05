@@ -15,4 +15,9 @@ public interface MarketOrder extends Order {
     default Optional<Long> limit() {
         return Optional.empty();
     }
+
+    @Override
+    default Optional<Double> stop() {
+        return Optional.empty();
+    }
 }
