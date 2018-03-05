@@ -8,6 +8,7 @@ import java.time.format.DateTimeFormatter;
 public interface MarketTime {
 
     ZoneId ZONE = ZoneId.of("America/Chicago");
+    ZoneId ZONE_UTC = ZoneId.of("UTC");
 
     DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm");
 

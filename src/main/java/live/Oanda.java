@@ -26,6 +26,7 @@ import market.ForexPortfolioValue;
 import market.ForexPosition;
 import market.ForexPositionValue;
 import market.Instrument;
+import market.MarketTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -34,9 +35,9 @@ import trader.ForexTrader;
 import javax.annotation.Nullable;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
@@ -48,6 +49,7 @@ import java.util.stream.Collectors;
 
 import static java.util.Collections.emptySortedSet;
 import static market.MarketTime.ZONE;
+import static market.MarketTime.ZONE_UTC;
 
 @Service
 class Oanda implements ForexBroker {
@@ -57,12 +59,14 @@ class Oanda implements ForexBroker {
     private final Context ctx;
     private final AccountID accountId;
     private static final DecimalFormat decimalFormat = new DecimalFormat("#.#####");
+    private final SystemTime clock;
 
     static {
         decimalFormat.setRoundingMode(RoundingMode.CEILING);
     }
 
-    public Oanda(OandaProperties properties, ForexTrader trader) throws ExecuteException, RequestException {
+    public Oanda(SystemTime clock, OandaProperties properties, ForexTrader trader) throws ExecuteException, RequestException {
+        this.clock = clock;
         this.ctx = new Context(properties.getApi().getEndpoint(), properties.getApi().getToken());
         this.accountId = new AccountID(properties.getApi().getAccount());
         this.trader = trader;
@@ -89,7 +93,7 @@ class Oanda implements ForexBroker {
                     double currentPrice = price + pl;
 
                     ZonedDateTime utcOpened = ZonedDateTime.parse(it.getOpenTime().subSequence(0, 19) + "Z",
-                            DateTimeFormatter.ISO_INSTANT.withZone(ZoneId.of("UTC")));
+                            DateTimeFormatter.ISO_INSTANT.withZone(ZONE_UTC));
                     LocalDateTime localOpened = utcOpened.withZoneSameInstant(ZONE).toLocalDateTime();
 
                     ForexPosition position = new ForexPosition(localOpened, pair, Stance.LONG, price);
@@ -125,12 +129,23 @@ class Oanda implements ForexBroker {
 
     @Override
     public boolean isClosed() {
-        return false;
+        LocalDateTime now = clock.now();
+        if (ALWAYS_OPEN_DAYS.contains(now.getDayOfWeek())) {
+            return false;
+        }
+
+        ZonedDateTime utcNow = ZonedDateTime.of(now, MarketTime.ZONE).withZoneSameInstant(ZONE_UTC);
+        DayOfWeek dayOfWeek = utcNow.getDayOfWeek();
+
+        boolean dst = ZONE.getRules().isDaylightSavings(utcNow.toInstant());
+
+        return dayOfWeek == DayOfWeek.SATURDAY || (dayOfWeek == DayOfWeek.SUNDAY && utcNow.getHour() < (dst ? 20 : 21)) ||
+                (dayOfWeek == DayOfWeek.FRIDAY && utcNow.getHour() > (dst ? 21 : 22));
     }
 
     @Override
     public boolean isClosed(LocalDate time) {
-        return false;
+        return time.getDayOfWeek() == DayOfWeek.SATURDAY || time.getDayOfWeek() == DayOfWeek.SUNDAY;
     }
 
     @Override
