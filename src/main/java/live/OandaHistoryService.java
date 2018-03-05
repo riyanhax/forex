@@ -2,6 +2,7 @@ package live;
 
 import com.google.common.collect.Range;
 import com.oanda.v20.Context;
+import com.oanda.v20.RequestException;
 import com.oanda.v20.account.AccountID;
 import com.oanda.v20.instrument.CandlestickData;
 import com.oanda.v20.instrument.CandlestickGranularity;
@@ -52,28 +53,36 @@ class OandaHistoryService implements InstrumentHistoryService {
 
     private NavigableMap<LocalDateTime, OHLC> getCandles(CandlestickGranularity granularity, Range<LocalDateTime> closed, Instrument pair) throws Exception {
 
+        ZonedDateTime start = ZonedDateTime.of(closed.lowerEndpoint(), ZONE);
+        ZonedDateTime end = ZonedDateTime.of(closed.upperEndpoint(), ZONE);
+
         InstrumentName instrumentName = new InstrumentName(pair.getBrokerInstrument().getSymbol());
         InstrumentCandlesRequest request = new InstrumentCandlesRequest(instrumentName);
         request.setPrice("M");
         request.setGranularity(granularity);
-        request.setAlignmentTimezone(ZONE.getDisplayName(TextStyle.FULL, Locale.US));
-        request.setFrom(closed.lowerEndpoint().format(DATE_TIME_FORMATTER));
-        request.setTo(closed.upperEndpoint().format(DATE_TIME_FORMATTER));
+        request.setAlignmentTimezone(ZONE.getDisplayName(TextStyle.NARROW, Locale.US));
+        request.setFrom(start.format(DATE_TIME_FORMATTER));
+        request.setTo(end.format(DATE_TIME_FORMATTER));
         request.setIncludeFirst(true);
         request.setDailyAlignment(0);
 
-        InstrumentCandlesResponse response = ctx.instrument.candles(request);
+        try {
+            InstrumentCandlesResponse response = ctx.instrument.candles(request);
 
-        NavigableMap<LocalDateTime, OHLC> data = new TreeMap<>();
+            NavigableMap<LocalDateTime, OHLC> data = new TreeMap<>();
 
-        response.getCandles().forEach(it -> {
-            ZonedDateTime zonedDateTime = parseToZone(it.getTime(), ZONE);
-            CandlestickData c = it.getMid();
+            // TODO: Need to use the same start/end times as HistoryDataCurrencyPairService
+            response.getCandles().forEach(it -> {
+                ZonedDateTime zonedDateTime = parseToZone(it.getTime(), ZONE);
+                CandlestickData c = it.getMid();
 
-            data.put(zonedDateTime.toLocalDateTime(), new OHLC(c.getO().doubleValue(), c.getH().doubleValue(),
-                    c.getL().doubleValue(), c.getC().doubleValue()));
-        });
-        return data;
+                data.put(zonedDateTime.toLocalDateTime(), new OHLC(c.getO().doubleValue(), c.getH().doubleValue(),
+                        c.getL().doubleValue(), c.getC().doubleValue()));
+            });
+            return data;
+        } catch (RequestException e) {
+            throw new Exception(e.getErrorMessage(), e);
+        }
     }
 
     ZonedDateTime parseToZone(DateTime time, ZoneId zone) {
