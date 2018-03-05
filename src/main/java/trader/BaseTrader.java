@@ -10,15 +10,11 @@ import market.MarketTime;
 import market.order.OrderRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import simulator.Simulation;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-
-import static java.util.Collections.emptySet;
-import static java.util.Collections.emptySortedSet;
 
 abstract class BaseTrader implements ForexTrader {
 
@@ -87,11 +83,6 @@ abstract class BaseTrader implements ForexTrader {
     @Override
     public void cancelled(OrderRequest cancelled) {
 
-    }
-
-    @Override
-    public void init(Simulation simulation) {
-        this.portfolio = new ForexPortfolio(0, emptySet(), emptySortedSet());
     }
 
     @Override

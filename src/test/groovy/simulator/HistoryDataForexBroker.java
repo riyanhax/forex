@@ -42,6 +42,8 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import static java.util.Collections.emptySet;
+import static java.util.Collections.emptySortedSet;
 import static market.MarketTime.formatRange;
 import static market.MarketTime.formatTimestamp;
 
@@ -80,7 +82,9 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
                 .map(Map.Entry::getValue).flatMap(Collection::stream)
                 .collect(Collectors.toList());
 
-        traders.forEach(it -> it.init(simulation));
+        traders.forEach(it -> {
+            it.setPortfolio(new ForexPortfolio(0, emptySet(), emptySortedSet()));
+        });
     }
 
     @Override

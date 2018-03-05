@@ -5,7 +5,6 @@ import broker.OpenPositionRequest;
 import market.ForexPortfolio;
 import market.ForexPortfolioValue;
 import market.order.OrderRequest;
-import simulator.Simulation;
 
 public interface ForexTrader {
 
@@ -14,8 +13,6 @@ public interface ForexTrader {
     void processUpdates(ForexBroker broker) throws Exception;
 
     void cancelled(OrderRequest cancelled);
-
-    void init(Simulation simulation);
 
     ForexPortfolio getPortfolio();
 

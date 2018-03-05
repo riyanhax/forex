@@ -30,6 +30,8 @@ dependencies {
     compile "com.oanda.v20:v20:$oandaVersion"
 
     compile "org.codehaus.groovy:groovy-all:$groovyVersion"
+
+    testCompile "org.springframework:spring-test"
     testCompile("org.spockframework:spock-core:$spockVersion") {
         exclude group: 'org.codehaus.groovy'
     }
