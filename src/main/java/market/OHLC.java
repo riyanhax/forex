@@ -1,5 +1,6 @@
 package market;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 
@@ -36,5 +37,15 @@ public class OHLC {
         }
 
         return new OHLC(open, high, low, close);
+    }
+
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(this)
+                .add("open", open)
+                .add("high", high)
+                .add("low", low)
+                .add("close", close)
+                .toString();
     }
 }

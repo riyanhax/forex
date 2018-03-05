@@ -98,7 +98,7 @@ class HistoryDataCurrencyPairService implements CurrencyPairHistoryService {
     }
 
     private final DateTimeFormatter timestampParser = DateTimeFormatter.ofPattern("yyyyMMdd HHmmss");
-    private final LoadingCache<CurrencyPairYear, CurrencyData> cache = CacheBuilder.newBuilder()
+    private final LoadingCache<CurrencyPairYear, CurrencyData> minuteCache = CacheBuilder.newBuilder()
             .build(new CacheLoader<CurrencyPairYear, CurrencyData>() {
                 @Override
                 public CurrencyData load(CurrencyPairYear pairYear) throws Exception {
@@ -147,7 +147,7 @@ class HistoryDataCurrencyPairService implements CurrencyPairHistoryService {
                 }
             });
 
-    private final LoadingCache<CurrencyPairYear, CurrencyData> fiveMinuteCache = timeFrameAggregateCache(cache, FIVE_MINUTE);
+    private final LoadingCache<CurrencyPairYear, CurrencyData> fiveMinuteCache = timeFrameAggregateCache(minuteCache, FIVE_MINUTE);
     private final LoadingCache<CurrencyPairYear, CurrencyData> fifteenMinuteCache = timeFrameAggregateCache(fiveMinuteCache, FIFTEEN_MINUTE);
     private final LoadingCache<CurrencyPairYear, CurrencyData> thirtyMinuteCache = timeFrameAggregateCache(fifteenMinuteCache, THIRTY_MINUTE);
     private final LoadingCache<CurrencyPairYear, CurrencyData> oneHourCache = timeFrameAggregateCache(thirtyMinuteCache, ONE_HOUR);
@@ -155,8 +155,10 @@ class HistoryDataCurrencyPairService implements CurrencyPairHistoryService {
     private final LoadingCache<CurrencyPairYear, CurrencyData> oneDayCache = timeFrameAggregateCache(fourHourCache, ONE_DAY);
     private final LoadingCache<CurrencyPairYear, CurrencyData> oneWeekCache = timeFrameAggregateCache(oneDayCache, ONE_WEEK);
     private final LoadingCache<CurrencyPairYear, CurrencyData> oneMonthCache = timeFrameAggregateCache(oneDayCache, ONE_MONTH);
+    // TODO: Need to simulate an "ongoing" candle, which is what a live broker returns for the current minute, five minute, hour, day, etc.
     private final ImmutableMap<CandleTimeFrame, LoadingCache<CurrencyPairYear, CurrencyData>> caches = ImmutableMap.<CandleTimeFrame, LoadingCache<CurrencyPairYear, CurrencyData>>
             builder()
+            .put(ONE_MINUTE, minuteCache)
             .put(FIVE_MINUTE, fiveMinuteCache)
             .put(FIFTEEN_MINUTE, fifteenMinuteCache)
             .put(THIRTY_MINUTE, thirtyMinuteCache)
@@ -179,7 +181,7 @@ class HistoryDataCurrencyPairService implements CurrencyPairHistoryService {
         boolean inverse = pair.isInverse();
         int year = time.getYear();
         Instrument lookupInstrument = pair.getBrokerInstrument();
-        CurrencyData currencyData = cache.getUnchecked(new CurrencyPairYear(lookupInstrument, year));
+        CurrencyData currencyData = minuteCache.getUnchecked(new CurrencyPairYear(lookupInstrument, year));
         Map<LocalDateTime, OHLC> yearData = currencyData.ohlcData;
         OHLC ohlc = yearData.get(time);
         if (inverse && ohlc != null) {
@@ -192,7 +194,7 @@ class HistoryDataCurrencyPairService implements CurrencyPairHistoryService {
     @Override
     public Set<LocalDate> getAvailableDays(Instrument pair, int year) {
         CurrencyPairYear key = new CurrencyPairYear(pair.getBrokerInstrument(), year);
-        CurrencyData currencyData = cache.getUnchecked(key);
+        CurrencyData currencyData = minuteCache.getUnchecked(key);
         return currencyData.availableDates;
     }
 

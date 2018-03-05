@@ -1,6 +1,7 @@
 package market;
 
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.TemporalAdjusters;
 import java.util.NavigableMap;
@@ -15,7 +16,7 @@ public enum CandleTimeFrame {
         }
 
         @Override
-        public LocalDateTime calculateStart(LocalDateTime firstTime) {
+        LocalDateTime calculateStart(LocalDateTime firstTime, int endOfTradingHour) {
             return firstTime.withSecond(0).withNano(0);
         }
     }, FIVE_MINUTE {
@@ -25,7 +26,7 @@ public enum CandleTimeFrame {
         }
 
         @Override
-        public LocalDateTime calculateStart(LocalDateTime firstTime) {
+        LocalDateTime calculateStart(LocalDateTime firstTime, int endOfTradingHour) {
             return ONE_MINUTE.calculateStart(firstTime.minusMinutes(firstTime.getMinute() % 5));
         }
     }, FIFTEEN_MINUTE {
@@ -35,7 +36,7 @@ public enum CandleTimeFrame {
         }
 
         @Override
-        public LocalDateTime calculateStart(LocalDateTime firstTime) {
+        LocalDateTime calculateStart(LocalDateTime firstTime, int endOfTradingHour) {
             return ONE_MINUTE.calculateStart(firstTime.minusMinutes(firstTime.getMinute() % 15));
         }
     }, THIRTY_MINUTE {
@@ -45,7 +46,7 @@ public enum CandleTimeFrame {
         }
 
         @Override
-        public LocalDateTime calculateStart(LocalDateTime firstTime) {
+        LocalDateTime calculateStart(LocalDateTime firstTime, int endOfTradingHour) {
             return ONE_MINUTE.calculateStart(firstTime.minusMinutes(firstTime.getMinute() % 30));
         }
     }, ONE_HOUR {
@@ -55,7 +56,7 @@ public enum CandleTimeFrame {
         }
 
         @Override
-        public LocalDateTime calculateStart(LocalDateTime firstTime) {
+        LocalDateTime calculateStart(LocalDateTime firstTime, int endOfTradingHour) {
             return ONE_MINUTE.calculateStart(firstTime.withMinute(0));
         }
     }, FOUR_HOURS {
@@ -65,8 +66,11 @@ public enum CandleTimeFrame {
         }
 
         @Override
-        public LocalDateTime calculateStart(LocalDateTime firstTime) {
-            return ONE_HOUR.calculateStart(firstTime.minusHours(firstTime.getHour() % 4));
+        LocalDateTime calculateStart(LocalDateTime firstTime, int endOfTradingHour) {
+            int hourAdjustment = (endOfTradingHour % 4);
+            int hour = firstTime.getHour() - hourAdjustment;
+
+            return ONE_HOUR.calculateStart(firstTime.minusHours(hour % 4));
         }
     }, ONE_DAY {
         @Override
@@ -75,8 +79,12 @@ public enum CandleTimeFrame {
         }
 
         @Override
-        public LocalDateTime calculateStart(LocalDateTime firstTime) {
-            return firstTime.toLocalDate().atStartOfDay();
+        LocalDateTime calculateStart(LocalDateTime firstTime, int endOfTradingHour) {
+            LocalDate candleDay = firstTime.toLocalDate();
+            if (firstTime.getHour() < endOfTradingHour) {
+                candleDay = candleDay.minusDays(1);
+            }
+            return candleDay.atTime(endOfTradingHour, 0);
         }
     }, ONE_WEEK {
         @Override
@@ -85,7 +93,7 @@ public enum CandleTimeFrame {
         }
 
         @Override
-        public LocalDateTime calculateStart(LocalDateTime firstTime) {
+        LocalDateTime calculateStart(LocalDateTime firstTime, int endOfTradingHour) {
             return ONE_DAY.calculateStart(firstTime.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)));
         }
     }, ONE_MONTH {
@@ -95,10 +103,11 @@ public enum CandleTimeFrame {
         }
 
         @Override
-        public LocalDateTime calculateStart(LocalDateTime firstTime) {
+        LocalDateTime calculateStart(LocalDateTime firstTime, int endOfTradingHour) {
             return ONE_DAY.calculateStart(firstTime.with(TemporalAdjusters.firstDayOfMonth()));
         }
     };
+
 
     public NavigableMap<LocalDateTime, OHLC> aggregate(NavigableMap<LocalDateTime, OHLC> ohlcData) {
 
@@ -120,5 +129,9 @@ public enum CandleTimeFrame {
 
     abstract LocalDateTime nextCandle(LocalDateTime current);
 
-    public abstract LocalDateTime calculateStart(LocalDateTime firstTime);
+    abstract LocalDateTime calculateStart(LocalDateTime firstTime, int endOfTradingDayHour);
+
+    public final LocalDateTime calculateStart(LocalDateTime time) {
+        return calculateStart(time, MarketTime.END_OF_TRADING_DAY_HOUR);
+    }
 }

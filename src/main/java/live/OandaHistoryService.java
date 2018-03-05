@@ -8,10 +8,12 @@ import com.oanda.v20.instrument.CandlestickData;
 import com.oanda.v20.instrument.CandlestickGranularity;
 import com.oanda.v20.instrument.InstrumentCandlesRequest;
 import com.oanda.v20.instrument.InstrumentCandlesResponse;
+import com.oanda.v20.instrument.WeeklyAlignment;
 import com.oanda.v20.primitives.DateTime;
 import com.oanda.v20.primitives.InstrumentName;
 import market.Instrument;
 import market.InstrumentHistoryService;
+import market.MarketTime;
 import market.OHLC;
 import org.springframework.stereotype.Service;
 
@@ -19,11 +21,10 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.format.TextStyle;
-import java.util.Locale;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
+import static market.MarketTime.END_OF_TRADING_DAY_HOUR;
 import static market.MarketTime.ZONE;
 
 @Service
@@ -53,30 +54,41 @@ class OandaHistoryService implements InstrumentHistoryService {
 
     private NavigableMap<LocalDateTime, OHLC> getCandles(CandlestickGranularity granularity, Range<LocalDateTime> closed, Instrument pair) throws Exception {
 
+        LocalDateTime exclusiveEnd = closed.upperEndpoint();
+
         ZonedDateTime start = ZonedDateTime.of(closed.lowerEndpoint(), ZONE);
-        ZonedDateTime end = ZonedDateTime.of(closed.upperEndpoint(), ZONE);
+        ZonedDateTime end = ZonedDateTime.of(exclusiveEnd, ZONE);
 
         InstrumentName instrumentName = new InstrumentName(pair.getBrokerInstrument().getSymbol());
         InstrumentCandlesRequest request = new InstrumentCandlesRequest(instrumentName);
         request.setPrice("M");
         request.setGranularity(granularity);
-        request.setAlignmentTimezone(ZONE.getDisplayName(TextStyle.NARROW, Locale.US));
+        // These dates get translated to UTC time via the formatter, which is what Oanda expects
         request.setFrom(start.format(DATE_TIME_FORMATTER));
         request.setTo(end.format(DATE_TIME_FORMATTER));
         request.setIncludeFirst(true);
-        request.setDailyAlignment(0);
+
+        if (granularity == CandlestickGranularity.D) {
+            request.setAlignmentTimezone(MarketTime.ZONE_NAME);
+            request.setDailyAlignment(END_OF_TRADING_DAY_HOUR);
+        } else if (granularity == CandlestickGranularity.W) {
+            request.setWeeklyAlignment(WeeklyAlignment.Friday);
+        }
 
         try {
             InstrumentCandlesResponse response = ctx.instrument.candles(request);
 
             NavigableMap<LocalDateTime, OHLC> data = new TreeMap<>();
 
-            // TODO: Need to use the same start/end times as HistoryDataCurrencyPairService
             response.getCandles().forEach(it -> {
                 ZonedDateTime zonedDateTime = parseToZone(it.getTime(), ZONE);
+                LocalDateTime timestamp = zonedDateTime.toLocalDateTime();
+                if (timestamp.equals(exclusiveEnd)) { // Force exclusive endpoint behavior
+                    return;
+                }
                 CandlestickData c = it.getMid();
 
-                data.put(zonedDateTime.toLocalDateTime(), new OHLC(c.getO().doubleValue(), c.getH().doubleValue(),
+                data.put(timestamp, new OHLC(c.getO().doubleValue(), c.getH().doubleValue(),
                         c.getL().doubleValue(), c.getC().doubleValue()));
             });
             return data;
