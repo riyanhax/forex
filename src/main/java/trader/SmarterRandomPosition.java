@@ -34,7 +34,7 @@ class SmarterRandomPosition extends BaseTrader {
         Instrument[] instruments = Instrument.values();
         Instrument pair = instruments[random.nextInt(instruments.length)];
 
-        NavigableMap<LocalDateTime, OHLC> oneWeekCandles = instrumentHistoryService.getOHLC(CandleTimeFrame.ONE_DAY, pair, Range.closed(now.minusDays(10), now));
+        NavigableMap<LocalDateTime, OHLC> oneWeekCandles = instrumentHistoryService.getOneDayCandles(pair, Range.closed(now.minusDays(10), now));
 
         NavigableMap<LocalDateTime, OHLC> oneWeekCandlesDescending = oneWeekCandles.descendingMap();
         Iterator<Map.Entry<LocalDateTime, OHLC>> oneWeekIter = oneWeekCandlesDescending.entrySet().iterator();
@@ -50,7 +50,7 @@ class SmarterRandomPosition extends BaseTrader {
         if ((currentWeekHigh > previousWeekHigh && previousWeekHigh > thirdWeekHigh && thirdWeekHigh < fourthWeekHigh && fourthWeekHigh < fifthWeekHigh)
                 || (checkingInverse && previousWeekHigh < thirdWeekHigh && thirdWeekHigh > fourthWeekHigh && fourthWeekHigh > fifthWeekHigh)) {
 
-            NavigableMap<LocalDateTime, OHLC> dayCandles = instrumentHistoryService.getOHLC(CandleTimeFrame.FOUR_HOURS, pair, Range.closed(now.minusDays(7), now));
+            NavigableMap<LocalDateTime, OHLC> dayCandles = instrumentHistoryService.getFourHourCandles(pair, Range.closed(now.minusDays(7), now));
             NavigableMap<LocalDateTime, OHLC> newestToOldest = dayCandles.descendingMap();
             Set<Map.Entry<LocalDateTime, OHLC>> entries = newestToOldest.entrySet();
             Iterator<Map.Entry<LocalDateTime, OHLC>> iterator = entries.iterator();

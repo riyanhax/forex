@@ -1,10 +1,10 @@
 package live;
 
 import com.google.common.collect.Range;
-import market.CandleTimeFrame;
 import market.CurrencyPairHistory;
 import market.CurrencyPairHistoryService;
 import market.Instrument;
+import market.InstrumentHistoryService;
 import market.OHLC;
 import org.springframework.stereotype.Service;
 
@@ -15,19 +15,15 @@ import java.util.Optional;
 import java.util.Set;
 
 @Service
-class OandaHistoryService implements CurrencyPairHistoryService {
+class OandaHistoryService implements InstrumentHistoryService {
+
     @Override
-    public NavigableMap<LocalDateTime, OHLC> getOHLC(CandleTimeFrame timeFrame, Instrument pair, Range<LocalDateTime> between) {
+    public NavigableMap<LocalDateTime, OHLC> getOneDayCandles(Instrument pair, Range<LocalDateTime> closed) {
         return null;
     }
 
     @Override
-    public Optional<CurrencyPairHistory> getData(Instrument instrument, LocalDateTime time) {
-        return Optional.empty();
-    }
-
-    @Override
-    public Set<LocalDate> getAvailableDays(Instrument instrument, int year) {
+    public NavigableMap<LocalDateTime, OHLC> getFourHourCandles(Instrument pair, Range<LocalDateTime> closed) {
         return null;
     }
 }

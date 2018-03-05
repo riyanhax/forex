@@ -197,7 +197,16 @@ class HistoryDataCurrencyPairService implements CurrencyPairHistoryService {
     }
 
     @Override
-    public NavigableMap<LocalDateTime, OHLC> getOHLC(CandleTimeFrame timeFrame, Instrument pair, Range<LocalDateTime> between) {
+    public NavigableMap<LocalDateTime, OHLC> getOneDayCandles(Instrument pair, Range<LocalDateTime> closed) {
+        return getOHLC(ONE_DAY, pair, closed);
+    }
+
+    @Override
+    public NavigableMap<LocalDateTime, OHLC> getFourHourCandles(Instrument pair, Range<LocalDateTime> closed) {
+        return getOHLC(FOUR_HOURS, pair, closed);
+    }
+
+    private NavigableMap<LocalDateTime, OHLC> getOHLC(CandleTimeFrame timeFrame, Instrument pair, Range<LocalDateTime> between) {
         NavigableMap<LocalDateTime, OHLC> result = new TreeMap<>();
         LocalDateTime start = timeFrame.calculateStart(between.lowerEndpoint());
         LocalDateTime end = timeFrame.calculateStart(between.upperEndpoint());
