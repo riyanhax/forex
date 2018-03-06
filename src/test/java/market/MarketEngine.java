@@ -14,12 +14,12 @@ import simulator.Simulation;
 import simulator.SimulatorForexBroker;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 public interface MarketEngine extends Market {
 
@@ -41,12 +41,15 @@ public interface MarketEngine extends Market {
         return new MarketEngineImpl(market, clock);
     }
 
+    void cancel(OrderRequest cancel);
+
     class MarketEngineImpl implements MarketEngine {
 
         private final ForexMarket market;
         private final MarketTime clock;
-        private final List<String> openOrders = new ArrayList<>();
-        private final List<String> stopOrders = new ArrayList<>();
+        private final Set<String> openOrders = new LinkedHashSet<>();
+        private final Set<String> canceledOrders = new LinkedHashSet<>();
+        private final Set<String> stopOrders = new LinkedHashSet<>();
         private final Map<String, OrderRequest> ordersById = new HashMap<>();
         private final Map<String, SimulatorForexBroker> brokersByOrder = new HashMap<>();
 
@@ -74,6 +77,9 @@ public interface MarketEngine extends Market {
         public void init(Simulation simulation) {
             ordersById.clear();
             brokersByOrder.clear();
+            openOrders.clear();
+            canceledOrders.clear();
+            stopOrders.clear();
 
             market.init(simulation);
         }
@@ -125,6 +131,11 @@ public interface MarketEngine extends Market {
             return orderSubmitted(broker, order);
         }
 
+        @Override
+        public void cancel(OrderRequest order) {
+            canceledOrders.add(order.getId());
+        }
+
         private OrderRequest orderSubmitted(SimulatorForexBroker broker, Order order) {
             OrderRequest open = OrderRequest.open(order, clock);
             addOrder(broker, open);
@@ -135,6 +146,9 @@ public interface MarketEngine extends Market {
         private void processOrders() {
             for (Iterator<String> iter = stopOrders.iterator(); iter.hasNext(); ) {
                 String orderId = iter.next();
+                if (canceledOrders.contains(orderId)) {
+                    continue;
+                }
                 OrderRequest order = ordersById.get(orderId);
                 double price = getPrice(order.getInstrument());
 
@@ -151,8 +165,9 @@ public interface MarketEngine extends Market {
 
                 final OrderRequest updated;
 
-                if (order.isExpired(clock.now())) {
+                if (order.isExpired(clock.now()) || canceledOrders.contains(orderId)) {
                     updated = OrderRequest.cancelled(order, clock);
+                    canceledOrders.remove(orderId);
                 } else {
                     long price = getPrice(order.getInstrument());
                     Optional<Long> limit = order.limit();
@@ -178,6 +193,8 @@ public interface MarketEngine extends Market {
                     broker.orderFilled(updated);
                 }
             }
+
+            openOrders.removeAll(canceledOrders);
         }
 
         private void addOrder(SimulatorForexBroker broker, OrderRequest order) {

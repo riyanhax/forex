@@ -21,6 +21,7 @@ import market.order.OrderRequest;
 import market.order.Orders;
 import market.order.SellLimitOrder;
 import market.order.SellMarketOrder;
+import market.order.SellStopOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -62,6 +63,7 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
     private final Map<TradingStrategy, Collection<SimulatorForexTrader>> tradersByStrategy = new HashMap<>();
     private final List<TradingStrategy> tradingStrategies;
     private final Map<String, SimulatorForexTrader> tradersByAccountNumber = new HashMap<>();
+    private Map<String, OrderRequest> oneCancelsAnother = new HashMap<>();
 
     private Simulation simulation;
 
@@ -81,6 +83,7 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
         this.tradersByOrderId.clear();
         this.tradersByStrategy.clear();
         this.tradersByAccountNumber.clear();
+        this.oneCancelsAnother.clear();
 
         marketEngine.init(simulation);
 
@@ -110,9 +113,6 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
 
         Collection<SimulatorForexTrader> traders = this.tradersByAccountNumber.values();
         for (SimulatorForexTrader trader : traders) {
-            // TODO: The market needs to manage stop loss/take profit orders
-            handleStopLossTakeProfits(trader);
-
             // Allow traders to make/close positions
             trader.processUpdates(this);
         }
@@ -250,7 +250,7 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
         long commission = (filled.isBuyOrder() ? -1 : 1) * halfSpread(instrument);
         long price = filled.getExecutionPrice().get() + commission;
 
-        ForexTrader trader = tradersByOrderId.get(filled.getId());
+        ForexTrader trader = tradersByOrderId.remove(filled.getId());
         ForexPortfolio oldPortfolio = trader.getPortfolio();
         ImmutableMap<Instrument, ForexPosition> positionsByInstrument = Maps.uniqueIndex(oldPortfolio.getPositions(), ForexPosition::getInstrument);
         Map<Instrument, ForexPosition> newPositions = new HashMap<>(positionsByInstrument);
@@ -276,11 +276,17 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
         ForexPortfolio portfolio = new ForexPortfolio(newPipsProfit, new HashSet<>(newPositions.values()), closedTrades);
 
         trader.setPortfolio(portfolio);
+
+        OrderRequest orderToCancel = oneCancelsAnother.remove(filled.getId());
+        if (orderToCancel != null) {
+            oneCancelsAnother.remove(orderToCancel.getId());
+            marketEngine.cancel(orderToCancel);
+        }
     }
 
     @Override
     public void orderCancelled(OrderRequest cancelled) {
-        ForexTrader trader = tradersByOrderId.get(cancelled.getId());
+        ForexTrader trader = tradersByOrderId.remove(cancelled.getId());
         trader.cancelled(cancelled);
     }
 
@@ -318,11 +324,24 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
             submitted = marketEngine.submit(this, order);
         }
         orderSubmitted(trader, submitted);
-        getSimulatorTrader(trader).setOpenedPosition(request);
-    }
 
-    private SimulatorForexTrader getSimulatorTrader(ForexTrader trader) {
-        return this.tradersByAccountNumber.get(trader.getAccountNumber());
+        OrderRequest stop = null;
+        OrderRequest takeProfit = null;
+        if (request.getStopLoss().isPresent()) {
+            SellStopOrder stopOrder = Orders.sellStopOrder(submitted.getUnits(), pair, request.getStopLoss().get());
+            stop = marketEngine.submit(this, stopOrder);
+            orderSubmitted(trader, stop);
+        }
+        if (request.getTakeProfit().isPresent()) {
+            SellStopOrder stopOrder = Orders.sellStopOrder(submitted.getUnits(), pair, request.getTakeProfit().get());
+            takeProfit = marketEngine.submit(this, stopOrder);
+            orderSubmitted(trader, takeProfit);
+        }
+
+        if (!(stop == null || takeProfit == null)) {
+            oneCancelsAnother.put(stop.getId(), takeProfit);
+            oneCancelsAnother.put(takeProfit.getId(), stop);
+        }
     }
 
     @Override
