@@ -42,8 +42,8 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-import static java.util.Collections.emptySet;
-import static java.util.Collections.emptySortedSet;
+import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.toMap;
 import static market.MarketTime.formatRange;
 import static market.MarketTime.formatTimestamp;
 
@@ -55,9 +55,9 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
     private final MarketTime clock;
     private final MarketEngine marketEngine;
     private final Map<String, ForexTrader> tradersByOrderId = new HashMap<>();
-    private final Map<ForexTraderFactory, Collection<ForexTrader>> tradersByFactory = new IdentityHashMap<>();
+    private final Map<ForexTraderFactory, Collection<SimulatorForexTrader>> tradersByFactory = new IdentityHashMap<>();
     private final List<ForexTraderFactory> traderFactories;
-    private List<ForexTrader> traders;
+    private final Map<String, SimulatorForexTrader> tradersByAccountNumber = new HashMap<>();
 
     private Simulation simulation;
 
@@ -74,17 +74,14 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
 
         this.tradersByOrderId.clear();
         this.tradersByFactory.clear();
+        this.tradersByAccountNumber.clear();
 
         marketEngine.init(simulation);
 
         traderFactories.forEach(it -> tradersByFactory.put(it, it.createInstances(simulation)));
-        this.traders = tradersByFactory.entrySet().stream()
+        this.tradersByAccountNumber.putAll(tradersByFactory.entrySet().stream()
                 .map(Map.Entry::getValue).flatMap(Collection::stream)
-                .collect(Collectors.toList());
-
-        traders.forEach(it -> {
-            it.setPortfolio(new ForexPortfolio(0, emptySet(), emptySortedSet()));
-        });
+                .collect(toMap(ForexTrader::getAccountNumber, identity())));
     }
 
     @Override
@@ -97,7 +94,8 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
         // Update prices and process any limit/stop orders
         marketEngine.processUpdates();
 
-        for (ForexTrader trader : traders) {
+        Collection<SimulatorForexTrader> traders = this.tradersByAccountNumber.values();
+        for (SimulatorForexTrader trader : traders) {
             // TODO: The market needs to manage stop loss/take profit orders
             handleStopLossTakeProfits(trader);
 
@@ -116,7 +114,7 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
      * All of this logic should be moved to be handled with orders in the market.
      * @param trader
      */
-    private void handleStopLossTakeProfits(ForexTrader trader) {
+    private void handleStopLossTakeProfits(SimulatorForexTrader trader) {
         OpenPositionRequest openedPosition = trader.getOpenedPosition();
 
         if (openedPosition != null) {
@@ -156,7 +154,7 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
             SortedSet<ForexPortfolioValue> portfolios = new TreeSet<>(Comparator.comparing(ForexPortfolioValue::pips));
             SortedSet<ForexPositionValue> tradesSortedByProfit = new TreeSet<>(Comparator.comparing(ForexPositionValue::pips));
 
-            for (ForexTrader trader : traders) {
+            for (SimulatorForexTrader trader : traders) {
                 ForexPortfolioValue end = trader.getMostRecentPortfolio();
                 double endPips = end.pips();
                 LOG.info("End: {} pips at {}", endPips, formatTimestamp(end.getTimestamp()));
@@ -302,7 +300,12 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
             submitted = marketEngine.submit(this, order);
         }
         orderSubmitted(trader, submitted);
-        trader.setOpenedPosition(request);
+        getSimulatorTrader(trader).setOpenedPosition(request);
+    }
+
+    // TODO DPJ: Add generics so we know it's a SimulatorForexTrader
+    private SimulatorForexTrader getSimulatorTrader(ForexTrader trader) {
+        return this.tradersByAccountNumber.get(trader.getAccountNumber());
     }
 
     @Override

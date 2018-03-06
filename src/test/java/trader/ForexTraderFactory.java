@@ -1,6 +1,7 @@
 package trader;
 
 import simulator.Simulation;
+import simulator.SimulatorForexTrader;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -10,10 +11,10 @@ public interface ForexTraderFactory {
 
     ForexTrader create();
 
-    default Collection<ForexTrader> createInstances(Simulation simulation) {
-        List<ForexTrader> traders = new ArrayList<>();
+    default Collection<SimulatorForexTrader> createInstances(Simulation simulation) {
+        List<SimulatorForexTrader> traders = new ArrayList<>();
         for (int i = 0; i < simulation.instancesPerTraderType; i++) {
-            traders.add(create());
+            traders.add(new SimulatorForexTrader(create()));
         }
         return traders;
     }

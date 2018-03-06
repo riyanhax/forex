@@ -1,7 +1,6 @@
 package live;
 
 import broker.ForexBroker;
-import broker.OpenPositionRequest;
 import market.ForexPortfolio;
 import market.ForexPortfolioValue;
 import market.order.OrderRequest;
@@ -38,35 +37,5 @@ public class OandaTrader implements ForexTrader {
     @Override
     public void setPortfolio(ForexPortfolio portfolio) {
         tradingStrategy.setPortfolio(portfolio);
-    }
-
-    @Override
-    public void addPortfolioValueSnapshot(ForexPortfolioValue portfolioValue) {
-        tradingStrategy.addPortfolioValueSnapshot(portfolioValue);
-    }
-
-    @Override
-    public ForexPortfolioValue getDrawdownPortfolio() {
-        return tradingStrategy.getDrawdownPortfolio();
-    }
-
-    @Override
-    public ForexPortfolioValue getProfitPortfolio() {
-        return tradingStrategy.getProfitPortfolio();
-    }
-
-    @Override
-    public ForexPortfolioValue getMostRecentPortfolio() {
-        return tradingStrategy.getMostRecentPortfolio();
-    }
-
-    @Override
-    public OpenPositionRequest getOpenedPosition() {
-        return tradingStrategy.getOpenedPosition();
-    }
-
-    @Override
-    public void setOpenedPosition(OpenPositionRequest positionRequest) {
-        tradingStrategy.setOpenedPosition(positionRequest);
     }
 }

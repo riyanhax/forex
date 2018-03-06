@@ -26,13 +26,6 @@ abstract class BaseTrader implements ForexTrader {
     private String accountNo = UUID.randomUUID().toString();
     private ForexPortfolio portfolio;
 
-    private ForexPortfolioValue drawdownPortfolio = null;
-    private ForexPortfolioValue profitPortfolio = null;
-    private ForexPortfolioValue mostRecentPortfolio = null;
-
-    // This should be managed in the market
-    private OpenPositionRequest openedPosition;
-
     BaseTrader(MarketTime clock, InstrumentHistoryService instrumentHistoryService) {
         this.clock = clock;
         this.instrumentHistoryService = instrumentHistoryService;
@@ -93,38 +86,5 @@ abstract class BaseTrader implements ForexTrader {
     @Override
     public void setPortfolio(ForexPortfolio portfolio) {
         this.portfolio = portfolio;
-    }
-
-    @Override
-    public void addPortfolioValueSnapshot(ForexPortfolioValue portfolioValue) {
-        if (drawdownPortfolio == null || drawdownPortfolio.pips() > portfolioValue.pips()) {
-            drawdownPortfolio = portfolioValue;
-        }
-        if (profitPortfolio == null || profitPortfolio.pips() < portfolioValue.pips()) {
-            profitPortfolio = portfolioValue;
-        }
-        mostRecentPortfolio = portfolioValue;
-    }
-
-    public ForexPortfolioValue getDrawdownPortfolio() {
-        return drawdownPortfolio;
-    }
-
-    public ForexPortfolioValue getProfitPortfolio() {
-        return profitPortfolio;
-    }
-
-    public ForexPortfolioValue getMostRecentPortfolio() {
-        return mostRecentPortfolio;
-    }
-
-    @Override
-    public OpenPositionRequest getOpenedPosition() {
-        return openedPosition;
-    }
-
-    @Override
-    public void setOpenedPosition(OpenPositionRequest positionRequest) {
-        this.openedPosition = positionRequest;
     }
 }
