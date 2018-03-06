@@ -1,41 +1,14 @@
 package live;
 
-import broker.ForexBroker;
-import market.ForexPortfolio;
-import market.ForexPortfolioValue;
-import market.order.OrderRequest;
-import trader.ForexTrader;
+import market.InstrumentHistoryService;
+import market.MarketTime;
+import trader.BaseTrader;
+import trader.TradingStrategy;
 
-public class OandaTrader implements ForexTrader {
+public class OandaTrader extends BaseTrader {
 
-    private final ForexTrader tradingStrategy;
-
-    public OandaTrader(ForexTrader tradingStrategy) {
-        this.tradingStrategy = tradingStrategy;
+    public OandaTrader(TradingStrategy tradingStrategy, MarketTime clock, InstrumentHistoryService instrumentHistoryService) {
+        super(tradingStrategy, clock, instrumentHistoryService);
     }
 
-    @Override
-    public String getAccountNumber() {
-        return tradingStrategy.getAccountNumber();
-    }
-
-    @Override
-    public void processUpdates(ForexBroker broker) throws Exception {
-        tradingStrategy.processUpdates(broker);
-    }
-
-    @Override
-    public void cancelled(OrderRequest cancelled) {
-        tradingStrategy.cancelled(cancelled);
-    }
-
-    @Override
-    public ForexPortfolio getPortfolio() {
-        return tradingStrategy.getPortfolio();
-    }
-
-    @Override
-    public void setPortfolio(ForexPortfolio portfolio) {
-        tradingStrategy.setPortfolio(portfolio);
-    }
 }

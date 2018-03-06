@@ -15,16 +15,12 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 
-class SmarterRandomPosition extends BaseTrader {
+class SmarterRandomPosition implements TradingStrategy {
 
     private final Random random = new Random();
 
-    SmarterRandomPosition(MarketTime clock, InstrumentHistoryService instrumentHistoryService) {
-        super(clock, instrumentHistoryService);
-    }
-
     @Override
-    Optional<OpenPositionRequest> shouldOpenPosition(MarketTime clock, InstrumentHistoryService instrumentHistoryService) throws Exception {
+    public Optional<OpenPositionRequest> shouldOpenPosition(MarketTime clock, InstrumentHistoryService instrumentHistoryService) throws Exception {
         LocalDateTime now = clock.now();
         if (!(now.getMinute() == 30)) {
             return Optional.empty();

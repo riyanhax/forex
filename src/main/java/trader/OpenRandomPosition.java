@@ -8,16 +8,12 @@ import market.MarketTime;
 import java.util.Optional;
 import java.util.Random;
 
-public class OpenRandomPosition extends BaseTrader {
+public class OpenRandomPosition implements TradingStrategy {
 
     private final Random random = new Random();
 
-    public OpenRandomPosition(MarketTime clock, InstrumentHistoryService instrumentHistoryService) {
-        super(clock, instrumentHistoryService);
-    }
-
     @Override
-    Optional<OpenPositionRequest> shouldOpenPosition(MarketTime clock, InstrumentHistoryService instrumentHistoryService) {
+    public Optional<OpenPositionRequest> shouldOpenPosition(MarketTime clock, InstrumentHistoryService instrumentHistoryService) {
         Instrument[] instruments = Instrument.values();
         Instrument pair = instruments[random.nextInt(instruments.length)];
 

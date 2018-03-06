@@ -16,17 +16,19 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-abstract class BaseTrader implements ForexTrader {
+public abstract class BaseTrader implements ForexTrader {
 
     private static final Logger LOG = LoggerFactory.getLogger(BaseTrader.class);
 
     private final MarketTime clock;
     private final InstrumentHistoryService instrumentHistoryService;
+    private final TradingStrategy tradingStrategy;
 
     private String accountNo = UUID.randomUUID().toString();
     private ForexPortfolio portfolio;
 
-    BaseTrader(MarketTime clock, InstrumentHistoryService instrumentHistoryService) {
+    public BaseTrader(TradingStrategy tradingStrategy, MarketTime clock, InstrumentHistoryService instrumentHistoryService) {
+        this.tradingStrategy = tradingStrategy;
         this.clock = clock;
         this.instrumentHistoryService = instrumentHistoryService;
     }
@@ -47,7 +49,7 @@ abstract class BaseTrader implements ForexTrader {
 
         if (positions.isEmpty()) {
             if (!stopTrading) {
-                Optional<OpenPositionRequest> toOpen = shouldOpenPosition(clock, instrumentHistoryService);
+                Optional<OpenPositionRequest> toOpen = tradingStrategy.shouldOpenPosition(clock, instrumentHistoryService);
                 toOpen.ifPresent(request -> {
                     LOG.info("Opening position: {}", request);
                     try {
@@ -70,8 +72,6 @@ abstract class BaseTrader implements ForexTrader {
             }
         }
     }
-
-    abstract Optional<OpenPositionRequest> shouldOpenPosition(MarketTime clock, InstrumentHistoryService instrumentHistoryService) throws Exception;
 
     @Override
     public void cancelled(OrderRequest cancelled) {

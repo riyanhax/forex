@@ -12,6 +12,7 @@ import market.ForexPortfolioValue;
 import market.ForexPosition;
 import market.ForexPositionValue;
 import market.Instrument;
+import market.InstrumentHistoryService;
 import market.MarketEngine;
 import market.MarketTime;
 import market.order.BuyLimitOrder;
@@ -54,6 +55,8 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
 
     private final MarketTime clock;
     private final MarketEngine marketEngine;
+    private final InstrumentHistoryService instrumentHistoryService;
+
     private final Map<String, ForexTrader> tradersByOrderId = new HashMap<>();
     private final Map<ForexTraderFactory, Collection<SimulatorForexTrader>> tradersByFactory = new IdentityHashMap<>();
     private final List<ForexTraderFactory> traderFactories;
@@ -62,9 +65,11 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
     private Simulation simulation;
 
     public HistoryDataForexBroker(MarketTime clock, MarketEngine marketEngine,
+                                  InstrumentHistoryService instrumentHistoryService,
                                   List<ForexTraderFactory> traderFactories) {
         this.clock = clock;
         this.marketEngine = marketEngine;
+        this.instrumentHistoryService = instrumentHistoryService;
         this.traderFactories = traderFactories;
     }
 
@@ -78,7 +83,7 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
 
         marketEngine.init(simulation);
 
-        traderFactories.forEach(it -> tradersByFactory.put(it, it.createInstances(simulation)));
+        traderFactories.forEach(it -> tradersByFactory.put(it, it.createInstances(simulation, clock, instrumentHistoryService)));
         this.tradersByAccountNumber.putAll(tradersByFactory.entrySet().stream()
                 .map(Map.Entry::getValue).flatMap(Collection::stream)
                 .collect(toMap(ForexTrader::getAccountNumber, identity())));
@@ -303,7 +308,6 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
         getSimulatorTrader(trader).setOpenedPosition(request);
     }
 
-    // TODO DPJ: Add generics so we know it's a SimulatorForexTrader
     private SimulatorForexTrader getSimulatorTrader(ForexTrader trader) {
         return this.tradersByAccountNumber.get(trader.getAccountNumber());
     }

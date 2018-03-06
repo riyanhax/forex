@@ -1,18 +1,17 @@
 package simulator;
 
-import broker.ForexBroker;
 import broker.OpenPositionRequest;
 import market.ForexPortfolio;
 import market.ForexPortfolioValue;
-import market.order.OrderRequest;
-import trader.ForexTrader;
+import market.InstrumentHistoryService;
+import market.MarketTime;
+import trader.BaseTrader;
+import trader.TradingStrategy;
 
 import static java.util.Collections.emptySet;
 import static java.util.Collections.emptySortedSet;
 
-public class SimulatorForexTrader implements ForexTrader {
-
-    private final ForexTrader tradingStrategy;
+public class SimulatorForexTrader extends BaseTrader {
 
     private ForexPortfolioValue drawdownPortfolio = null;
     private ForexPortfolioValue profitPortfolio = null;
@@ -21,35 +20,9 @@ public class SimulatorForexTrader implements ForexTrader {
     // This should be managed in the market
     private OpenPositionRequest openedPosition;
 
-    public SimulatorForexTrader(ForexTrader tradingStrategy) {
-        this.tradingStrategy = tradingStrategy;
-
-        tradingStrategy.setPortfolio(new ForexPortfolio(0, emptySet(), emptySortedSet()));
-    }
-
-    @Override
-    public String getAccountNumber() {
-        return tradingStrategy.getAccountNumber();
-    }
-
-    @Override
-    public void processUpdates(ForexBroker broker) throws Exception {
-        tradingStrategy.processUpdates(broker);
-    }
-
-    @Override
-    public void cancelled(OrderRequest cancelled) {
-        tradingStrategy.cancelled(cancelled);
-    }
-
-    @Override
-    public ForexPortfolio getPortfolio() {
-        return tradingStrategy.getPortfolio();
-    }
-
-    @Override
-    public void setPortfolio(ForexPortfolio portfolio) {
-        tradingStrategy.setPortfolio(portfolio);
+    public SimulatorForexTrader(TradingStrategy tradingStrategy, MarketTime clock, InstrumentHistoryService instrumentHistoryService) {
+        super(tradingStrategy, clock, instrumentHistoryService);
+        setPortfolio(new ForexPortfolio(0, emptySet(), emptySortedSet()));
     }
 
     public void addPortfolioValueSnapshot(ForexPortfolioValue portfolioValue) {
