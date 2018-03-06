@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import trader.OpenRandomPosition;
+import trader.TradingStrategies;
 import trader.TradingStrategy;
 
 @Configuration
@@ -19,7 +19,7 @@ public class LiveConfig {
     @Bean
     OandaTrader trader(MarketTime clock, InstrumentHistoryService instrumentHistoryService) {
         // TODO: Use a better trading strategy when possible
-        TradingStrategy trader = new OpenRandomPosition();
+        TradingStrategy trader = TradingStrategies.OPEN_RANDOM_POSITION;
 
         LOG.info("Using trading strategy: {}", trader.getClass().getName());
 

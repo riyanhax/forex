@@ -25,15 +25,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import trader.ForexTrader;
-import trader.ForexTraderFactory;
+import trader.TradingStrategy;
 
 import javax.annotation.Nullable;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -58,19 +58,19 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
     private final InstrumentHistoryService instrumentHistoryService;
 
     private final Map<String, ForexTrader> tradersByOrderId = new HashMap<>();
-    private final Map<ForexTraderFactory, Collection<SimulatorForexTrader>> tradersByFactory = new IdentityHashMap<>();
-    private final List<ForexTraderFactory> traderFactories;
+    private final Map<TradingStrategy, Collection<SimulatorForexTrader>> tradersByStrategy = new HashMap<>();
+    private final List<TradingStrategy> tradingStrategies;
     private final Map<String, SimulatorForexTrader> tradersByAccountNumber = new HashMap<>();
 
     private Simulation simulation;
 
     public HistoryDataForexBroker(MarketTime clock, MarketEngine marketEngine,
                                   InstrumentHistoryService instrumentHistoryService,
-                                  List<ForexTraderFactory> traderFactories) {
+                                  List<TradingStrategy> tradingStrategies) {
         this.clock = clock;
         this.marketEngine = marketEngine;
         this.instrumentHistoryService = instrumentHistoryService;
-        this.traderFactories = traderFactories;
+        this.tradingStrategies = tradingStrategies;
     }
 
     @Override
@@ -78,15 +78,23 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
         this.simulation = simulation;
 
         this.tradersByOrderId.clear();
-        this.tradersByFactory.clear();
+        this.tradersByStrategy.clear();
         this.tradersByAccountNumber.clear();
 
         marketEngine.init(simulation);
 
-        traderFactories.forEach(it -> tradersByFactory.put(it, it.createInstances(simulation, clock, instrumentHistoryService)));
-        this.tradersByAccountNumber.putAll(tradersByFactory.entrySet().stream()
+        tradingStrategies.forEach(it -> tradersByStrategy.put(it, createInstances(it, simulation)));
+        this.tradersByAccountNumber.putAll(tradersByStrategy.entrySet().stream()
                 .map(Map.Entry::getValue).flatMap(Collection::stream)
                 .collect(toMap(ForexTrader::getAccountNumber, identity())));
+    }
+
+    private Collection<SimulatorForexTrader> createInstances(TradingStrategy tradingStrategy, Simulation simulation) {
+        List<SimulatorForexTrader> traders = new ArrayList<>();
+        for (int i = 0; i < simulation.instancesPerTraderType; i++) {
+            traders.add(new SimulatorForexTrader(tradingStrategy, clock, instrumentHistoryService));
+        }
+        return traders;
     }
 
     @Override
@@ -150,7 +158,7 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
     @Override
     public void done() {
 
-        tradersByFactory.forEach((factory, traders) -> {
+        tradersByStrategy.forEach((factory, traders) -> {
 
             LOG.info("\n\n{}:", factory.getClass().getName());
 

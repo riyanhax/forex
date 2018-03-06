@@ -10,6 +10,8 @@ import org.springframework.boot.autoconfigure.web.EmbeddedServletContainerAutoCo
 import org.springframework.boot.autoconfigure.web.WebMvcAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import trader.TraderConfig;
+import trader.TradingStrategies;
+import trader.TradingStrategy;
 
 @SpringBootApplication(
         scanBasePackageClasses = {SimulatorForexBroker.class, MarketConfig.class,
@@ -25,6 +27,16 @@ public class SimulatorApplication {
     @Bean
     public CommandLineRunner commandLineRunner(Watcher watcher) {
         return args -> watcher.run();
+    }
+
+    @Bean
+    public TradingStrategy randomPosition() {
+        return TradingStrategies.OPEN_RANDOM_POSITION;
+    }
+
+    @Bean
+    public TradingStrategy smarterRandomPosition() {
+        return TradingStrategies.SMARTER_RANDOM_POSITION;
     }
 
 }
