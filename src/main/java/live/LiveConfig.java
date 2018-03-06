@@ -7,8 +7,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import trader.TradingStrategies;
 import trader.TradingStrategy;
+
+import java.util.List;
+
+import static java.util.stream.Collectors.toList;
 
 @Configuration
 @ComponentScan
@@ -17,12 +20,16 @@ public class LiveConfig {
     private static final Logger LOG = LoggerFactory.getLogger(LiveConfig.class);
 
     @Bean
-    OandaTrader trader(MarketTime clock, InstrumentHistoryService instrumentHistoryService) {
-        // TODO: Use a better trading strategy when possible
-        TradingStrategy trader = TradingStrategies.OPEN_RANDOM_POSITION;
+    LiveTraders trader(OandaProperties properties, MarketTime clock, InstrumentHistoryService instrumentHistoryService) {
 
-        LOG.info("Using trading strategy: {}", trader.getClass().getName());
+        List<OandaTrader> traders = properties.getTraders().stream().map(it -> {
+            String account = it.getAccount();
+            TradingStrategy strategy = it.getStrategy();
+            LOG.info("Using trading strategy: {}", strategy);
 
-        return new OandaTrader(trader, clock, instrumentHistoryService);
+            return new OandaTrader(account, strategy, clock, instrumentHistoryService);
+        }).collect(toList());
+
+        return new LiveTraders(traders);
     }
 }

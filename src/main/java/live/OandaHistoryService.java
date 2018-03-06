@@ -3,7 +3,6 @@ package live;
 import com.google.common.collect.Range;
 import com.oanda.v20.Context;
 import com.oanda.v20.RequestException;
-import com.oanda.v20.account.AccountID;
 import com.oanda.v20.instrument.CandlestickData;
 import com.oanda.v20.instrument.CandlestickGranularity;
 import com.oanda.v20.instrument.InstrumentCandlesRequest;
@@ -30,16 +29,12 @@ import static market.MarketTime.ZONE;
 @Service
 class OandaHistoryService implements InstrumentHistoryService {
 
-    static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ISO_INSTANT;
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ISO_INSTANT;
 
     private final Context ctx;
-    private final AccountID accountId;
-    private final SystemTime clock;
 
-    OandaHistoryService(SystemTime clock, OandaProperties properties) {
-        this.clock = clock;
+    OandaHistoryService(OandaProperties properties) {
         this.ctx = new Context(properties.getApi().getEndpoint(), properties.getApi().getToken());
-        this.accountId = new AccountID(properties.getApi().getAccount());
     }
 
     @Override

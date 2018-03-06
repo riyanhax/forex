@@ -18,7 +18,7 @@ public interface ForexBroker {
 
     ForexPortfolioValue getPortfolioValue(ForexTrader trader) throws Exception;
 
-    Quote getQuote(Instrument pair) throws Exception;
+    Quote getQuote(ForexTrader trader, Instrument pair) throws Exception;
 
     boolean isClosed();
 

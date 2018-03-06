@@ -220,7 +220,7 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
     private ForexPositionValue positionValue(ForexPosition position) {
         Quote quote = null;
         try {
-            quote = getQuote(position.getInstrument());
+            quote = getQuote(null, position.getInstrument());
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -228,7 +228,7 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
     }
 
     @Override
-    public Quote getQuote(Instrument pair) throws Exception {
+    public Quote getQuote(ForexTrader trader, Instrument pair) throws Exception {
         double price = marketEngine.getPrice(pair);
         double halfSpread = halfSpread(pair);
 

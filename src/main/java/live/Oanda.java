@@ -56,7 +56,6 @@ class Oanda implements ForexBroker {
     private final OandaHistoryService service;
     private final List<OandaTrader> traders;
     private final Context ctx;
-    private final AccountID accountId;
     private static final DecimalFormat decimalFormat = new DecimalFormat("#.#####");
     private final SystemTime clock;
 
@@ -64,18 +63,19 @@ class Oanda implements ForexBroker {
         decimalFormat.setRoundingMode(RoundingMode.CEILING);
     }
 
-    public Oanda(SystemTime clock, OandaProperties properties, OandaHistoryService service, List<OandaTrader> traders) {
+    public Oanda(SystemTime clock, OandaProperties properties, OandaHistoryService service, LiveTraders traders) {
         this.clock = clock;
         this.ctx = new Context(properties.getApi().getEndpoint(), properties.getApi().getToken());
-        this.accountId = new AccountID(properties.getApi().getAccount());
         this.service = service;
-        this.traders = traders;
+        this.traders = traders.getTraders();
     }
 
     @Override
     public ForexPortfolioValue getPortfolioValue(ForexTrader trader) throws Exception {
         LocalDateTime now = clock.now();
-        Account account = ctx.account.get(this.accountId).getAccount();
+
+        AccountID accountId = new AccountID(trader.getAccountNumber());
+        Account account = ctx.account.get(accountId).getAccount();
 
         Set<ForexPositionValue> positionValues = account.getTrades().stream()
                 .map(it -> {
@@ -108,8 +108,10 @@ class Oanda implements ForexBroker {
     }
 
     @Override
-    public Quote getQuote(Instrument pair) throws Exception {
+    public Quote getQuote(ForexTrader trader, Instrument pair) throws Exception {
         String symbol = pair.getSymbol();
+
+        AccountID accountId = new AccountID(trader.getAccountNumber());
 
         PricingGetRequest request = new PricingGetRequest(accountId, Collections.singletonList(symbol));
         PricingGetResponse resp = ctx.pricing.get(request);
@@ -155,7 +157,7 @@ class Oanda implements ForexBroker {
             pair = pair.getOpposite();
         }
 
-        Quote quote = getQuote(pair);
+        Quote quote = getQuote(trader, pair);
         String symbol = pair.getSymbol();
         double basePrice = shorting ? quote.getAsk() : quote.getBid();
         double pip = pair.getPip();
@@ -176,6 +178,7 @@ class Oanda implements ForexBroker {
             marketOrderRequest.setTakeProfitOnFill(takeProfit);
         });
 
+        AccountID accountId = new AccountID(trader.getAccountNumber());
         OrderCreateRequest orderCreateRequest = new OrderCreateRequest(accountId);
         orderCreateRequest.setOrder(marketOrderRequest);
 
@@ -191,7 +194,9 @@ class Oanda implements ForexBroker {
     public void closePosition(ForexTrader trader, ForexPosition position, @Nullable Double limit) throws Exception {
 
         Instrument pair = position.getInstrument().getBrokerInstrument();
-        Account account = ctx.account.get(this.accountId).getAccount();
+
+        AccountID accountId = new AccountID(trader.getAccountNumber());
+        Account account = ctx.account.get(accountId).getAccount();
         List<TradeSummary> trades = account.getTrades();
 
         Optional<TradeSummary> tradeSummary = trades.stream()
@@ -199,6 +204,7 @@ class Oanda implements ForexBroker {
                 .findFirst();
 
         if (tradeSummary.isPresent()) {
+
             TradeSpecifier tradeSpecifier = new TradeSpecifier(tradeSummary.get().getId());
             TradeCloseRequest closeRequest = new TradeCloseRequest(accountId, tradeSpecifier);
             closeRequest.setUnits("ALL");

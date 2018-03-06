@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 
 public abstract class BaseTrader implements ForexTrader {
 
@@ -24,18 +23,12 @@ public abstract class BaseTrader implements ForexTrader {
     private final InstrumentHistoryService instrumentHistoryService;
     private final TradingStrategy tradingStrategy;
 
-    private String accountNo = UUID.randomUUID().toString();
     private ForexPortfolio portfolio;
 
     public BaseTrader(TradingStrategy tradingStrategy, MarketTime clock, InstrumentHistoryService instrumentHistoryService) {
         this.tradingStrategy = tradingStrategy;
         this.clock = clock;
         this.instrumentHistoryService = instrumentHistoryService;
-    }
-
-    @Override
-    public String getAccountNumber() {
-        return accountNo;
     }
 
     @Override

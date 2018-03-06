@@ -20,10 +20,15 @@ public enum TradingStrategies implements TradingStrategy {
     OPEN_RANDOM_POSITION {
         @Override
         public Optional<OpenPositionRequest> shouldOpenPosition(MarketTime clock, InstrumentHistoryService instrumentHistoryService) {
-            Instrument[] instruments = Instrument.values();
-            Instrument pair = instruments[random.nextInt(instruments.length)];
-
+            Instrument pair = TradingStrategies.randomInstrument();
             return Optional.of(new OpenPositionRequest(pair, null, 30d, 60d));
+        }
+    },
+    OPEN_RANDOM_POSITION_HIGH_FREQUENCY {
+        @Override
+        public Optional<OpenPositionRequest> shouldOpenPosition(MarketTime clock, InstrumentHistoryService instrumentHistoryService) {
+            Instrument pair = TradingStrategies.randomInstrument();
+            return Optional.of(new OpenPositionRequest(pair, null, 10d, 10d));
         }
     },
     SMARTER_RANDOM_POSITION {
@@ -34,9 +39,7 @@ public enum TradingStrategies implements TradingStrategy {
                 return Optional.empty();
             }
 
-            Instrument[] instruments = Instrument.values();
-            Instrument pair = instruments[random.nextInt(instruments.length)];
-
+            Instrument pair = randomInstrument();
             NavigableMap<LocalDateTime, OHLC> oneWeekCandles = instrumentHistoryService.getOneDayCandles(pair, Range.closed(now.minusDays(10), now));
 
             NavigableMap<LocalDateTime, OHLC> oneWeekCandlesDescending = oneWeekCandles.descendingMap();
@@ -77,4 +80,9 @@ public enum TradingStrategies implements TradingStrategy {
     };
 
     private static final Random random = new Random();
+
+    private static Instrument randomInstrument() {
+        Instrument[] instruments = Instrument.values();
+        return instruments[random.nextInt(instruments.length)];
+    }
 }

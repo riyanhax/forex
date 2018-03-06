@@ -3,21 +3,14 @@ package live;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.List;
+
 @Configuration
 @ConfigurationProperties(prefix = "oanda")
 public class OandaProperties {
     public static class Api {
-        private String account;
         private String endpoint;
         private String token;
-
-        public String getAccount() {
-            return account;
-        }
-
-        public void setAccount(String account) {
-            this.account = account;
-        }
 
         public String getEndpoint() {
             return endpoint;
@@ -37,6 +30,7 @@ public class OandaProperties {
     }
 
     private Api api;
+    private List<TraderConfiguration> traders;
 
     public Api getApi() {
         return api;
@@ -44,5 +38,13 @@ public class OandaProperties {
 
     public void setApi(Api api) {
         this.api = api;
+    }
+
+    public List<TraderConfiguration> getTraders() {
+        return traders;
+    }
+
+    public void setTraders(List<TraderConfiguration> traders) {
+        this.traders = traders;
     }
 }

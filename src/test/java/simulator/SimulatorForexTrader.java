@@ -8,10 +8,14 @@ import market.MarketTime;
 import trader.BaseTrader;
 import trader.TradingStrategy;
 
+import java.util.UUID;
+
 import static java.util.Collections.emptySet;
 import static java.util.Collections.emptySortedSet;
 
 public class SimulatorForexTrader extends BaseTrader {
+
+    private final String accountNumber = UUID.randomUUID().toString();
 
     private ForexPortfolioValue drawdownPortfolio = null;
     private ForexPortfolioValue profitPortfolio = null;
@@ -23,6 +27,11 @@ public class SimulatorForexTrader extends BaseTrader {
     public SimulatorForexTrader(TradingStrategy tradingStrategy, MarketTime clock, InstrumentHistoryService instrumentHistoryService) {
         super(tradingStrategy, clock, instrumentHistoryService);
         setPortfolio(new ForexPortfolio(0, emptySet(), emptySortedSet()));
+    }
+
+    @Override
+    public String getAccountNumber() {
+        return accountNumber;
     }
 
     public void addPortfolioValueSnapshot(ForexPortfolioValue portfolioValue) {

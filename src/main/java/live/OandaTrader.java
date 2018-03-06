@@ -7,8 +7,15 @@ import trader.TradingStrategy;
 
 public class OandaTrader extends BaseTrader {
 
-    public OandaTrader(TradingStrategy tradingStrategy, MarketTime clock, InstrumentHistoryService instrumentHistoryService) {
+    private final String account;
+
+    public OandaTrader(String account, TradingStrategy tradingStrategy, MarketTime clock, InstrumentHistoryService instrumentHistoryService) {
         super(tradingStrategy, clock, instrumentHistoryService);
+        this.account = account;
     }
 
+    @Override
+    public String getAccountNumber() {
+        return account;
+    }
 }
