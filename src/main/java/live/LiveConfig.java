@@ -17,12 +17,12 @@ public class LiveConfig {
     private static final Logger LOG = LoggerFactory.getLogger(LiveConfig.class);
 
     @Bean
-    ForexTrader trader(MarketTime clock, InstrumentHistoryService instrumentHistoryService) {
+    OandaTrader trader(MarketTime clock, InstrumentHistoryService instrumentHistoryService) {
         // TODO: Use a better trader when possible
         ForexTrader trader = new OpenRandomPosition(clock, instrumentHistoryService);
 
         LOG.info("Using trader: {}", trader.getClass().getName());
 
-        return trader;
+        return new OandaTrader(trader);
     }
 }

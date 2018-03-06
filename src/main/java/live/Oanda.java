@@ -54,7 +54,7 @@ class Oanda implements ForexBroker {
 
     private static final Logger LOG = LoggerFactory.getLogger(Oanda.class);
     private final OandaHistoryService service;
-    private final ForexTrader trader;
+    private final List<OandaTrader> traders;
     private final Context ctx;
     private final AccountID accountId;
     private static final DecimalFormat decimalFormat = new DecimalFormat("#.#####");
@@ -64,13 +64,12 @@ class Oanda implements ForexBroker {
         decimalFormat.setRoundingMode(RoundingMode.CEILING);
     }
 
-
-    public Oanda(SystemTime clock, OandaProperties properties, OandaHistoryService service, ForexTrader trader) {
+    public Oanda(SystemTime clock, OandaProperties properties, OandaHistoryService service, List<OandaTrader> traders) {
         this.clock = clock;
         this.ctx = new Context(properties.getApi().getEndpoint(), properties.getApi().getToken());
         this.accountId = new AccountID(properties.getApi().getAccount());
         this.service = service;
-        this.trader = trader;
+        this.traders = traders;
     }
 
     @Override
@@ -82,7 +81,6 @@ class Oanda implements ForexBroker {
                 .map(it -> {
                     Instrument pair = Instrument.bySymbol.get(it.getInstrument().toString());
                     double units = it.getCurrentUnits().doubleValue();
-                    boolean inverse = false;
                     double price = it.getPrice().doubleValue();
 
                     if (units < 0d) {
@@ -223,7 +221,9 @@ class Oanda implements ForexBroker {
             return;
         }
 
-        trader.processUpdates(this);
+        for (ForexTrader trader : traders) {
+            trader.processUpdates(this);
+        }
     }
 
     private static String roundToFiveDecimalPlaces(double value) {
