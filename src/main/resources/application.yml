@@ -1,6 +1,5 @@
 spring.main.web-environment: false
 logging.file: app.log
-logging.level.trader: warn
 
 oanda:
   traders:
@@ -13,9 +12,14 @@ oanda:
 
 ---
 spring:
+  profiles: simulation
+
+logging.level.trader: warn
+
+---
+spring:
   profiles: prod
 
-logging.level.trader: info
 oanda:
   endpoint: 'https://api-fxtrade.oanda.com/'
 
@@ -23,7 +27,6 @@ oanda:
 spring:
   profiles: demo
 
-logging.level.trader: info
 oanda:
   traders:
     - # 30/60 SL/TP

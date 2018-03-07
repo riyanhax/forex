@@ -21,6 +21,7 @@ import trader.TradingStrategy;
 public class SimulatorApplication {
 
     public static void main(String[] args) {
+        System.setProperty("spring.profiles.active", "simulation");
         SpringApplication.run(SimulatorApplication.class, args);
     }
 
