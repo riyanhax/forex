@@ -4,15 +4,10 @@ import broker.ForexBroker;
 import broker.OpenPositionRequest;
 import broker.Quote;
 import broker.Stance;
-import com.google.common.base.Stopwatch;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
+import com.google.common.collect.Maps;
 import com.oanda.v20.Context;
 import com.oanda.v20.RequestException;
 import com.oanda.v20.account.Account;
-import com.oanda.v20.account.AccountChangesRequest;
-import com.oanda.v20.account.AccountChangesResponse;
 import com.oanda.v20.account.AccountID;
 import com.oanda.v20.order.MarketOrderRequest;
 import com.oanda.v20.order.OrderCreateRequest;
@@ -26,7 +21,6 @@ import com.oanda.v20.trade.TradeSpecifier;
 import com.oanda.v20.trade.TradeSummary;
 import com.oanda.v20.transaction.StopLossDetails;
 import com.oanda.v20.transaction.TakeProfitDetails;
-import com.oanda.v20.transaction.TransactionID;
 import market.ForexPortfolio;
 import market.ForexPortfolioValue;
 import market.ForexPosition;
@@ -45,6 +39,7 @@ import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
@@ -61,35 +56,20 @@ class Oanda implements ForexBroker {
 
     private static final Logger LOG = LoggerFactory.getLogger(Oanda.class);
     private final OandaHistoryService service;
-    private final List<OandaTrader> traders;
+    private final Map<String, OandaTrader> tradersByAccountId;
     private final SystemTime clock;
-    private final Context ctx;
-    private final LoadingCache<String, Account> accounts = CacheBuilder.newBuilder()
-            .build(new CacheLoader<String, Account>() {
-                @Override
-                public Account load(String id) throws Exception {
-                    Stopwatch timer = Stopwatch.createStarted();
 
-                    AccountID accountId = new AccountID(id);
-                    Account account = ctx.account.get(accountId).getAccount();
-
-                    LOG.info("Loaded account {} in {}", accountId, timer);
-                    return account;
-                }
-            });
-
-    public Oanda(SystemTime clock, OandaProperties properties, OandaHistoryService service, LiveTraders traders) {
+    public Oanda(SystemTime clock, OandaHistoryService service, LiveTraders traders) {
         this.clock = clock;
-        this.ctx = new Context(properties.getApi().getEndpoint(), properties.getApi().getToken());
         this.service = service;
-        this.traders = traders.getTraders();
+        this.tradersByAccountId = Maps.uniqueIndex(traders.getTraders(), OandaTrader::getAccountNumber);
     }
 
     @Override
     public ForexPortfolioValue getPortfolioValue(ForexTrader trader) throws Exception {
         LocalDateTime now = clock.now();
 
-        Account account = getAccount(trader.getAccountNumber());
+        Account account = getAccount(trader);
 
         Set<ForexPositionValue> positionValues = account.getTrades().stream()
                 .map(it -> {
@@ -127,7 +107,7 @@ class Oanda implements ForexBroker {
         AccountID accountId = new AccountID(trader.getAccountNumber());
 
         PricingGetRequest request = new PricingGetRequest(accountId, Collections.singletonList(symbol));
-        PricingGetResponse resp = ctx.pricing.get(request);
+        PricingGetResponse resp = getContext(trader).pricing.get(request);
         List<Price> prices = resp.getPrices();
 
         if (prices.isEmpty()) {
@@ -195,7 +175,7 @@ class Oanda implements ForexBroker {
         orderCreateRequest.setOrder(marketOrderRequest);
 
         try {
-            OrderCreateResponse orderCreateResponse = ctx.order.create(orderCreateRequest);
+            OrderCreateResponse orderCreateResponse = getContext(trader).order.create(orderCreateRequest);
             LOG.info(orderCreateResponse.toString());
         } catch (RequestException e) {
             throw new Exception(e.getErrorMessage(), e);
@@ -207,7 +187,7 @@ class Oanda implements ForexBroker {
 
         Instrument pair = position.getInstrument().getBrokerInstrument();
 
-        Account account = getAccount(trader.getAccountNumber());
+        Account account = getAccount(trader);
         List<TradeSummary> trades = account.getTrades();
 
         Optional<TradeSummary> tradeSummary = trades.stream()
@@ -221,7 +201,7 @@ class Oanda implements ForexBroker {
             closeRequest.setUnits("ALL");
 
             try {
-                TradeCloseResponse response = ctx.trade.close(closeRequest);
+                TradeCloseResponse response = getContext(trader).trade.close(closeRequest);
                 LOG.info(response.toString());
             } catch (RequestException e) {
                 throw new Exception(e.getErrorMessage(), e);
@@ -238,27 +218,17 @@ class Oanda implements ForexBroker {
             return;
         }
 
-        for (ForexTrader trader : traders) {
+        for (ForexTrader trader : tradersByAccountId.values()) {
             trader.processUpdates(this);
         }
     }
 
-    private Account getAccount(String id) throws Exception {
-        Account account = accounts.get(id);
+    private Account getAccount(ForexTrader trader) throws Exception {
+        return tradersByAccountId.get(trader.getAccountNumber()).getAccount();
+    }
 
-        AccountChangesRequest request = new AccountChangesRequest(account.getId());
-        request.setSinceTransactionID(account.getLastTransactionID());
-
-        AccountChangesResponse changes = this.ctx.account.changes(request);
-        TransactionID lastTransactionID = changes.getLastTransactionID();
-
-        if (lastTransactionID.equals(account.getLastTransactionID())) {
-            return account;
-        }
-
-        // TODO: Could merge the changes here, but for now it's easiest to just retrieve a new account instance
-        accounts.invalidate(id);
-        return accounts.get(id);
+    private Context getContext(ForexTrader trader) throws Exception {
+        return tradersByAccountId.get(trader.getAccountNumber()).getContext();
     }
 
     private static String roundToFiveDecimalPlaces(long value) {
