@@ -19,8 +19,8 @@ public class OHLC {
         this.close = close;
     }
 
-    public OHLC inverse() {
-        return new OHLC(1 / open, 1 / high, 1 / close, 1 / low);
+    public OHLC inverse() { // Notice the high is the low, and the low is the high for the inverse
+        return new OHLC(1 / open, 1 / low, 1 / close, 1 / high);
     }
 
     public static OHLC aggregate(Collection<OHLC> values) {
