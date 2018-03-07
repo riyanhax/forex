@@ -4,9 +4,15 @@ import broker.ForexBroker;
 import broker.OpenPositionRequest;
 import broker.Quote;
 import broker.Stance;
+import com.google.common.base.Stopwatch;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.oanda.v20.Context;
 import com.oanda.v20.RequestException;
 import com.oanda.v20.account.Account;
+import com.oanda.v20.account.AccountChangesRequest;
+import com.oanda.v20.account.AccountChangesResponse;
 import com.oanda.v20.account.AccountID;
 import com.oanda.v20.order.MarketOrderRequest;
 import com.oanda.v20.order.OrderCreateRequest;
@@ -20,6 +26,7 @@ import com.oanda.v20.trade.TradeSpecifier;
 import com.oanda.v20.trade.TradeSummary;
 import com.oanda.v20.transaction.StopLossDetails;
 import com.oanda.v20.transaction.TakeProfitDetails;
+import com.oanda.v20.transaction.TransactionID;
 import market.ForexPortfolio;
 import market.ForexPortfolioValue;
 import market.ForexPosition;
@@ -32,8 +39,6 @@ import org.springframework.stereotype.Service;
 import trader.ForexTrader;
 
 import javax.annotation.Nullable;
-import java.math.RoundingMode;
-import java.text.DecimalFormat;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -57,13 +62,21 @@ class Oanda implements ForexBroker {
     private static final Logger LOG = LoggerFactory.getLogger(Oanda.class);
     private final OandaHistoryService service;
     private final List<OandaTrader> traders;
-    private final Context ctx;
-    private static final DecimalFormat decimalFormat = new DecimalFormat("#.#####");
     private final SystemTime clock;
+    private final Context ctx;
+    private final LoadingCache<String, Account> accounts = CacheBuilder.newBuilder()
+            .build(new CacheLoader<String, Account>() {
+                @Override
+                public Account load(String id) throws Exception {
+                    Stopwatch timer = Stopwatch.createStarted();
 
-    static {
-        decimalFormat.setRoundingMode(RoundingMode.CEILING);
-    }
+                    AccountID accountId = new AccountID(id);
+                    Account account = ctx.account.get(accountId).getAccount();
+
+                    LOG.info("Loaded account {} in {}", accountId, timer);
+                    return account;
+                }
+            });
 
     public Oanda(SystemTime clock, OandaProperties properties, OandaHistoryService service, LiveTraders traders) {
         this.clock = clock;
@@ -76,8 +89,7 @@ class Oanda implements ForexBroker {
     public ForexPortfolioValue getPortfolioValue(ForexTrader trader) throws Exception {
         LocalDateTime now = clock.now();
 
-        AccountID accountId = new AccountID(trader.getAccountNumber());
-        Account account = ctx.account.get(accountId).getAccount();
+        Account account = getAccount(trader.getAccountNumber());
 
         Set<ForexPositionValue> positionValues = account.getTrades().stream()
                 .map(it -> {
@@ -195,8 +207,7 @@ class Oanda implements ForexBroker {
 
         Instrument pair = position.getInstrument().getBrokerInstrument();
 
-        AccountID accountId = new AccountID(trader.getAccountNumber());
-        Account account = ctx.account.get(accountId).getAccount();
+        Account account = getAccount(trader.getAccountNumber());
         List<TradeSummary> trades = account.getTrades();
 
         Optional<TradeSummary> tradeSummary = trades.stream()
@@ -206,7 +217,7 @@ class Oanda implements ForexBroker {
         if (tradeSummary.isPresent()) {
 
             TradeSpecifier tradeSpecifier = new TradeSpecifier(tradeSummary.get().getId());
-            TradeCloseRequest closeRequest = new TradeCloseRequest(accountId, tradeSpecifier);
+            TradeCloseRequest closeRequest = new TradeCloseRequest(account.getId(), tradeSpecifier);
             closeRequest.setUnits("ALL");
 
             try {
@@ -230,6 +241,24 @@ class Oanda implements ForexBroker {
         for (ForexTrader trader : traders) {
             trader.processUpdates(this);
         }
+    }
+
+    private Account getAccount(String id) throws Exception {
+        Account account = accounts.get(id);
+
+        AccountChangesRequest request = new AccountChangesRequest(account.getId());
+        request.setSinceTransactionID(account.getLastTransactionID());
+
+        AccountChangesResponse changes = this.ctx.account.changes(request);
+        TransactionID lastTransactionID = changes.getLastTransactionID();
+
+        if (lastTransactionID.equals(account.getLastTransactionID())) {
+            return account;
+        }
+
+        // TODO: Could merge the changes here, but for now it's easiest to just retrieve a new account instance
+        accounts.invalidate(id);
+        return accounts.get(id);
     }
 
     private static String roundToFiveDecimalPlaces(long value) {
