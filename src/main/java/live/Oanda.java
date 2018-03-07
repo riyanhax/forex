@@ -1,12 +1,11 @@
 package live;
 
+import broker.Context;
 import broker.ForexBroker;
 import broker.OpenPositionRequest;
 import broker.Quote;
 import broker.Stance;
 import com.google.common.collect.Maps;
-import com.oanda.v20.Context;
-import com.oanda.v20.RequestException;
 import com.oanda.v20.account.Account;
 import com.oanda.v20.account.AccountID;
 import com.oanda.v20.order.MarketOrderRequest;
@@ -107,7 +106,7 @@ class Oanda implements ForexBroker {
         AccountID accountId = new AccountID(trader.getAccountNumber());
 
         PricingGetRequest request = new PricingGetRequest(accountId, Collections.singletonList(symbol));
-        PricingGetResponse resp = getContext(trader).pricing.get(request);
+        PricingGetResponse resp = getContext(trader).pricing().get(request);
         List<Price> prices = resp.getPrices();
 
         if (prices.isEmpty()) {
@@ -174,12 +173,8 @@ class Oanda implements ForexBroker {
         OrderCreateRequest orderCreateRequest = new OrderCreateRequest(accountId);
         orderCreateRequest.setOrder(marketOrderRequest);
 
-        try {
-            OrderCreateResponse orderCreateResponse = getContext(trader).order.create(orderCreateRequest);
-            LOG.info(orderCreateResponse.toString());
-        } catch (RequestException e) {
-            throw new Exception(e.getErrorMessage(), e);
-        }
+        OrderCreateResponse orderCreateResponse = getContext(trader).order().create(orderCreateRequest);
+        LOG.info(orderCreateResponse.toString());
     }
 
     @Override
@@ -200,12 +195,8 @@ class Oanda implements ForexBroker {
             TradeCloseRequest closeRequest = new TradeCloseRequest(account.getId(), tradeSpecifier);
             closeRequest.setUnits("ALL");
 
-            try {
-                TradeCloseResponse response = getContext(trader).trade.close(closeRequest);
-                LOG.info(response.toString());
-            } catch (RequestException e) {
-                throw new Exception(e.getErrorMessage(), e);
-            }
+            TradeCloseResponse response = getContext(trader).trade().close(closeRequest);
+            LOG.info(response.toString());
         } else {
             LOG.error("Didn't find a matching trade with Oanda! Position: {}  Oanda Trades: {}", position, trades);
         }

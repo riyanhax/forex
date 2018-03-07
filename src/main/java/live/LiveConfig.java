@@ -1,6 +1,6 @@
 package live;
 
-import com.oanda.v20.Context;
+import broker.Context;
 import market.InstrumentHistoryService;
 import market.MarketTime;
 import org.slf4j.Logger;
@@ -23,7 +23,7 @@ public class LiveConfig {
     LiveTraders traders(OandaProperties properties, MarketTime clock,
                         InstrumentHistoryService instrumentHistoryService) throws Exception {
 
-        Context ctx = new Context(properties.getApi().getEndpoint(), properties.getApi().getToken());
+        Context ctx = OandaContext.create(properties.getApi().getEndpoint(), properties.getApi().getToken());
 
         List<OandaTrader> traders = new ArrayList<>();
         for (TraderConfiguration it : properties.getTraders()) {

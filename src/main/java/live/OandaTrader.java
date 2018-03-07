@@ -1,9 +1,8 @@
 package live;
 
+import broker.Context;
+import broker.RequestException;
 import com.google.common.base.Stopwatch;
-import com.oanda.v20.Context;
-import com.oanda.v20.ExecuteException;
-import com.oanda.v20.RequestException;
 import com.oanda.v20.account.Account;
 import com.oanda.v20.account.AccountChangesRequest;
 import com.oanda.v20.account.AccountChangesResponse;
@@ -49,11 +48,11 @@ public class OandaTrader extends BaseTrader {
         return account;
     }
 
-    private boolean newTransactionsExist() throws ExecuteException, RequestException {
+    private boolean newTransactionsExist() throws RequestException {
         AccountChangesRequest request = new AccountChangesRequest(account.getId());
         request.setSinceTransactionID(account.getLastTransactionID());
 
-        AccountChangesResponse changes = this.ctx.account.changes(request);
+        AccountChangesResponse changes = this.ctx.account().changes(request);
         TransactionID lastTransactionID = changes.getLastTransactionID();
 
         return !lastTransactionID.equals(account.getLastTransactionID());
@@ -62,7 +61,7 @@ public class OandaTrader extends BaseTrader {
     private Account refresh() throws Exception {
         Stopwatch timer = Stopwatch.createStarted();
 
-        Account account = ctx.account.get(new AccountID(this.accountId)).getAccount();
+        Account account = ctx.account().get(new AccountID(this.accountId)).getAccount();
 
         LOG.info("Loaded account {} in {}", accountId, timer);
 
