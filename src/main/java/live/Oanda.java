@@ -161,7 +161,6 @@ class Oanda implements ForexBroker {
         Quote quote = getQuote(trader, pair);
         String symbol = pair.getSymbol();
         long basePrice = shorting ? quote.getAsk() : quote.getBid();
-        long pip = 10; // TODO DPJ: This needs to be configurable for JPY currencies
 
         MarketOrderRequest marketOrderRequest = new MarketOrderRequest();
         marketOrderRequest.setInstrument(symbol);
@@ -169,13 +168,13 @@ class Oanda implements ForexBroker {
 
         request.getStopLoss().ifPresent(stop -> {
             StopLossDetails stopLoss = new StopLossDetails();
-            stopLoss.setPrice(roundToFiveDecimalPlaces(basePrice - stop * pip * (shorting ? -1 : 1)));
+            stopLoss.setPrice(roundToFiveDecimalPlaces(basePrice - stop * (shorting ? -1 : 1)));
             marketOrderRequest.setStopLossOnFill(stopLoss);
         });
 
         request.getTakeProfit().ifPresent(profit -> {
             TakeProfitDetails takeProfit = new TakeProfitDetails();
-            takeProfit.setPrice(roundToFiveDecimalPlaces(basePrice + profit * pip * (shorting ? -1 : 1)));
+            takeProfit.setPrice(roundToFiveDecimalPlaces(basePrice + profit * (shorting ? -1 : 1)));
             marketOrderRequest.setTakeProfitOnFill(takeProfit);
         });
 
