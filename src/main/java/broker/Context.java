@@ -9,4 +9,6 @@ public interface Context {
     TradeContext trade();
 
     AccountContext account();
+
+    InstrumentContext instrument();
 }

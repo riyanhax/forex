@@ -1,13 +1,13 @@
 package live;
 
+import broker.Account;
+import broker.AccountChangesRequest;
+import broker.AccountChangesResponse;
+import broker.AccountID;
 import broker.Context;
 import broker.RequestException;
+import broker.TransactionID;
 import com.google.common.base.Stopwatch;
-import com.oanda.v20.account.Account;
-import com.oanda.v20.account.AccountChangesRequest;
-import com.oanda.v20.account.AccountChangesResponse;
-import com.oanda.v20.account.AccountID;
-import com.oanda.v20.transaction.TransactionID;
 import market.InstrumentHistoryService;
 import market.MarketTime;
 import org.slf4j.Logger;
@@ -24,7 +24,7 @@ public class OandaTrader extends BaseTrader {
     private Account account;
 
     OandaTrader(String accountId, Context ctx, TradingStrategy tradingStrategy, MarketTime clock,
-                       InstrumentHistoryService instrumentHistoryService) throws Exception {
+                InstrumentHistoryService instrumentHistoryService) throws Exception {
         super(tradingStrategy, clock, instrumentHistoryService);
         this.accountId = accountId;
         this.ctx = ctx;

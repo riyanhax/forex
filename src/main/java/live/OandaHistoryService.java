@@ -1,15 +1,12 @@
 package live;
 
+import broker.CandlestickData;
+import broker.CandlestickGranularity;
+import broker.Context;
+import broker.InstrumentCandlesRequest;
+import broker.InstrumentCandlesResponse;
+import broker.RequestException;
 import com.google.common.collect.Range;
-import com.oanda.v20.Context;
-import com.oanda.v20.RequestException;
-import com.oanda.v20.instrument.CandlestickData;
-import com.oanda.v20.instrument.CandlestickGranularity;
-import com.oanda.v20.instrument.InstrumentCandlesRequest;
-import com.oanda.v20.instrument.InstrumentCandlesResponse;
-import com.oanda.v20.instrument.WeeklyAlignment;
-import com.oanda.v20.primitives.DateTime;
-import com.oanda.v20.primitives.InstrumentName;
 import market.Instrument;
 import market.InstrumentHistoryService;
 import market.MarketTime;
@@ -24,6 +21,7 @@ import java.util.NavigableMap;
 import java.util.TreeMap;
 
 import static broker.Quote.pippetesFromDouble;
+import static java.time.DayOfWeek.FRIDAY;
 import static market.MarketTime.END_OF_TRADING_DAY_HOUR;
 import static market.MarketTime.ZONE;
 
@@ -35,7 +33,7 @@ class OandaHistoryService implements InstrumentHistoryService {
     private final Context ctx;
 
     OandaHistoryService(OandaProperties properties) {
-        this.ctx = new Context(properties.getApi().getEndpoint(), properties.getApi().getToken());
+        this.ctx = OandaContext.create(properties.getApi().getEndpoint(), properties.getApi().getToken());
     }
 
     @Override
@@ -55,8 +53,7 @@ class OandaHistoryService implements InstrumentHistoryService {
         ZonedDateTime start = ZonedDateTime.of(closed.lowerEndpoint(), ZONE);
         ZonedDateTime end = ZonedDateTime.of(exclusiveEnd, ZONE);
 
-        InstrumentName instrumentName = new InstrumentName(pair.getBrokerInstrument().getSymbol());
-        InstrumentCandlesRequest request = new InstrumentCandlesRequest(instrumentName);
+        InstrumentCandlesRequest request = new InstrumentCandlesRequest(pair.getBrokerInstrument().getSymbol());
         request.setPrice("M");
         request.setGranularity(granularity);
         // These dates get translated to UTC time via the formatter, which is what Oanda expects
@@ -68,11 +65,11 @@ class OandaHistoryService implements InstrumentHistoryService {
             request.setAlignmentTimezone(MarketTime.ZONE_NAME);
             request.setDailyAlignment(END_OF_TRADING_DAY_HOUR);
         } else if (granularity == CandlestickGranularity.W) {
-            request.setWeeklyAlignment(WeeklyAlignment.Friday);
+            request.setWeeklyAlignment(FRIDAY);
         }
 
         try {
-            InstrumentCandlesResponse response = ctx.instrument.candles(request);
+            InstrumentCandlesResponse response = ctx.instrument().candles(request);
 
             NavigableMap<LocalDateTime, OHLC> data = new TreeMap<>();
 
@@ -84,16 +81,16 @@ class OandaHistoryService implements InstrumentHistoryService {
                 }
                 CandlestickData c = it.getMid();
 
-                data.put(timestamp, new OHLC(pippetesFromDouble(c.getO().doubleValue()), pippetesFromDouble(c.getH().doubleValue()),
-                        pippetesFromDouble(c.getL().doubleValue()), pippetesFromDouble(c.getC().doubleValue())));
+                data.put(timestamp, new OHLC(pippetesFromDouble(c.getO()), pippetesFromDouble(c.getH()),
+                        pippetesFromDouble(c.getL()), pippetesFromDouble(c.getC())));
             });
             return data;
         } catch (RequestException e) {
-            throw new Exception(e.getErrorMessage(), e);
+            throw new Exception(e);
         }
     }
 
-    ZonedDateTime parseToZone(DateTime time, ZoneId zone) {
-        return ZonedDateTime.parse(time.subSequence(0, 19) + "Z", DATE_TIME_FORMATTER.withZone(zone));
+    ZonedDateTime parseToZone(String time, ZoneId zone) {
+        return ZonedDateTime.parse(time.substring(0, 19) + "Z", DATE_TIME_FORMATTER.withZone(zone));
     }
 }

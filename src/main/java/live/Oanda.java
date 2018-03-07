@@ -1,25 +1,25 @@
 package live;
 
+import broker.Account;
+import broker.AccountID;
 import broker.Context;
 import broker.ForexBroker;
+import broker.MarketOrderRequest;
 import broker.OpenPositionRequest;
+import broker.OrderCreateRequest;
+import broker.OrderCreateResponse;
+import broker.Price;
+import broker.PricingGetRequest;
+import broker.PricingGetResponse;
 import broker.Quote;
 import broker.Stance;
+import broker.StopLossDetails;
+import broker.TakeProfitDetails;
+import broker.TradeCloseRequest;
+import broker.TradeCloseResponse;
+import broker.TradeSpecifier;
+import broker.TradeSummary;
 import com.google.common.collect.Maps;
-import com.oanda.v20.account.Account;
-import com.oanda.v20.account.AccountID;
-import com.oanda.v20.order.MarketOrderRequest;
-import com.oanda.v20.order.OrderCreateRequest;
-import com.oanda.v20.order.OrderCreateResponse;
-import com.oanda.v20.pricing.Price;
-import com.oanda.v20.pricing.PricingGetRequest;
-import com.oanda.v20.pricing.PricingGetResponse;
-import com.oanda.v20.trade.TradeCloseRequest;
-import com.oanda.v20.trade.TradeCloseResponse;
-import com.oanda.v20.trade.TradeSpecifier;
-import com.oanda.v20.trade.TradeSummary;
-import com.oanda.v20.transaction.StopLossDetails;
-import com.oanda.v20.transaction.TakeProfitDetails;
 import market.ForexPortfolio;
 import market.ForexPortfolioValue;
 import market.ForexPosition;
@@ -72,15 +72,14 @@ class Oanda implements ForexBroker {
 
         Set<ForexPositionValue> positionValues = account.getTrades().stream()
                 .map(it -> {
-                    Instrument pair = Instrument.bySymbol.get(it.getInstrument().toString())
+                    Instrument pair = Instrument.bySymbol.get(it.getInstrument())
                             .getBrokerInstrument();
-                    double units = it.getCurrentUnits().doubleValue();
+                    int units = it.getCurrentUnits();
                     boolean inverse = units < 0d;
 
-                    long price = pippetesFromDouble(inverse ? (1 / it.getPrice().doubleValue()) :
-                            it.getPrice().doubleValue());
+                    long price = pippetesFromDouble(inverse ? (1 / it.getPrice()) : it.getPrice());
 
-                    long pl = pippetesFromDouble(it.getUnrealizedPL().doubleValue());
+                    long pl = pippetesFromDouble(it.getUnrealizedPL());
                     long currentPrice = price + pl;
 
                     ZonedDateTime utcOpened = service.parseToZone(it.getOpenTime(), ZONE_UTC);
@@ -94,7 +93,7 @@ class Oanda implements ForexBroker {
         Set<ForexPosition> positions = positionValues.stream().map(ForexPositionValue::getPosition).collect(Collectors.toSet());
         SortedSet<ForexPositionValue> closedTrades = emptySortedSet();
 
-        ForexPortfolio portfolio = new ForexPortfolio(pippetesFromDouble(account.getPl().doubleValue()), positions, closedTrades);
+        ForexPortfolio portfolio = new ForexPortfolio(pippetesFromDouble(account.getPl()), positions, closedTrades);
 
         return new ForexPortfolioValue(portfolio, now, positionValues);
     }
@@ -105,7 +104,7 @@ class Oanda implements ForexBroker {
 
         AccountID accountId = new AccountID(trader.getAccountNumber());
 
-        PricingGetRequest request = new PricingGetRequest(accountId, Collections.singletonList(symbol));
+        PricingGetRequest request = new PricingGetRequest(accountId, Collections.singleton(symbol));
         PricingGetResponse resp = getContext(trader).pricing().get(request);
         List<Price> prices = resp.getPrices();
 
@@ -169,8 +168,7 @@ class Oanda implements ForexBroker {
             marketOrderRequest.setTakeProfitOnFill(takeProfit);
         });
 
-        AccountID accountId = new AccountID(trader.getAccountNumber());
-        OrderCreateRequest orderCreateRequest = new OrderCreateRequest(accountId);
+        OrderCreateRequest orderCreateRequest = new OrderCreateRequest(new AccountID(trader.getAccountNumber()));
         orderCreateRequest.setOrder(marketOrderRequest);
 
         OrderCreateResponse orderCreateResponse = getContext(trader).order().create(orderCreateRequest);
@@ -186,13 +184,13 @@ class Oanda implements ForexBroker {
         List<TradeSummary> trades = account.getTrades();
 
         Optional<TradeSummary> tradeSummary = trades.stream()
-                .filter(it -> it.getInstrument().toString().equals(pair.getSymbol()))
+                .filter(it -> it.getInstrument().equals(pair.getSymbol()))
                 .findFirst();
 
         if (tradeSummary.isPresent()) {
 
-            TradeSpecifier tradeSpecifier = new TradeSpecifier(tradeSummary.get().getId());
-            TradeCloseRequest closeRequest = new TradeCloseRequest(account.getId(), tradeSpecifier);
+            TradeSpecifier tradeSpecifier = new TradeSpecifier(tradeSummary.get());
+            TradeCloseRequest closeRequest = new TradeCloseRequest(new AccountID(account.getId().toString()), tradeSpecifier);
             closeRequest.setUnits("ALL");
 
             TradeCloseResponse response = getContext(trader).trade().close(closeRequest);
