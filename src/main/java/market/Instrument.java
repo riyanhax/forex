@@ -40,10 +40,6 @@ public enum Instrument {
         return inverse;
     }
 
-    public double getPip() {
-        return 0.0001d;
-    }
-
     public abstract Instrument getOpposite();
 
     public static final Map<String, Instrument> bySymbol = Maps.uniqueIndex(Arrays.asList(Instrument.values()),

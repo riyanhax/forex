@@ -38,6 +38,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import static broker.Quote.pippetesFromDouble;
 import static market.CandleTimeFrame.FIFTEEN_MINUTE;
 import static market.CandleTimeFrame.FIVE_MINUTE;
 import static market.CandleTimeFrame.FOUR_HOURS;
@@ -120,10 +121,10 @@ class HistoryDataCurrencyPairService implements CurrencyPairHistoryService {
                                 OffsetDateTime dateTime = parsedDate.atOffset(ZoneOffset.ofHours(-5));
                                 LocalDateTime dateTimeForLocal = dateTime.atZoneSameInstant(clock.getZone()).toLocalDateTime();
 
-                                double open = Double.parseDouble(parts[part++]);
-                                double high = Double.parseDouble(parts[part++]);
-                                double low = Double.parseDouble(parts[part++]);
-                                double close = Double.parseDouble(parts[part]);
+                                long open = pippetesFromDouble(Double.parseDouble(parts[part++]));
+                                long high =  pippetesFromDouble(Double.parseDouble(parts[part++]));
+                                long low =   pippetesFromDouble(Double.parseDouble(parts[part++]));
+                                long close = pippetesFromDouble(Double.parseDouble(parts[part]));
 
                                 values.put(dateTimeForLocal, new OHLC(open, high, low, close));
 

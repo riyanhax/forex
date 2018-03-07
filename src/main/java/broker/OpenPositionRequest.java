@@ -8,30 +8,30 @@ import java.util.Optional;
 
 public class OpenPositionRequest {
     private final Instrument pair;
-    private final Double limit;
-    private final Double stopLoss;
-    private final Double takeProfit;
+    private final Long limit;
+    private final Long stopLoss;
+    private final Long takeProfit;
 
-    public OpenPositionRequest(Instrument pair, @Nullable Double limit, @Nullable Double stopLoss, @Nullable Double takeProfit) {
+    public OpenPositionRequest(Instrument pair, @Nullable Long limit, @Nullable Long stopLossPippetes, @Nullable Long takeProfitPippetes) {
         this.pair = pair;
         this.limit = limit;
-        this.stopLoss = stopLoss;
-        this.takeProfit = takeProfit;
+        this.stopLoss = stopLossPippetes;
+        this.takeProfit = takeProfitPippetes;
     }
 
     public Instrument getPair() {
         return pair;
     }
 
-    public Optional<Double> getLimit() {
+    public Optional<Long> getLimit() {
         return Optional.ofNullable(limit);
     }
 
-    public Optional<Double> getStopLoss() {
+    public Optional<Long> getStopLoss() {
         return Optional.ofNullable(stopLoss);
     }
 
-    public Optional<Double> getTakeProfit() {
+    public Optional<Long> getTakeProfit() {
         return Optional.ofNullable(takeProfit);
     }
 

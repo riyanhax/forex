@@ -28,12 +28,12 @@ class OrdersSpec extends Specification {
         expectedType.isAssignableFrom(order.class)
         order.units == 10
         order.instrument == EURUSD
-        order.limit() == Optional.of(2.550d)
+        order.limit() == Optional.of(255000L)
 
         where:
         type   | order                                     | expectedType
-        'buy'  | Orders.buyLimitOrder(10, EURUSD, 2.550d)  | BuyLimitOrder
-        'sell' | Orders.sellLimitOrder(10, EURUSD, 2.550d) | SellLimitOrder
+        'buy'  | Orders.buyLimitOrder(10, EURUSD, 255000L)  | BuyLimitOrder
+        'sell' | Orders.sellLimitOrder(10, EURUSD, 255000L) | SellLimitOrder
     }
 
 //    @Unroll

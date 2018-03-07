@@ -4,6 +4,8 @@ import broker.Quote;
 import com.google.common.base.MoreObjects;
 import com.oanda.v20.pricing.Price;
 
+import static broker.Quote.pippetesFromDouble;
+
 public class OandaQuote implements Quote {
     private final Price price;
 
@@ -12,13 +14,13 @@ public class OandaQuote implements Quote {
     }
 
     @Override
-    public double getBid() {
-        return price.getCloseoutBid().doubleValue();
+    public long getBid() {
+        return pippetesFromDouble(price.getCloseoutBid().doubleValue());
     }
 
     @Override
-    public double getAsk() {
-        return price.getCloseoutAsk().doubleValue();
+    public long getAsk() {
+        return pippetesFromDouble(price.getCloseoutAsk().doubleValue());
     }
 
     @Override

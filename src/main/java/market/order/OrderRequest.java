@@ -16,7 +16,7 @@ public interface OrderRequest extends Order {
 
     OrderStatus getStatus();
 
-    Optional<Double> getExecutionPrice();
+    Optional<Long> getExecutionPrice();
 
     LocalDateTime getProcessedDate();
 
@@ -29,7 +29,7 @@ public interface OrderRequest extends Order {
         return new OrderRequestImpl(order, UUID.randomUUID().toString(), clock.now());
     }
 
-    static OrderRequest executed(OrderRequest order, MarketTime clock, double price) {
+    static OrderRequest executed(OrderRequest order, MarketTime clock, long price) {
         return new OrderRequestImpl(order, order.getId(), clock.now(), OrderStatus.EXECUTED, clock.now(), price);
     }
 
@@ -42,14 +42,14 @@ public interface OrderRequest extends Order {
         private final String id;
         private final LocalDateTime submissionDate;
         private final LocalDateTime processedDate;
-        private final Double executionPrice;
+        private final Long executionPrice;
         private final OrderStatus status;
 
         public OrderRequestImpl(Order order, String id, LocalDateTime submissionDate) {
             this(order, id, submissionDate, OrderStatus.OPEN, null, null);
         }
 
-        public OrderRequestImpl(Order order, String id, LocalDateTime submissionDate, OrderStatus status, @Nullable LocalDateTime processedDate, @Nullable Double executionPrice) {
+        public OrderRequestImpl(Order order, String id, LocalDateTime submissionDate, OrderStatus status, @Nullable LocalDateTime processedDate, @Nullable Long executionPrice) {
             this.order = order;
             this.id = id;
             this.submissionDate = submissionDate;
@@ -74,7 +74,7 @@ public interface OrderRequest extends Order {
         }
 
         @Override
-        public Optional<Double> getExecutionPrice() {
+        public Optional<Long> getExecutionPrice() {
             return Optional.ofNullable(executionPrice);
         }
 
@@ -99,7 +99,7 @@ public interface OrderRequest extends Order {
         }
 
         @Override
-        public Optional<Double> limit() {
+        public Optional<Long> limit() {
             return order.limit();
         }
 

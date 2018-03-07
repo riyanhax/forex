@@ -32,16 +32,16 @@ public final class Orders {
     }
 
     private static class LimitOrderImpl extends OrderImpl implements LimitOrder {
-        private final double limit;
+        private final long limit;
 
-        public LimitOrderImpl(Instrument instrument, int units, double limit) {
+        public LimitOrderImpl(Instrument instrument, int units, long limit) {
             super(instrument, units);
 
             this.limit = limit;
         }
 
         @Override
-        public Optional<Double> limit() {
+        public Optional<Long> limit() {
             return Optional.of(limit);
         }
     }
@@ -59,13 +59,13 @@ public final class Orders {
     }
 
     private static class BuyLimitOrderImpl extends LimitOrderImpl implements BuyLimitOrder {
-        private BuyLimitOrderImpl(Instrument instrument, int units, double limit) {
+        private BuyLimitOrderImpl(Instrument instrument, int units, long limit) {
             super(instrument, units, limit);
         }
     }
 
     private static class SellLimitOrderImpl extends LimitOrderImpl implements SellLimitOrder {
-        private SellLimitOrderImpl(Instrument instrument, int units, double limit) {
+        private SellLimitOrderImpl(Instrument instrument, int units, long limit) {
             super(instrument, units, limit);
         }
     }
@@ -81,11 +81,11 @@ public final class Orders {
         return new SellMarketOrderImpl<>(instrument, shares);
     }
 
-    public static BuyLimitOrder buyLimitOrder(int shares, Instrument instrument, double limit) {
+    public static BuyLimitOrder buyLimitOrder(int shares, Instrument instrument, long limit) {
         return new BuyLimitOrderImpl(instrument, shares, limit);
     }
 
-    public static SellLimitOrder sellLimitOrder(int shares, Instrument instrument, double limit) {
+    public static SellLimitOrder sellLimitOrder(int shares, Instrument instrument, long limit) {
         return new SellLimitOrderImpl(instrument, shares, limit);
     }
 }

@@ -21,14 +21,14 @@ public enum TradingStrategies implements TradingStrategy {
         @Override
         public Optional<OpenPositionRequest> shouldOpenPosition(MarketTime clock, InstrumentHistoryService instrumentHistoryService) {
             Instrument pair = TradingStrategies.randomInstrument();
-            return Optional.of(new OpenPositionRequest(pair, null, 30d, 60d));
+            return Optional.of(new OpenPositionRequest(pair, null, 300L, 600L));
         }
     },
     OPEN_RANDOM_POSITION_HIGH_FREQUENCY {
         @Override
         public Optional<OpenPositionRequest> shouldOpenPosition(MarketTime clock, InstrumentHistoryService instrumentHistoryService) {
             Instrument pair = TradingStrategies.randomInstrument();
-            return Optional.of(new OpenPositionRequest(pair, null, 10d, 10d));
+            return Optional.of(new OpenPositionRequest(pair, null, 100L, 100L));
         }
     },
     SMARTER_RANDOM_POSITION {
@@ -69,9 +69,9 @@ public enum TradingStrategies implements TradingStrategy {
 
                 boolean openPosition = currentHigh > previousHigh && previousHigh > thirdHigh && thirdHigh < fourthHigh && fourthHigh < fifthHigh;
                 if (openPosition) {
-                    return Optional.of(new OpenPositionRequest(pair, null, 30d, 60d));
+                    return Optional.of(new OpenPositionRequest(pair, null, 300L, 600L));
                 } else if (currentHigh < previousHigh && previousHigh < thirdHigh && thirdHigh > fourthHigh && fourthHigh > fifthHigh) {
-                    return Optional.of(new OpenPositionRequest(pair.getOpposite(), null, 30d, 60d));
+                    return Optional.of(new OpenPositionRequest(pair.getOpposite(), null, 300L, 600L));
                 }
             }
 

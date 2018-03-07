@@ -35,10 +35,10 @@ public class SimulatorForexTrader extends BaseTrader {
     }
 
     public void addPortfolioValueSnapshot(ForexPortfolioValue portfolioValue) {
-        if (drawdownPortfolio == null || drawdownPortfolio.pips() > portfolioValue.pips()) {
+        if (drawdownPortfolio == null || drawdownPortfolio.pipettes() > portfolioValue.pipettes()) {
             drawdownPortfolio = portfolioValue;
         }
-        if (profitPortfolio == null || profitPortfolio.pips() < portfolioValue.pips()) {
+        if (profitPortfolio == null || profitPortfolio.pipettes() < portfolioValue.pipettes()) {
             profitPortfolio = portfolioValue;
         }
         mostRecentPortfolio = portfolioValue;

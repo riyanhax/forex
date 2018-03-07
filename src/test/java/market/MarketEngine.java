@@ -49,7 +49,7 @@ public interface MarketEngine extends Market {
         }
 
         @Override
-        public double getPrice(Instrument instrument) {
+        public long getPrice(Instrument instrument) {
             return market.getPrice(instrument);
         }
 
@@ -125,10 +125,10 @@ public interface MarketEngine extends Market {
                 if (order.isExpired(clock.now())) {
                     updated = OrderRequest.cancelled(order, clock);
                 } else {
-                    double price = getPrice(order.getInstrument());
-                    Optional<Double> limit = order.limit();
+                    long price = getPrice(order.getInstrument());
+                    Optional<Long> limit = order.limit();
                     if (limit.isPresent()) {
-                        double limitPrice = limit.get();
+                        long limitPrice = limit.get();
                         if ((order.isBuyOrder() && price > limitPrice) ||
                                 (order.isSellOrder() && price < limitPrice)) {
                             continue; // Limit not met

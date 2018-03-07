@@ -23,8 +23,8 @@ public class ForexPortfolioValue implements Comparable<ForexPortfolioValue> {
         return portfolio;
     }
 
-    public double getPipsProfit() {
-        return portfolio.getPipsProfit();
+    public long getPipettesProfit() {
+        return portfolio.getPipettesProfit();
     }
 
     public Set<ForexPosition> getPositions() {
@@ -35,8 +35,8 @@ public class ForexPortfolioValue implements Comparable<ForexPortfolioValue> {
         return timestamp;
     }
 
-    public double pips() {
-        return getPipsProfit() + positionValues.stream().mapToDouble(ForexPositionValue::pips).sum();
+    public long pipettes() {
+        return getPipettesProfit() + positionValues.stream().mapToLong(ForexPositionValue::pipettes).sum();
     }
 
     public Set<ForexPositionValue> getPositionValues() {

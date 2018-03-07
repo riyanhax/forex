@@ -6,30 +6,32 @@ import com.google.common.collect.Iterables;
 
 import java.util.Collection;
 
-public class OHLC {
-    public final double open;
-    public final double high;
-    public final double low;
-    public final double close;
+import static broker.Quote.invert;
 
-    public OHLC(double open, double high, double low, double close) {
+public class OHLC {
+    public final long open;
+    public final long high;
+    public final long low;
+    public final long close;
+
+    public OHLC(long open, long high, long low, long close) {
         this.open = open;
         this.high = high;
         this.low = low;
         this.close = close;
     }
 
-    public OHLC inverse() { // Notice the high is the low, and the low is the high for the inverse
-        return new OHLC(1 / open, 1 / low, 1 / close, 1 / high);
+    public OHLC inverse() {
+        return new OHLC(invert(open), invert(low), invert(close), invert(high));
     }
 
     public static OHLC aggregate(Collection<OHLC> values) {
         Preconditions.checkArgument(!values.isEmpty());
 
-        double open = values.iterator().next().open;
-        double close = Iterables.getLast(values).close;
-        double high = Math.max(open, close);
-        double low = Math.min(open, close);
+        long open = values.iterator().next().open;
+        long close = Iterables.getLast(values).close;
+        long high = Math.max(open, close);
+        long low = Math.min(open, close);
 
         for (OHLC value : values) {
             high = Math.max(high, value.high);

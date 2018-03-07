@@ -4,21 +4,21 @@ import com.google.common.base.MoreObjects;
 
 public class BidAsk implements Quote {
 
-    private final double bid;
-    private final double ask;
+    private final long bid;
+    private final long ask;
 
-    public BidAsk(double bid, double ask) {
+    public BidAsk(long bid, long ask) {
         this.bid = bid;
         this.ask = ask;
     }
 
     @Override
-    public double getBid() {
+    public long getBid() {
         return bid;
     }
 
     @Override
-    public double getAsk() {
+    public long getAsk() {
         return ask;
     }
 

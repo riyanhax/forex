@@ -12,7 +12,7 @@ public interface MarketOrder extends Order {
     }
 
     @Override
-    default Optional<Double> limit() {
+    default Optional<Long> limit() {
         return Optional.empty();
     }
 }

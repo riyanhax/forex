@@ -43,6 +43,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import static broker.Quote.pipsFromPippetes;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
 import static market.MarketTime.formatRange;
@@ -139,11 +140,11 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
             }
 
             ForexPositionValue positionValue = positions.iterator().next();
-            double pipsProfit = positionValue.pips();
+            long pipsProfit = positionValue.pipettes();
 
-            // Close once we've lost or gained enough pips or if it's noon Friday
-            double stopLoss = openedPosition.getStopLoss().get();
-            double takeProfit = openedPosition.getTakeProfit().get();
+            // Close once we've lost or gained enough pipettes or if it's noon Friday
+            long stopLoss = openedPosition.getStopLoss().get();
+            long takeProfit = openedPosition.getTakeProfit().get();
 
             if (pipsProfit < -stopLoss || pipsProfit > takeProfit) {
                 closePosition(trader, positionValue.getPosition(), null);
@@ -160,17 +161,17 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
 
         tradersByStrategy.forEach((factory, traders) -> {
 
-            LOG.info("\n\n{}:", factory.getClass().getName());
+            LOG.info("\n\n{}:", factory.toString());
 
-            double averageProfit = 0d;
+            long averageProfit = 0;
 
-            SortedSet<ForexPortfolioValue> portfolios = new TreeSet<>(Comparator.comparing(ForexPortfolioValue::pips));
-            SortedSet<ForexPositionValue> tradesSortedByProfit = new TreeSet<>(Comparator.comparing(ForexPositionValue::pips));
+            SortedSet<ForexPortfolioValue> portfolios = new TreeSet<>(Comparator.comparing(ForexPortfolioValue::pipettes));
+            SortedSet<ForexPositionValue> tradesSortedByProfit = new TreeSet<>(Comparator.comparing(ForexPositionValue::pipettes));
 
             for (SimulatorForexTrader trader : traders) {
                 ForexPortfolioValue end = trader.getMostRecentPortfolio();
-                double endPips = end.pips();
-                LOG.info("End: {} pips at {}", endPips, formatTimestamp(end.getTimestamp()));
+                long endPips = end.pipettes();
+                LOG.info("End: {} pipettes at {}", endPips, formatTimestamp(end.getTimestamp()));
 
                 averageProfit += endPips;
 
@@ -189,13 +190,17 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
             ForexPortfolioValue drawdownPortfolio = portfolios.first();
             ForexPortfolioValue profitPortfolio = portfolios.last();
 
-            LOG.info("Worst trade: {} pips from {}", worstTrade.pips(), formatRange(worstTrade.getPosition().getOpened(), worstTrade.getTimestamp()));
-            LOG.info("Best trade: {} pips from {}", bestTrade.pips(), formatRange(bestTrade.getPosition().getOpened(), bestTrade.getTimestamp()));
-            LOG.info("Profitable trades: {}/{}", tradesSortedByProfit.stream().filter(it -> it.pips() > 0).count(), tradesSortedByProfit.size());
-            LOG.info("Highest drawdown: {} pips at {}", drawdownPortfolio.pips(), formatTimestamp(drawdownPortfolio.getTimestamp()));
-            LOG.info("Highest profit: {} pips at {}", profitPortfolio.pips(), formatTimestamp(profitPortfolio.getTimestamp()));
-            LOG.info("Average profit: {} pips from {}", averageProfit, formatRange(simulation.startTime, simulation.endTime));
+            LOG.info("Worst trade: {} from {}", profitLossDisplay(worstTrade.pipettes()), formatRange(worstTrade.getPosition().getOpened(), worstTrade.getTimestamp()));
+            LOG.info("Best trade: {} from {}", profitLossDisplay(bestTrade.pipettes()), formatRange(bestTrade.getPosition().getOpened(), bestTrade.getTimestamp()));
+            LOG.info("Profitable trades: {}/{}", tradesSortedByProfit.stream().filter(it -> it.pipettes() > 0).count(), tradesSortedByProfit.size());
+            LOG.info("Highest drawdown: {} at {}", profitLossDisplay(drawdownPortfolio.pipettes()), formatTimestamp(drawdownPortfolio.getTimestamp()));
+            LOG.info("Highest profit: {} at {}", profitLossDisplay(profitPortfolio.pipettes()), formatTimestamp(profitPortfolio.getTimestamp()));
+            LOG.info("Average profit: {} from {}", profitLossDisplay(averageProfit), formatRange(simulation.startTime, simulation.endTime));
         });
+    }
+
+    private static String profitLossDisplay(long pipettes) {
+        return String.format("%s pips, (%d pipettes)", pipsFromPippetes(pipettes), pipettes);
     }
 
     @Override
@@ -229,35 +234,35 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
 
     @Override
     public Quote getQuote(ForexTrader trader, Instrument pair) throws Exception {
-        double price = marketEngine.getPrice(pair);
-        double halfSpread = halfSpread(pair);
+        long price = marketEngine.getPrice(pair);
+        long halfSpread = halfSpread(pair);
 
         return new BidAsk(price - halfSpread, price + halfSpread);
     }
 
-    private double halfSpread(Instrument pair) {
-        return (simulation.pipSpread * pair.getPip()) / 2;
+    private long halfSpread(Instrument pair) {
+        return (simulation.pippeteSpread / 2);
     }
 
     @Override
     public void orderFilled(OrderRequest filled) {
         Instrument instrument = filled.getInstrument();
-        double commission = (filled.isBuyOrder() ? -1 : 1) * halfSpread(instrument);
-        double price = filled.getExecutionPrice().get() + commission;
+        long commission = (filled.isBuyOrder() ? -1 : 1) * halfSpread(instrument);
+        long price = filled.getExecutionPrice().get() + commission;
 
         ForexTrader trader = tradersByOrderId.get(filled.getId());
         ForexPortfolio oldPortfolio = trader.getPortfolio();
         ImmutableMap<Instrument, ForexPosition> positionsByInstrument = Maps.uniqueIndex(oldPortfolio.getPositions(), ForexPosition::getInstrument);
         Map<Instrument, ForexPosition> newPositions = new HashMap<>(positionsByInstrument);
         ForexPosition existingPosition = positionsByInstrument.get(instrument);
-        double newPipsProfit = oldPortfolio.getPipsProfit();
+        long newPipsProfit = oldPortfolio.getPipettesProfit();
         SortedSet<ForexPositionValue> closedTrades = new TreeSet<>(oldPortfolio.getClosedTrades());
 
         if (filled.isSellOrder()) {
             Objects.requireNonNull(existingPosition, "Go long on the inverse pair, instead of shorting the primary pair.");
 
             ForexPositionValue closedTrade = positionValue(existingPosition);
-            newPipsProfit += closedTrade.pips();
+            newPipsProfit += closedTrade.pipettes();
 
             newPositions.remove(instrument);
             closedTrades.add(closedTrade);
@@ -302,7 +307,7 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
 
         // Open a long position on USD/EUR to simulate a short position for EUR/USD
         Instrument pair = request.getPair();
-        Optional<Double> limit = request.getLimit();
+        Optional<Long> limit = request.getLimit();
 
         OrderRequest submitted;
         if (limit.isPresent()) {
@@ -321,7 +326,7 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
     }
 
     @Override
-    public void closePosition(ForexTrader trader, ForexPosition position, @Nullable Double limit) {
+    public void closePosition(ForexTrader trader, ForexPosition position, @Nullable Long limit) {
         OrderRequest submitted;
         if (limit == null) {
             SellMarketOrder order = Orders.sellMarketOrder(1, position.getInstrument());

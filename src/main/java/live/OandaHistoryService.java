@@ -23,6 +23,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
+import static broker.Quote.pippetesFromDouble;
 import static market.MarketTime.END_OF_TRADING_DAY_HOUR;
 import static market.MarketTime.ZONE;
 
@@ -83,8 +84,8 @@ class OandaHistoryService implements InstrumentHistoryService {
                 }
                 CandlestickData c = it.getMid();
 
-                data.put(timestamp, new OHLC(c.getO().doubleValue(), c.getH().doubleValue(),
-                        c.getL().doubleValue(), c.getC().doubleValue()));
+                data.put(timestamp, new OHLC(pippetesFromDouble(c.getO().doubleValue()), pippetesFromDouble(c.getH().doubleValue()),
+                        pippetesFromDouble(c.getL().doubleValue()), pippetesFromDouble(c.getC().doubleValue())));
             });
             return data;
         } catch (RequestException e) {

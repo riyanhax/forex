@@ -11,9 +11,9 @@ public class ForexPositionValue implements Comparable<ForexPositionValue> {
 
     private final ForexPosition position;
     private final LocalDateTime timestamp;
-    private final double currentPrice;
+    private final long currentPrice;
 
-    public ForexPositionValue(ForexPosition position, LocalDateTime timestamp, double currentPrice) {
+    public ForexPositionValue(ForexPosition position, LocalDateTime timestamp, long currentPrice) {
         this.position = position;
         this.timestamp = timestamp;
         this.currentPrice = currentPrice;
@@ -27,8 +27,8 @@ public class ForexPositionValue implements Comparable<ForexPositionValue> {
         return timestamp;
     }
 
-    public double pips() {
-        return position.pipsProfit(currentPrice);
+    public long pipettes() {
+        return position.pipettesProfit(currentPrice);
     }
 
     public Instrument getInstrument() {
@@ -39,7 +39,7 @@ public class ForexPositionValue implements Comparable<ForexPositionValue> {
         return position.getStance();
     }
 
-    public double getPrice() {
+    public long getPrice() {
         return position.getPrice();
     }
 
@@ -64,7 +64,7 @@ public class ForexPositionValue implements Comparable<ForexPositionValue> {
                 .add("position", position)
                 .add("timestamp", timestamp)
                 .add("currentPrice", currentPrice)
-                .add("pips", pips())
+                .add("pipettes", pipettes())
                 .toString();
     }
 

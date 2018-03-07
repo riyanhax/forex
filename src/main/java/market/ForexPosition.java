@@ -11,9 +11,9 @@ public class ForexPosition {
     private final LocalDateTime opened;
     private final Instrument pair;
     private final Stance stance;
-    private final double price;
+    private final long price;
 
-    public ForexPosition(LocalDateTime opened, Instrument pair, Stance stance, double price) {
+    public ForexPosition(LocalDateTime opened, Instrument pair, Stance stance, long price) {
         this.opened = opened;
         this.pair = pair;
         this.stance = stance;
@@ -32,7 +32,7 @@ public class ForexPosition {
         return stance;
     }
 
-    public double getPrice() {
+    public long getPrice() {
         return price;
     }
 
@@ -62,8 +62,8 @@ public class ForexPosition {
                 .toString();
     }
 
-    public double pipsProfit(double currentPrice) {
-        double difference = getStance() == Stance.LONG ? currentPrice - getPrice() : getPrice() - currentPrice;
-        return difference * (1 / getInstrument().getPip());
+    public long pipettesProfit(long currentPrice) {
+        long pippetesDifference = getStance() == Stance.LONG ? currentPrice - getPrice() : getPrice() - currentPrice;
+        return pippetesDifference;
     }
 }

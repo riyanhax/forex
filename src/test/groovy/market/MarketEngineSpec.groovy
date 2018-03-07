@@ -22,7 +22,7 @@ class MarketEngineSpec extends Specification {
     @Unroll
     def 'should be able to submit a #type market order'() {
 
-        def marketPrice = 1.05d
+        def marketPrice = 105000d
         MarketEngine marketEngine = MarketEngine.create(market, clock)
 
         when: 'a market order is submitted'
@@ -59,7 +59,7 @@ class MarketEngineSpec extends Specification {
     @Unroll
     def 'should be able to submit a #type limit order'() {
 
-        def marketPrice = 1.05d
+        def marketPrice = 105000d
         MarketEngine marketEngine = MarketEngine.create(market, clock)
 
         when: 'a limit order is submitted'
@@ -88,10 +88,10 @@ class MarketEngineSpec extends Specification {
         (expectedExecutionPrice.isPresent() ? 1 : 0) * broker.orderFilled(_ as OrderRequest)
 
         where:
-        type                         | order                             | expectedStatus       | expectedExecutionPrice
-        'buy (limit not satisfied)'  | buyLimitOrder(10, EURUSD, 1.0d)   | OrderStatus.OPEN     | Optional.empty()
-        'sell (limit not satisfied)' | sellLimitOrder(10, EURUSD, 1.10d) | OrderStatus.OPEN     | Optional.empty()
-        'buy (limit satisfied)'      | buyLimitOrder(10, EURUSD, 1.10d)  | OrderStatus.EXECUTED | Optional.of(1.05d)
-        'sell (limit satisfied)'     | sellLimitOrder(10, EURUSD, 1.0d)  | OrderStatus.EXECUTED | Optional.of(1.05d)
+        type                         | order                               | expectedStatus       | expectedExecutionPrice
+        'buy (limit not satisfied)'  | buyLimitOrder(10, EURUSD, 100000L)  | OrderStatus.OPEN     | Optional.empty()
+        'sell (limit not satisfied)' | sellLimitOrder(10, EURUSD, 110000L) | OrderStatus.OPEN     | Optional.empty()
+        'buy (limit satisfied)'      | buyLimitOrder(10, EURUSD, 110000L)  | OrderStatus.EXECUTED | Optional.of(105000L)
+        'sell (limit satisfied)'     | sellLimitOrder(10, EURUSD, 100000L) | OrderStatus.EXECUTED | Optional.of(105000L)
     }
 }

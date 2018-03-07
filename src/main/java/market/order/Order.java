@@ -13,7 +13,7 @@ public interface Order {
 
     Optional<Expiry> expiry();
 
-    Optional<Double> limit();
+    Optional<Long> limit();
 
     default boolean isSellOrder() {
         return false;
