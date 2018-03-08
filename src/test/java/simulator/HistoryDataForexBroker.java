@@ -64,6 +64,7 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
     private final Map<String, SimulatorForexTrader> tradersByAccountNumber = new HashMap<>();
 
     private Simulation simulation;
+    private SimulatorContext context;
 
     public HistoryDataForexBroker(MarketTime clock, MarketEngine marketEngine,
                                   InstrumentHistoryService instrumentHistoryService,
@@ -81,19 +82,26 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
         this.tradersByOrderId.clear();
         this.tradersByStrategy.clear();
         this.tradersByAccountNumber.clear();
+        this.context = new SimulatorContext(clock, instrumentHistoryService, marketEngine, simulation);
 
         marketEngine.init(simulation);
 
-        tradingStrategies.forEach(it -> tradersByStrategy.put(it, createInstances(it, simulation)));
+        tradingStrategies.forEach(it -> {
+            try {
+                tradersByStrategy.put(it, createInstances(it, simulation));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
         this.tradersByAccountNumber.putAll(tradersByStrategy.entrySet().stream()
                 .map(Map.Entry::getValue).flatMap(Collection::stream)
                 .collect(toMap(ForexTrader::getAccountNumber, identity())));
     }
 
-    private Collection<SimulatorForexTrader> createInstances(TradingStrategy tradingStrategy, Simulation simulation) {
+    private Collection<SimulatorForexTrader> createInstances(TradingStrategy tradingStrategy, Simulation simulation) throws Exception {
         List<SimulatorForexTrader> traders = new ArrayList<>();
         for (int i = 0; i < simulation.instancesPerTraderType; i++) {
-            traders.add(new SimulatorForexTrader(tradingStrategy, clock, instrumentHistoryService));
+            traders.add(new SimulatorForexTrader(tradingStrategy.toString() + "-" + i, context, tradingStrategy, clock, instrumentHistoryService));
         }
         return traders;
     }
@@ -292,11 +300,6 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
     @Override
     public boolean isClosed(LocalDate time) {
         return !marketEngine.isAvailable(time);
-    }
-
-    @Override
-    public OrderRequest getOrder(OrderRequest order) {
-        return marketEngine.getOrder(order);
     }
 
     @Override

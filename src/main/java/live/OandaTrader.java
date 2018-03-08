@@ -23,7 +23,7 @@ public class OandaTrader extends BaseTrader {
     private final Context ctx;
     private Account account;
 
-    OandaTrader(String accountId, Context ctx, TradingStrategy tradingStrategy, MarketTime clock,
+    public OandaTrader(String accountId, Context ctx, TradingStrategy tradingStrategy, MarketTime clock,
                 InstrumentHistoryService instrumentHistoryService) throws Exception {
         super(tradingStrategy, clock, instrumentHistoryService);
         this.accountId = accountId;

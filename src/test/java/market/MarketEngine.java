@@ -9,7 +9,6 @@ import market.order.SellLimitOrder;
 import market.order.SellMarketOrder;
 import org.slf4j.LoggerFactory;
 import simulator.Simulation;
-import simulator.SimulatorForexBroker;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -23,13 +22,13 @@ public interface MarketEngine extends Market {
 
     OrderRequest getOrder(OrderRequest order);
 
-    OrderRequest submit(SimulatorForexBroker broker, BuyMarketOrder p);
+    OrderRequest submit(OrderListener broker, BuyMarketOrder p);
 
-    OrderRequest submit(SimulatorForexBroker broker, SellMarketOrder p);
+    OrderRequest submit(OrderListener broker, SellMarketOrder p);
 
-    OrderRequest submit(SimulatorForexBroker broker, BuyLimitOrder p);
+    OrderRequest submit(OrderListener broker, BuyLimitOrder p);
 
-    OrderRequest submit(SimulatorForexBroker broker, SellLimitOrder p);
+    OrderRequest submit(OrderListener broker, SellLimitOrder p);
 
     static MarketEngine create(ForexMarket market, MarketTime clock) {
         return new MarketEngineImpl(market, clock);
@@ -41,7 +40,7 @@ public interface MarketEngine extends Market {
         private final MarketTime clock;
         private final List<String> openOrders = new ArrayList<>();
         private final Map<String, OrderRequest> ordersById = new HashMap<>();
-        private final Map<String, SimulatorForexBroker> brokersByOrder = new HashMap<>();
+        private final Map<String, OrderListener> listenersByOrder = new HashMap<>();
 
         MarketEngineImpl(ForexMarket market, MarketTime clock) {
             this.market = market;
@@ -66,7 +65,7 @@ public interface MarketEngine extends Market {
         @Override
         public void init(Simulation simulation) {
             ordersById.clear();
-            brokersByOrder.clear();
+            listenersByOrder.clear();
 
             market.init(simulation);
         }
@@ -89,26 +88,26 @@ public interface MarketEngine extends Market {
         }
 
         @Override
-        public OrderRequest submit(SimulatorForexBroker broker, BuyMarketOrder order) {
+        public OrderRequest submit(OrderListener broker, BuyMarketOrder order) {
             return orderSubmitted(broker, order);
         }
 
         @Override
-        public OrderRequest submit(SimulatorForexBroker broker, BuyLimitOrder order) {
+        public OrderRequest submit(OrderListener broker, BuyLimitOrder order) {
             return orderSubmitted(broker, order);
         }
 
         @Override
-        public OrderRequest submit(SimulatorForexBroker broker, SellMarketOrder order) {
+        public OrderRequest submit(OrderListener broker, SellMarketOrder order) {
             return orderSubmitted(broker, order);
         }
 
         @Override
-        public OrderRequest submit(SimulatorForexBroker broker, SellLimitOrder order) {
+        public OrderRequest submit(OrderListener broker, SellLimitOrder order) {
             return orderSubmitted(broker, order);
         }
 
-        private OrderRequest orderSubmitted(SimulatorForexBroker broker, Order order) {
+        private OrderRequest orderSubmitted(OrderListener broker, Order order) {
             OrderRequest open = OrderRequest.open(order, clock);
             addOrder(broker, open);
 
@@ -141,7 +140,7 @@ public interface MarketEngine extends Market {
                 ordersById.put(orderId, updated);
                 iter.remove();
 
-                SimulatorForexBroker broker = brokersByOrder.get(orderId);
+                OrderListener broker = listenersByOrder.get(orderId);
 
                 if (updated.getStatus() == OrderStatus.CANCELLED) {
                     broker.orderCancelled(updated);
@@ -151,12 +150,12 @@ public interface MarketEngine extends Market {
             }
         }
 
-        private void addOrder(SimulatorForexBroker broker, OrderRequest order) {
+        private void addOrder(OrderListener broker, OrderRequest order) {
             String id = order.getId();
 
             openOrders.add(id);
             ordersById.put(id, order);
-            brokersByOrder.put(id, broker);
+            listenersByOrder.put(id, broker);
         }
     }
 }
