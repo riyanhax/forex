@@ -14,9 +14,7 @@ import market.OHLC;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
@@ -27,8 +25,6 @@ import static market.MarketTime.ZONE;
 
 @Service
 class OandaHistoryService implements InstrumentHistoryService {
-
-    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ISO_INSTANT;
 
     private final Context ctx;
 
@@ -88,9 +84,5 @@ class OandaHistoryService implements InstrumentHistoryService {
         } catch (RequestException e) {
             throw new Exception(e);
         }
-    }
-
-    ZonedDateTime parseToZone(String time, ZoneId zone) {
-        return ZonedDateTime.parse(time.substring(0, 19) + "Z", DATE_TIME_FORMATTER.withZone(zone));
     }
 }

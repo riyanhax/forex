@@ -25,6 +25,7 @@ import market.ForexPortfolioValue;
 import market.ForexPosition;
 import market.ForexPositionValue;
 import market.Instrument;
+import market.InstrumentHistoryService;
 import market.MarketTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,14 +55,14 @@ import static market.MarketTime.ZONE_UTC;
 class Oanda implements ForexBroker {
 
     private static final Logger LOG = LoggerFactory.getLogger(Oanda.class);
-    private final OandaHistoryService service;
+    private final InstrumentHistoryService service;
     private final Map<String, OandaTrader> tradersByAccountId;
-    private final SystemTime clock;
+    private final MarketTime clock;
 
-    public Oanda(SystemTime clock, OandaHistoryService service, LiveTraders traders) {
+    public Oanda(MarketTime clock, InstrumentHistoryService service, LiveTraders traders) {
         this.clock = clock;
         this.service = service;
-        this.tradersByAccountId = Maps.uniqueIndex(traders.getTraders(), OandaTrader::getAccountNumber);
+        this.tradersByAccountId = Maps.uniqueIndex(traders.getTraders(), ForexTrader::getAccountNumber);
     }
 
     @Override
