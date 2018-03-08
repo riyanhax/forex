@@ -10,7 +10,6 @@ import market.MarketTime;
 import trader.TradingStrategy;
 
 import static java.util.Collections.emptySet;
-import static java.util.Collections.emptySortedSet;
 
 public class SimulatorForexTrader extends OandaTrader {
 
@@ -21,9 +20,10 @@ public class SimulatorForexTrader extends OandaTrader {
     // This should be managed in the market
     private OpenPositionRequest openedPosition;
 
-    public SimulatorForexTrader(String accountId, Context context, TradingStrategy tradingStrategy, MarketTime clock, InstrumentHistoryService instrumentHistoryService) throws Exception {
+    public SimulatorForexTrader(String accountId, Context context, TradingStrategy tradingStrategy,
+                                MarketTime clock, InstrumentHistoryService instrumentHistoryService) throws Exception {
         super(accountId, context, tradingStrategy, clock, instrumentHistoryService);
-        setPortfolio(new ForexPortfolio(0, emptySet(), emptySortedSet()));
+        setPortfolio(new ForexPortfolio(0, emptySet()));
     }
 
     public void addPortfolioValueSnapshot(ForexPortfolioValue portfolioValue) {

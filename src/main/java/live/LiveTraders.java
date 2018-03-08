@@ -3,13 +3,13 @@ package live;
 import java.util.List;
 
 /**
- *  Container for all configured traders from application.yml
+ * Container for all configured traders from application.yml
  */
-class LiveTraders {
+public class LiveTraders {
 
     private final List<OandaTrader> traders;
 
-    LiveTraders(List<OandaTrader> traders) {
+    public LiveTraders(List<OandaTrader> traders) {
         this.traders = traders;
     }
 

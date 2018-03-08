@@ -12,7 +12,7 @@ public interface Quote {
     long getAsk();
 
     static long pippetesFromDouble(double value) {
-        return (long) (value * PIPPETE_CONVERSION);
+        return Math.round(value * PIPPETE_CONVERSION);
     }
 
     static double doubleFromPippetes(long value) {

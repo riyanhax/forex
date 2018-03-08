@@ -6,7 +6,6 @@ import broker.AccountChangesResponse;
 import broker.AccountContext;
 import broker.AccountGetResponse;
 import broker.AccountID;
-import broker.BidAsk;
 import broker.Candlestick;
 import broker.CandlestickData;
 import broker.Context;
@@ -48,6 +47,7 @@ import market.order.Orders;
 import market.order.SellMarketOrder;
 
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -72,6 +72,7 @@ public class SimulatorContext implements Context, OrderListener {
     private final InstrumentHistoryService instrumentHistoryService;
     private final Map<String, ForexPortfolio> mostRecentPortfolio = new HashMap<>();
     private final Map<String, AccountID> accountIdsByOrderId = new HashMap<>();
+    private final Map<String, SortedSet<ForexPositionValue>> closedTrades = new HashMap<>();
 
     @Override
     public void orderCancelled(OrderRequest filled) {
@@ -81,17 +82,16 @@ public class SimulatorContext implements Context, OrderListener {
     @Override
     public void orderFilled(OrderRequest filled) {
         Instrument instrument = filled.getInstrument();
-        long commission = (filled.isBuyOrder() ? -1 : 1) * halfSpread(instrument);
-        long price = filled.getExecutionPrice().get() + commission;
+        long executionPrice = filled.getExecutionPrice().get();
+        long price = adjustPriceForSpread(executionPrice, instrument, filled.isBuyOrder() ? Stance.LONG : Stance.SHORT);
 
         AccountID accountID = accountIdsByOrderId.remove(filled.getId());
-        ForexPortfolio oldPortfolio = mostRecentPortfolio.get(accountID.getId());
+        ForexPortfolio oldPortfolio = mostRecentPortfolio(accountID);
 
         ImmutableMap<Instrument, ForexPosition> positionsByInstrument = Maps.uniqueIndex(oldPortfolio.getPositions(), ForexPosition::getInstrument);
         Map<Instrument, ForexPosition> newPositions = new HashMap<>(positionsByInstrument);
         ForexPosition existingPosition = positionsByInstrument.get(instrument);
         long newPipsProfit = oldPortfolio.getPipettesProfit();
-        SortedSet<ForexPositionValue> closedTrades = new TreeSet<>(oldPortfolio.getClosedTrades());
 
         if (filled.isSellOrder()) {
             Objects.requireNonNull(existingPosition, "Go long on the inverse pair, instead of shorting the primary pair.");
@@ -100,7 +100,17 @@ public class SimulatorContext implements Context, OrderListener {
             newPipsProfit += closedTrade.pipettes();
 
             newPositions.remove(instrument);
-            closedTrades.add(closedTrade);
+
+            SortedSet<ForexPositionValue> closedTradesForAccount = closedTrades.get(accountID.getId());
+            if (closedTradesForAccount == null) {
+                closedTradesForAccount = new TreeSet<>();
+            }
+            closedTradesForAccount.add(closedTrade);
+            closedTrades.put(accountID.getId(), closedTradesForAccount);
+
+            long expectedPipettes = closedTradesForAccount.stream().mapToLong(ForexPositionValue::pipettes).sum();
+            Preconditions.checkArgument(expectedPipettes == newPipsProfit);
+
         } else if (filled.isBuyOrder()) {
             Preconditions.checkArgument(existingPosition == null, "Shouldn't have more than one position open for a pair at a time!");
             Preconditions.checkArgument(!positionsByInstrument.containsKey(instrument.getOpposite()), "Shouldn't have more than one position open for a pair at a time!");
@@ -108,7 +118,7 @@ public class SimulatorContext implements Context, OrderListener {
             newPositions.put(instrument, new ForexPosition(clock.now(), instrument, Stance.LONG, price));
         }
 
-        ForexPortfolio portfolio = new ForexPortfolio(newPipsProfit, new HashSet<>(newPositions.values()), closedTrades);
+        ForexPortfolio portfolio = new ForexPortfolio(newPipsProfit, new HashSet<>(newPositions.values()));
         mostRecentPortfolio.put(accountID.getId(), portfolio);
     }
 
@@ -120,10 +130,11 @@ public class SimulatorContext implements Context, OrderListener {
             Instrument pair = Instrument.bySymbol.get(instrument);
 
             long price = marketEngine.getPrice(pair);
-            long halfSpread = halfSpread(pair);
+            double bid = doubleFromPippetes(adjustPriceForSpread(price, pair, Stance.LONG));
+            double ask = doubleFromPippetes(adjustPriceForSpread(price, pair, Stance.SHORT));
 
             List<Price> prices = new ArrayList<>();
-            prices.add(new Price(doubleFromPippetes(price - halfSpread), doubleFromPippetes(price + halfSpread)));
+            prices.add(new Price(bid, ask));
 
             return new PricingGetResponse(prices);
         }
@@ -164,8 +175,8 @@ public class SimulatorContext implements Context, OrderListener {
         }
 
         private TransactionID getLatestTransactionId(AccountID accountID) {
-            SortedSet<ForexPositionValue> closedTrades = mostRecentPortfolio(accountID).getClosedTrades();
-            return new TransactionID(closedTrades.isEmpty() ? "EMPTY" : closedTrades.last().getTimestamp().toString());
+            String transactionId = clock.now().toString();
+            return new TransactionID(transactionId);
         }
 
         @Override
@@ -177,8 +188,10 @@ public class SimulatorContext implements Context, OrderListener {
 
             List<TradeSummary> trades = portfolioValue.getPositionValues().stream().map(it ->
                     new TradeSummary(it.getInstrument().getSymbol(), 1, doubleFromPippetes(it.getPrice()),
-                            doubleFromPippetes(it.pipettes()), it.getTimestamp().format(DATE_TIME_FORMATTER) + "Z",
-                            it.getTimestamp().toString())).collect(Collectors.toList());
+                            doubleFromPippetes(it.pipettes()),
+                            ZonedDateTime.of(it.getPosition().getOpened(), MarketTime.ZONE).format(DATE_TIME_FORMATTER),
+                            it.getTimestamp().toString()))
+                    .collect(Collectors.toList());
 
             Account account = new Account(accountID, latestTransactionId,
                     trades, doubleFromPippetes(portfolioValue.getPipettesProfit()));
@@ -202,10 +215,9 @@ public class SimulatorContext implements Context, OrderListener {
         private ForexPositionValue positionValue(ForexPosition position) {
             Instrument pair = position.getInstrument();
             long price = marketEngine.getPrice(pair);
-            long halfSpread = halfSpread(pair);
+            long currentPrice = adjustPriceForSpread(price, pair, position.getStance());
 
-            BidAsk bidAsk = new BidAsk(price - halfSpread, price + halfSpread);
-            return new ForexPositionValue(position, clock.now(), position.getStance() == Stance.LONG ? bidAsk.getBid() : bidAsk.getAsk());
+            return new ForexPositionValue(position, clock.now(), currentPrice);
         }
     }
 
@@ -240,9 +252,13 @@ public class SimulatorContext implements Context, OrderListener {
         this.simulation = simulation;
     }
 
+    SortedSet<ForexPositionValue> closedTradesForAccountId(String id) {
+        return closedTrades.get(id);
+    }
+
     private ForexPortfolio mostRecentPortfolio(AccountID accountID) {
         return mostRecentPortfolio.getOrDefault(accountID.getId(),
-                new ForexPortfolio(0, Collections.emptySet(), Collections.emptySortedSet()));
+                new ForexPortfolio(0, Collections.emptySet()));
     }
 
     @Override
@@ -268,6 +284,16 @@ public class SimulatorContext implements Context, OrderListener {
     @Override
     public InstrumentContext instrument() {
         return new SimulatorInstrumentContext();
+    }
+
+    private long adjustPriceForSpread(long price, Instrument instrument, Stance stance) {
+        long halfSpread = halfSpread(instrument);
+
+        long bid = price - halfSpread;
+        long ask = price + halfSpread;
+
+        // Selling gets the bid price, buying gets the ask price.
+        return stance == Stance.LONG ? bid : ask;
     }
 
     private long halfSpread(Instrument pair) {

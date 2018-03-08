@@ -16,6 +16,7 @@ public class Simulation {
 
     public Simulation() {
         this(of(2017, JANUARY, 1, 1, 0), of(2017, DECEMBER, 31, 23, 59), 0L);
+
     }
 
     public Simulation(LocalDateTime startTime, LocalDateTime endTime, long realDelayPerMinute) {

@@ -14,6 +14,7 @@ oanda:
 spring:
   profiles: simulation
 
+logging.level.live: warn
 logging.level.trader: warn
 
 ---

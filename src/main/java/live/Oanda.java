@@ -42,17 +42,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.stream.Collectors;
 
 import static broker.Quote.doubleFromPippetes;
 import static broker.Quote.pippetesFromDouble;
-import static java.util.Collections.emptySortedSet;
 import static market.MarketTime.ZONE;
 import static market.MarketTime.ZONE_UTC;
 
 @Service
-class Oanda implements ForexBroker {
+public class Oanda implements ForexBroker {
 
     private static final Logger LOG = LoggerFactory.getLogger(Oanda.class);
     private final InstrumentHistoryService service;
@@ -92,9 +90,8 @@ class Oanda implements ForexBroker {
                 }).collect(Collectors.toSet());
 
         Set<ForexPosition> positions = positionValues.stream().map(ForexPositionValue::getPosition).collect(Collectors.toSet());
-        SortedSet<ForexPositionValue> closedTrades = emptySortedSet();
 
-        ForexPortfolio portfolio = new ForexPortfolio(pippetesFromDouble(account.getPl()), positions, closedTrades);
+        ForexPortfolio portfolio = new ForexPortfolio(pippetesFromDouble(account.getPl()), positions);
 
         return new ForexPortfolioValue(portfolio, now, positionValues);
     }
@@ -191,7 +188,7 @@ class Oanda implements ForexBroker {
         if (tradeSummary.isPresent()) {
 
             TradeSpecifier tradeSpecifier = new TradeSpecifier(tradeSummary.get());
-            TradeCloseRequest closeRequest = new TradeCloseRequest(new AccountID(account.getId().toString()), tradeSpecifier);
+            TradeCloseRequest closeRequest = new TradeCloseRequest(new AccountID(account.getId().getId()), tradeSpecifier);
             closeRequest.setUnits("ALL");
 
             TradeCloseResponse response = getContext(trader).trade().close(closeRequest);
