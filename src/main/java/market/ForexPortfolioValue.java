@@ -1,19 +1,21 @@
 package market;
 
+import broker.Quote;
+import broker.TradeSummary;
 import com.google.common.base.MoreObjects;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 public class ForexPortfolioValue implements Comparable<ForexPortfolioValue> {
 
     private final ForexPortfolio portfolio;
     private final LocalDateTime timestamp;
-    private final Set<ForexPositionValue> positionValues;
+    private final List<TradeSummary> positionValues;
 
-    public ForexPortfolioValue(ForexPortfolio portfolio, LocalDateTime timestamp, Set<ForexPositionValue> positionValues) {
+    public ForexPortfolioValue(ForexPortfolio portfolio, LocalDateTime timestamp, List<TradeSummary> positionValues) {
         this.portfolio = portfolio;
         this.timestamp = timestamp;
         this.positionValues = positionValues;
@@ -27,7 +29,7 @@ public class ForexPortfolioValue implements Comparable<ForexPortfolioValue> {
         return portfolio.getPipettesProfit();
     }
 
-    public Set<ForexPosition> getPositions() {
+    public List<TradeSummary> getPositions() {
         return portfolio.getPositions();
     }
 
@@ -36,10 +38,13 @@ public class ForexPortfolioValue implements Comparable<ForexPortfolioValue> {
     }
 
     public long pipettes() {
-        return getPipettesProfit() + positionValues.stream().mapToLong(ForexPositionValue::pipettes).sum();
+        return getPipettesProfit() + positionValues.stream()
+                .map(TradeSummary::getUnrealizedPL)
+                .mapToLong(Quote::pippetesFromDouble)
+                .sum();
     }
 
-    public Set<ForexPositionValue> getPositionValues() {
+    public List<TradeSummary> getPositionValues() {
         return positionValues;
     }
 

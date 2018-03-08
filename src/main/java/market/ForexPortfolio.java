@@ -1,16 +1,17 @@
 package market;
 
+import broker.TradeSummary;
 import com.google.common.base.MoreObjects;
 
+import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 public class ForexPortfolio {
 
     private final long pipettesProfit;
-    private final Set<ForexPosition> positions;
+    private final List<TradeSummary> positions;
 
-    public ForexPortfolio(long pipettesProfit, Set<ForexPosition> positions) {
+    public ForexPortfolio(long pipettesProfit, List<TradeSummary> positions) {
         this.pipettesProfit = pipettesProfit;
         this.positions = positions;
     }
@@ -19,7 +20,7 @@ public class ForexPortfolio {
         return pipettesProfit;
     }
 
-    public Set<ForexPosition> getPositions() {
+    public List<TradeSummary> getPositions() {
         return positions;
     }
 

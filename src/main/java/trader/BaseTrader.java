@@ -2,18 +2,16 @@ package trader;
 
 import broker.ForexBroker;
 import broker.OpenPositionRequest;
-import market.ForexPortfolio;
+import broker.TradeSummary;
 import market.ForexPortfolioValue;
-import market.ForexPositionValue;
 import market.InstrumentHistoryService;
 import market.MarketTime;
-import market.order.OrderRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 public abstract class BaseTrader implements ForexTrader {
 
@@ -22,8 +20,6 @@ public abstract class BaseTrader implements ForexTrader {
     private final MarketTime clock;
     private final InstrumentHistoryService instrumentHistoryService;
     private final TradingStrategy tradingStrategy;
-
-    private ForexPortfolio portfolio;
 
     public BaseTrader(TradingStrategy tradingStrategy, MarketTime clock, InstrumentHistoryService instrumentHistoryService) {
         this.tradingStrategy = tradingStrategy;
@@ -35,7 +31,7 @@ public abstract class BaseTrader implements ForexTrader {
     public void processUpdates(ForexBroker broker) throws Exception {
 
         ForexPortfolioValue portfolio = broker.getPortfolioValue(this);
-        Set<ForexPositionValue> positions = portfolio.getPositionValues();
+        List<TradeSummary> positions = portfolio.getPositionValues();
 
         LocalDateTime now = clock.now();
         boolean stopTrading = now.getHour() > 11 && broker.isClosed(clock.tomorrow());
@@ -53,7 +49,7 @@ public abstract class BaseTrader implements ForexTrader {
                 });
             }
         } else {
-            ForexPositionValue positionValue = positions.iterator().next();
+            TradeSummary positionValue = positions.iterator().next();
 
             LOG.info("Existing position: {}", positionValue);
 
@@ -61,23 +57,8 @@ public abstract class BaseTrader implements ForexTrader {
             if (stopTrading) {
                 LOG.info("Closing position since it's {}", MarketTime.formatTimestamp(now));
 
-                broker.closePosition(this, positionValue.getPosition(), null);
+                broker.closePosition(this, positionValue, null);
             }
         }
-    }
-
-    @Override
-    public void cancelled(OrderRequest cancelled) {
-
-    }
-
-    @Override
-    public ForexPortfolio getPortfolio() {
-        return portfolio;
-    }
-
-    @Override
-    public void setPortfolio(ForexPortfolio portfolio) {
-        this.portfolio = portfolio;
     }
 }

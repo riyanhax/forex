@@ -38,6 +38,10 @@ public interface MarketTime {
         return formatTimestamp(start) + " - " + formatTimestamp(end);
     }
 
+    static String formatRange(String start, String end ) {
+        return start + " - " + end;
+    }
+
     default ZoneId getZone() {
         return ZONE;
     }

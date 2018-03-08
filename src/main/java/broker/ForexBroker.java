@@ -1,7 +1,6 @@
 package broker;
 
 import market.ForexPortfolioValue;
-import market.ForexPosition;
 import market.Instrument;
 import trader.ForexTrader;
 
@@ -26,6 +25,6 @@ public interface ForexBroker {
 
     void openPosition(ForexTrader trader, OpenPositionRequest request) throws Exception;
 
-    void closePosition(ForexTrader trader, ForexPosition position, @Nullable Long limit) throws Exception;
+    void closePosition(ForexTrader trader, TradeSummary position, @Nullable Long limit) throws Exception;
 
 }

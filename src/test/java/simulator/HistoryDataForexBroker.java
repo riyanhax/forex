@@ -2,12 +2,11 @@ package simulator;
 
 import broker.OpenPositionRequest;
 import broker.Quote;
+import broker.TradeSummary;
 import live.LiveTraders;
 import live.Oanda;
 import live.OandaTrader;
 import market.ForexPortfolioValue;
-import market.ForexPosition;
-import market.ForexPositionValue;
 import market.Instrument;
 import market.InstrumentHistoryService;
 import market.MarketEngine;
@@ -26,11 +25,11 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import static broker.Quote.pippetesFromDouble;
 import static broker.Quote.pipsFromPippetes;
 import static market.MarketTime.formatRange;
 import static market.MarketTime.formatTimestamp;
@@ -135,21 +134,21 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
 
         if (openedPosition != null) {
             ForexPortfolioValue portfolioValue = getPortfolioValue(trader);
-            Set<ForexPositionValue> positions = portfolioValue.getPositionValues();
+            List<TradeSummary> positions = portfolioValue.getPositionValues();
             if (positions.isEmpty()) {
                 // Not yet been filled
                 return;
             }
 
-            ForexPositionValue positionValue = positions.iterator().next();
-            long pipsProfit = positionValue.pipettes();
+            TradeSummary positionValue = positions.iterator().next();
+            long pipsProfit = pippetesFromDouble(positionValue.getUnrealizedPL());
 
             // Close once we've lost or gained enough pipettes or if it's noon Friday
             long stopLoss = openedPosition.getStopLoss().get();
             long takeProfit = openedPosition.getTakeProfit().get();
 
             if (pipsProfit < -stopLoss || pipsProfit > takeProfit) {
-                closePosition(trader, positionValue.getPosition(), null);
+                closePosition(trader, positionValue, null);
 
                 // Skipping trader because this was their theoretical action in the old format
                 // This may not be necessary in reality
@@ -174,7 +173,7 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
             long averageProfit = 0;
 
             SortedSet<ForexPortfolioValue> portfolios = new TreeSet<>(Comparator.comparing(ForexPortfolioValue::pipettes));
-            SortedSet<ForexPositionValue> allTrades = new TreeSet<>();
+            SortedSet<TradeSummary> allTrades = new TreeSet<>();
 
             for (OandaTrader trader : traders) {
                 ForexPortfolioValue end = getPortfolioValue(trader);
@@ -188,27 +187,35 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
                 portfolios.add(traderData.getProfitPortfolio());
                 portfolios.add(end);
 
-                SortedSet<ForexPositionValue> closedTrades = context.closedTradesForAccountId(trader.getAccountNumber());
+                SortedSet<TradeSummary> closedTrades = context.closedTradesForAccountId(trader.getAccountNumber());
                 allTrades.addAll(closedTrades);
             }
 
             averageProfit /= traders.size();
 
-            SortedSet<ForexPositionValue> tradesSortedByProfit = new TreeSet<>(Comparator.comparing(ForexPositionValue::pipettes));
+            SortedSet<TradeSummary> tradesSortedByProfit = new TreeSet<>(Comparator.comparing(TradeSummary::getRealizedProfitLoss));
             tradesSortedByProfit.addAll(allTrades);
-            ForexPositionValue worstTrade = tradesSortedByProfit.first();
-            ForexPositionValue bestTrade = tradesSortedByProfit.last();
+            TradeSummary worstTrade = tradesSortedByProfit.first();
+            TradeSummary bestTrade = tradesSortedByProfit.last();
 
             ForexPortfolioValue drawdownPortfolio = portfolios.first();
             ForexPortfolioValue profitPortfolio = portfolios.last();
 
-            LOG.info("Worst trade: {} from {}", profitLossDisplay(worstTrade.pipettes()), formatRange(worstTrade.getPosition().getOpened(), worstTrade.getTimestamp()));
-            LOG.info("Best trade: {} from {}", profitLossDisplay(bestTrade.pipettes()), formatRange(bestTrade.getPosition().getOpened(), bestTrade.getTimestamp()));
-            LOG.info("Profitable trades: {}/{}", allTrades.stream().filter(it -> it.pipettes() > 0).count(), allTrades.size());
-            LOG.info("Highest drawdown: {} at {}", profitLossDisplay(drawdownPortfolio.pipettes()), formatTimestamp(drawdownPortfolio.getTimestamp()));
-            LOG.info("Highest profit: {} at {}", profitLossDisplay(profitPortfolio.pipettes()), formatTimestamp(profitPortfolio.getTimestamp()));
+            LOG.info("Worst trade: {} from {}", profitLossDisplay(worstTrade), formatRange(worstTrade.getOpenTime(), worstTrade.getCloseTime()));
+            LOG.info("Best trade: {} from {}", profitLossDisplay(bestTrade), formatRange(bestTrade.getOpenTime(), bestTrade.getCloseTime()));
+            LOG.info("Profitable trades: {}/{}", allTrades.stream().filter(it -> it.getRealizedProfitLoss() > 0).count(), allTrades.size());
+            LOG.info("Highest drawdown: {} at {}", profitLossDisplay(drawdownPortfolio), formatTimestamp(drawdownPortfolio.getTimestamp()));
+            LOG.info("Highest profit: {} at {}", profitLossDisplay(profitPortfolio), formatTimestamp(profitPortfolio.getTimestamp()));
             LOG.info("Average profit: {} from {}", profitLossDisplay(averageProfit), formatRange(simulation.startTime, simulation.endTime));
         }
+    }
+
+    private static String profitLossDisplay(ForexPortfolioValue portfolio) {
+       return profitLossDisplay(portfolio.pipettes());
+    }
+
+    private static String profitLossDisplay(TradeSummary trade) {
+      return profitLossDisplay(pippetesFromDouble(trade.getRealizedProfitLoss()));
     }
 
     private static String profitLossDisplay(long pipettes) {
@@ -246,7 +253,7 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
     }
 
     @Override
-    public void closePosition(ForexTrader trader, ForexPosition position, @Nullable Long limit) throws Exception {
+    public void closePosition(ForexTrader trader, TradeSummary position, @Nullable Long limit) throws Exception {
         broker.closePosition(trader, position, limit);
     }
 

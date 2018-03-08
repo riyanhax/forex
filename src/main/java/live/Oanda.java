@@ -12,7 +12,6 @@ import broker.Price;
 import broker.PricingGetRequest;
 import broker.PricingGetResponse;
 import broker.Quote;
-import broker.Stance;
 import broker.StopLossDetails;
 import broker.TakeProfitDetails;
 import broker.TradeCloseRequest;
@@ -22,8 +21,6 @@ import broker.TradeSummary;
 import com.google.common.collect.Maps;
 import market.ForexPortfolio;
 import market.ForexPortfolioValue;
-import market.ForexPosition;
-import market.ForexPositionValue;
 import market.Instrument;
 import market.InstrumentHistoryService;
 import market.MarketTime;
@@ -41,8 +38,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import static broker.Quote.doubleFromPippetes;
 import static broker.Quote.pippetesFromDouble;
@@ -68,32 +63,9 @@ public class Oanda implements ForexBroker {
         LocalDateTime now = clock.now();
 
         Account account = getAccount(trader);
+        ForexPortfolio portfolio = new ForexPortfolio(pippetesFromDouble(account.getPl()), account.getTrades());
 
-        Set<ForexPositionValue> positionValues = account.getTrades().stream()
-                .map(it -> {
-                    Instrument pair = Instrument.bySymbol.get(it.getInstrument())
-                            .getBrokerInstrument();
-                    int units = it.getCurrentUnits();
-                    boolean inverse = units < 0d;
-
-                    long price = pippetesFromDouble(inverse ? (1 / it.getPrice()) : it.getPrice());
-
-                    long pl = pippetesFromDouble(it.getUnrealizedPL());
-                    long currentPrice = price + pl;
-
-                    ZonedDateTime utcOpened = service.parseToZone(it.getOpenTime(), ZONE_UTC);
-                    LocalDateTime localOpened = utcOpened.withZoneSameInstant(ZONE).toLocalDateTime();
-
-                    ForexPosition position = new ForexPosition(localOpened, pair, Stance.LONG, price);
-
-                    return new ForexPositionValue(position, now, currentPrice);
-                }).collect(Collectors.toSet());
-
-        Set<ForexPosition> positions = positionValues.stream().map(ForexPositionValue::getPosition).collect(Collectors.toSet());
-
-        ForexPortfolio portfolio = new ForexPortfolio(pippetesFromDouble(account.getPl()), positions);
-
-        return new ForexPortfolioValue(portfolio, now, positionValues);
+        return new ForexPortfolioValue(portfolio, now, account.getTrades());
     }
 
     @Override
@@ -174,9 +146,9 @@ public class Oanda implements ForexBroker {
     }
 
     @Override
-    public void closePosition(ForexTrader trader, ForexPosition position, @Nullable Long limit) throws Exception {
+    public void closePosition(ForexTrader trader, TradeSummary position, @Nullable Long limit) throws Exception {
 
-        Instrument pair = position.getInstrument().getBrokerInstrument();
+        Instrument pair = Instrument.bySymbol.get(position.getInstrument()).getBrokerInstrument();
 
         Account account = getAccount(trader);
         List<TradeSummary> trades = account.getTrades();

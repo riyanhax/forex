@@ -276,8 +276,10 @@ public class OandaContext implements Context {
         return new TradeSummary(tradeSummary.getInstrument().toString(),
                 (int) tradeSummary.getCurrentUnits().doubleValue(),
                 tradeSummary.getPrice().doubleValue(),
+                tradeSummary.getRealizedPL().doubleValue(),
                 tradeSummary.getUnrealizedPL().doubleValue(),
                 tradeSummary.getOpenTime().toString(),
+                tradeSummary.getCloseTime().toString(),
                 tradeSummary.getId().toString());
     }
 
