@@ -1,17 +1,9 @@
 package simulator;
 
-import broker.Context;
 import broker.OpenPositionRequest;
-import live.OandaTrader;
-import market.ForexPortfolio;
 import market.ForexPortfolioValue;
-import market.InstrumentHistoryService;
-import market.MarketTime;
-import trader.TradingStrategy;
 
-import static java.util.Collections.emptySet;
-
-public class SimulatorForexTrader extends OandaTrader {
+public class TraderData {
 
     private ForexPortfolioValue drawdownPortfolio = null;
     private ForexPortfolioValue profitPortfolio = null;
@@ -19,12 +11,6 @@ public class SimulatorForexTrader extends OandaTrader {
 
     // This should be managed in the market
     private OpenPositionRequest openedPosition;
-
-    public SimulatorForexTrader(String accountId, Context context, TradingStrategy tradingStrategy,
-                                MarketTime clock, InstrumentHistoryService instrumentHistoryService) throws Exception {
-        super(accountId, context, tradingStrategy, clock, instrumentHistoryService);
-        setPortfolio(new ForexPortfolio(0, emptySet()));
-    }
 
     public void addPortfolioValueSnapshot(ForexPortfolioValue portfolioValue) {
         if (drawdownPortfolio == null || drawdownPortfolio.pipettes() > portfolioValue.pipettes()) {

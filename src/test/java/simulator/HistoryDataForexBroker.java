@@ -4,6 +4,7 @@ import broker.OpenPositionRequest;
 import broker.Quote;
 import live.LiveTraders;
 import live.Oanda;
+import live.OandaTrader;
 import market.ForexPortfolioValue;
 import market.ForexPosition;
 import market.ForexPositionValue;
@@ -28,10 +29,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import static broker.Quote.pipsFromPippetes;
-import static java.util.function.Function.identity;
-import static java.util.stream.Collectors.toMap;
 import static market.MarketTime.formatRange;
 import static market.MarketTime.formatTimestamp;
 
@@ -44,9 +44,10 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
     private final MarketEngine marketEngine;
     private final InstrumentHistoryService instrumentHistoryService;
 
-    private final Map<TradingStrategy, Collection<SimulatorForexTrader>> tradersByStrategy = new HashMap<>();
+    private final Map<TradingStrategy, Collection<OandaTrader>> tradersByStrategy = new HashMap<>();
+    private final List<OandaTrader> traders = new ArrayList<>();
     private final List<TradingStrategy> tradingStrategies;
-    private final Map<String, SimulatorForexTrader> tradersByAccountNumber = new HashMap<>();
+    private final Map<String, TraderData> tradersByAccountNumber = new HashMap<>();
 
     private Simulation simulation;
     private SimulatorContext context;
@@ -66,6 +67,7 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
         this.simulation = simulation;
 
         this.tradersByStrategy.clear();
+        this.traders.clear();
         this.tradersByAccountNumber.clear();
         this.context = new SimulatorContext(clock, instrumentHistoryService, marketEngine, simulation);
 
@@ -78,16 +80,17 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
                 throw new RuntimeException(e);
             }
         });
-        this.tradersByAccountNumber.putAll(tradersByStrategy.entrySet().stream()
-                .map(Map.Entry::getValue).flatMap(Collection::stream)
-                .collect(toMap(ForexTrader::getAccountNumber, identity())));
-        this.broker = new Oanda(clock, instrumentHistoryService, new LiveTraders(new ArrayList<>(tradersByAccountNumber.values())));
+
+        this.traders.addAll(tradersByStrategy.values().stream().flatMap(Collection::stream).collect(Collectors.toList()));
+        traders.forEach(trader -> tradersByAccountNumber.put(trader.getAccountNumber(), new TraderData()));
+
+        this.broker = new Oanda(clock, instrumentHistoryService, new LiveTraders(traders));
     }
 
-    private Collection<SimulatorForexTrader> createInstances(TradingStrategy tradingStrategy, Simulation simulation) throws Exception {
-        List<SimulatorForexTrader> traders = new ArrayList<>();
+    private Collection<OandaTrader> createInstances(TradingStrategy tradingStrategy, Simulation simulation) throws Exception {
+        List<OandaTrader> traders = new ArrayList<>();
         for (int i = 0; i < simulation.instancesPerTraderType; i++) {
-            traders.add(new SimulatorForexTrader(tradingStrategy.toString() + "-" + i, context, tradingStrategy, clock, instrumentHistoryService));
+            traders.add(new OandaTrader(tradingStrategy.toString() + "-" + i, context, tradingStrategy, clock, instrumentHistoryService));
         }
         return traders;
     }
@@ -102,8 +105,7 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
         // Update prices and process any limit/stop orders
         marketEngine.processUpdates();
 
-        Collection<SimulatorForexTrader> traders = this.tradersByAccountNumber.values();
-        for (SimulatorForexTrader trader : traders) {
+        for (OandaTrader trader : traders) {
             // TODO: The market needs to manage stop loss/take profit orders
             handleStopLossTakeProfits(trader);
 
@@ -117,7 +119,7 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
         // Update portfolio snapshots
         traders.forEach(it -> {
             try {
-                it.addPortfolioValueSnapshot(getPortfolioValue(it));
+                getTraderData(it).addPortfolioValueSnapshot(getPortfolioValue(it));
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -128,8 +130,8 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
      * All of this logic should be moved to be handled with orders in the market.
      * @param trader
      */
-    private void handleStopLossTakeProfits(SimulatorForexTrader trader) throws Exception {
-        OpenPositionRequest openedPosition = trader.getOpenedPosition();
+    private void handleStopLossTakeProfits(OandaTrader trader) throws Exception {
+        OpenPositionRequest openedPosition = getTraderData(trader).getOpenedPosition();
 
         if (openedPosition != null) {
             ForexPortfolioValue portfolioValue = getPortfolioValue(trader);
@@ -151,17 +153,21 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
 
                 // Skipping trader because this was their theoretical action in the old format
                 // This may not be necessary in reality
-                trader.setOpenedPosition(null);
+                getTraderData(trader).setOpenedPosition(null);
             }
         }
+    }
+
+    private TraderData getTraderData(ForexTrader trader) {
+        return tradersByAccountNumber.get(trader.getAccountNumber());
     }
 
     @Override
     public void done() throws Exception {
 
-        for (Map.Entry<TradingStrategy, Collection<SimulatorForexTrader>> e : tradersByStrategy.entrySet()) {
+        for (Map.Entry<TradingStrategy, Collection<OandaTrader>> e : tradersByStrategy.entrySet()) {
             TradingStrategy factory = e.getKey();
-            Collection<SimulatorForexTrader> traders = e.getValue();
+            Collection<OandaTrader> traders = e.getValue();
 
             LOG.info("\n\n{}:", factory.toString());
 
@@ -170,15 +176,16 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
             SortedSet<ForexPortfolioValue> portfolios = new TreeSet<>(Comparator.comparing(ForexPortfolioValue::pipettes));
             SortedSet<ForexPositionValue> allTrades = new TreeSet<>();
 
-            for (SimulatorForexTrader trader : traders) {
+            for (OandaTrader trader : traders) {
                 ForexPortfolioValue end = getPortfolioValue(trader);
                 long endPips = end.getPipettesProfit();
                 LOG.info("End: {} at {}", profitLossDisplay(endPips), formatTimestamp(end.getTimestamp()));
 
                 averageProfit += endPips;
 
-                portfolios.add(trader.getDrawdownPortfolio());
-                portfolios.add(trader.getProfitPortfolio());
+                TraderData traderData = getTraderData(trader);
+                portfolios.add(traderData.getDrawdownPortfolio());
+                portfolios.add(traderData.getProfitPortfolio());
                 portfolios.add(end);
 
                 SortedSet<ForexPositionValue> closedTrades = context.closedTradesForAccountId(trader.getAccountNumber());
@@ -220,12 +227,12 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
 
     @Override
     public boolean isClosed() {
-        return !marketEngine.isAvailable();
+        return broker.isClosed() || !marketEngine.isAvailable();
     }
 
     @Override
     public boolean isClosed(LocalDate time) {
-        return !marketEngine.isAvailable(time);
+        return broker.isClosed(time) || !marketEngine.isAvailable(time);
     }
 
     @Override
@@ -234,8 +241,8 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
         getSimulatorTrader(trader).setOpenedPosition(request);
     }
 
-    private SimulatorForexTrader getSimulatorTrader(ForexTrader trader) {
-        return this.tradersByAccountNumber.get(trader.getAccountNumber());
+    private TraderData getSimulatorTrader(ForexTrader trader) {
+        return getTraderData(trader);
     }
 
     @Override
