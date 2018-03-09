@@ -8,9 +8,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
-import static java.time.LocalDateTime.parse;
 import static java.time.format.TextStyle.NARROW;
-import static market.InstrumentHistoryService.DATE_TIME_FORMATTER;
 
 public interface MarketTime {
 
@@ -24,6 +22,7 @@ public interface MarketTime {
             .withZoneSameInstant(MarketTime.ZONE).getHour();
 
     DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm");
+
 
     LocalDateTime now();
 
@@ -47,9 +46,4 @@ public interface MarketTime {
     default ZoneId getZone() {
         return ZONE;
     }
-
-    static LocalDateTime parseTimestamp(String timestamp) {
-        return timestamp == null ? null : parse(timestamp, DATE_TIME_FORMATTER.withZone(MarketTime.ZONE));
-    }
-
 }

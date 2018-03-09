@@ -3,9 +3,11 @@ package market;
 import broker.CandlestickData;
 import com.google.common.collect.Range;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.NavigableMap;
+import java.util.Optional;
+import java.util.Set;
 
 public interface InstrumentHistoryService {
 
@@ -13,5 +15,7 @@ public interface InstrumentHistoryService {
 
     NavigableMap<LocalDateTime, CandlestickData> getFourHourCandles(Instrument pair, Range<LocalDateTime> closed) throws Exception;
 
-    DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ISO_INSTANT;
+    Optional<InstrumentHistory> getData(Instrument instrument, LocalDateTime time);
+
+    Set<LocalDate> getAvailableDays(Instrument instrument, int year);
 }

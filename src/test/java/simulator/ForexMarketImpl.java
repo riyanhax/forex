@@ -1,10 +1,10 @@
 package simulator;
 
 import broker.CandlestickData;
-import market.CurrencyPairHistory;
-import market.CurrencyPairHistoryService;
 import market.ForexMarket;
 import market.Instrument;
+import market.InstrumentHistory;
+import market.InstrumentHistoryService;
 import market.MarketTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,12 +20,12 @@ class ForexMarketImpl implements ForexMarket {
     private static final Logger LOG = LoggerFactory.getLogger(ForexMarketImpl.class);
 
     private final MarketTime clock;
-    private final CurrencyPairHistoryService currencyPairService;
+    private final InstrumentHistoryService historyService;
 
     @Autowired
-    public ForexMarketImpl(MarketTime clock, CurrencyPairHistoryService currencyPairService) {
+    public ForexMarketImpl(MarketTime clock, InstrumentHistoryService historyService) {
         this.clock = clock;
-        this.currencyPairService = currencyPairService;
+        this.historyService = historyService;
     }
 
     @Override
@@ -38,7 +38,7 @@ class ForexMarketImpl implements ForexMarket {
         if (LOG.isDebugEnabled()) {
             LOG.debug("\tUpdating instrument quote data");
 
-            Optional<CurrencyPairHistory> history = currencyPairService.getData(Instrument.EURUSD, clock.now());
+            Optional<InstrumentHistory> history = historyService.getData(Instrument.EURUSD, clock.now());
             history.ifPresent(h -> {
                 CandlestickData data = h.getOHLC();
 
@@ -49,18 +49,18 @@ class ForexMarketImpl implements ForexMarket {
 
     @Override
     public long getPrice(Instrument instrument) {
-        Optional<CurrencyPairHistory> history = currencyPairService.getData(instrument, clock.now());
+        Optional<InstrumentHistory> history = historyService.getData(instrument, clock.now());
 
         return history.get().getOHLC().getO();
     }
 
     @Override
     public boolean isAvailable() {
-        return currencyPairService.getData(Instrument.EURUSD, clock.now()).isPresent();
+        return historyService.getData(Instrument.EURUSD, clock.now()).isPresent();
     }
 
     @Override
     public boolean isAvailable(LocalDate date) {
-        return currencyPairService.getAvailableDays(Instrument.EURUSD, date.getYear()).contains(date);
+        return historyService.getAvailableDays(Instrument.EURUSD, date.getYear()).contains(date);
     }
 }

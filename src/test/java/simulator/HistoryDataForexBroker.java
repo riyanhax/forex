@@ -1,8 +1,11 @@
 package simulator;
 
+import broker.CandlestickData;
 import broker.OpenPositionRequest;
 import broker.Quote;
+import broker.RequestException;
 import broker.TradeSummary;
+import com.google.common.collect.Range;
 import live.LiveTraders;
 import live.Oanda;
 import live.OandaTrader;
@@ -19,12 +22,14 @@ import trader.TradingStrategy;
 
 import javax.annotation.Nullable;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
@@ -82,13 +87,13 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
         this.traders.addAll(tradersByStrategy.values().stream().flatMap(Collection::stream).collect(Collectors.toList()));
         traders.forEach(trader -> tradersByAccountNumber.put(trader.getAccountNumber(), new TraderData()));
 
-        this.broker = new Oanda(clock, instrumentHistoryService, new LiveTraders(traders));
+        this.broker = new Oanda(clock, new LiveTraders(traders));
     }
 
     private Collection<OandaTrader> createInstances(TradingStrategy tradingStrategy, Simulation simulation) throws Exception {
         List<OandaTrader> traders = new ArrayList<>();
         for (int i = 0; i < simulation.instancesPerTraderType; i++) {
-            traders.add(new OandaTrader(tradingStrategy.toString() + "-" + i, context, tradingStrategy, clock, instrumentHistoryService));
+            traders.add(new OandaTrader(tradingStrategy.toString() + "-" + i, context, tradingStrategy, clock));
         }
         return traders;
     }
@@ -254,6 +259,16 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
     @Override
     public void closePosition(ForexTrader trader, TradeSummary position, @Nullable Long limit) throws Exception {
         broker.closePosition(trader, position, limit);
+    }
+
+    @Override
+    public NavigableMap<LocalDateTime, CandlestickData> getOneDayCandles(ForexTrader trader, Instrument pair, Range<LocalDateTime> closed) throws RequestException {
+        return broker.getOneDayCandles(trader, pair, closed);
+    }
+
+    @Override
+    public NavigableMap<LocalDateTime, CandlestickData> getFourHourCandles(ForexTrader trader, Instrument pair, Range<LocalDateTime> closed) throws RequestException {
+        return broker.getFourHourCandles(trader, pair, closed);
     }
 
 }

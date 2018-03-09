@@ -38,11 +38,13 @@ import com.oanda.v20.order.OrderRequest;
 import com.oanda.v20.primitives.InstrumentName;
 import com.oanda.v20.trade.TradeSpecifier;
 import market.Instrument;
+import market.MarketTime;
 
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.Locale;
 import java.util.Map;
@@ -51,17 +53,18 @@ import java.util.function.Function;
 
 import static broker.Quote.doubleFromPippetes;
 import static broker.Quote.pippetesFromDouble;
+import static java.time.LocalDateTime.parse;
 import static java.time.format.TextStyle.NARROW;
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
-import static market.InstrumentHistoryService.DATE_TIME_FORMATTER;
 import static market.MarketTime.ZONE;
-import static market.MarketTime.parseTimestamp;
 
 public class OandaContext implements Context {
+
+    private static DateTimeFormatter ISO_INSTANT_FORMATTER = DateTimeFormatter.ISO_INSTANT;
 
     public static Context create(String endpoint, String token) {
         return new OandaContext(endpoint, token);
@@ -234,8 +237,8 @@ public class OandaContext implements Context {
             oandaRequest.setPrice(price);
             oandaRequest.setGranularity(convert(request.getGranularity()));
             // These dates get translated to UTC time via the formatter, which is what Oanda expects
-            oandaRequest.setFrom(start.format(DATE_TIME_FORMATTER));
-            oandaRequest.setTo(end.format(DATE_TIME_FORMATTER));
+            oandaRequest.setFrom(start.format(ISO_INSTANT_FORMATTER));
+            oandaRequest.setTo(end.format(ISO_INSTANT_FORMATTER));
             oandaRequest.setIncludeFirst(request.isIncludeFirst());
 
             if (request.getAlignmentTimezone() != null) {
@@ -326,8 +329,12 @@ public class OandaContext implements Context {
         return new TransactionID(oandaVersion.toString());
     }
 
+    private static LocalDateTime parseTimestamp(String timestamp) {
+        return timestamp == null ? null : parse(timestamp, ISO_INSTANT_FORMATTER.withZone(MarketTime.ZONE));
+    }
+
     private static ZonedDateTime parseToZone(String time, ZoneId zone) {
-        return ZonedDateTime.parse(time.substring(0, 19) + "Z", DATE_TIME_FORMATTER.withZone(zone));
+        return ZonedDateTime.parse(time.substring(0, 19) + "Z", ISO_INSTANT_FORMATTER.withZone(zone));
     }
 
     private final com.oanda.v20.Context ctx;

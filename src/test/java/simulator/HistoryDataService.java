@@ -11,9 +11,9 @@ import com.google.common.collect.Range;
 import com.google.common.io.CharStreams;
 import com.google.common.io.LineProcessor;
 import market.CandleTimeFrame;
-import market.CurrencyPairHistory;
-import market.CurrencyPairHistoryService;
 import market.Instrument;
+import market.InstrumentHistory;
+import market.InstrumentHistoryService;
 import market.MarketTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,9 +51,9 @@ import static market.CandleTimeFrame.ONE_WEEK;
 import static market.CandleTimeFrame.THIRTY_MINUTE;
 
 @Service
-class HistoryDataCurrencyPairService implements CurrencyPairHistoryService {
+class HistoryDataService implements InstrumentHistoryService {
 
-    private static final Logger LOG = LoggerFactory.getLogger(HistoryDataCurrencyPairService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HistoryDataService.class);
 
     private static class CurrencyPairYear {
         final Instrument pair;
@@ -108,7 +108,7 @@ class HistoryDataCurrencyPairService implements CurrencyPairHistoryService {
                     Stopwatch timer = Stopwatch.createStarted();
 
                     String path = String.format("/history/DAT_ASCII_%s_M1_%d.csv", pairYear.pair.name(), pairYear.year);
-                    try (InputStreamReader is = new InputStreamReader(HistoryDataCurrencyPairService.class.getResourceAsStream(path))) {
+                    try (InputStreamReader is = new InputStreamReader(HistoryDataService.class.getResourceAsStream(path))) {
 
                         NavigableMap<LocalDateTime, CandlestickData> result = CharStreams.readLines(is, new LineProcessor<NavigableMap<LocalDateTime, CandlestickData>>() {
                             NavigableMap<LocalDateTime, CandlestickData> values = new TreeMap<>();
@@ -175,12 +175,12 @@ class HistoryDataCurrencyPairService implements CurrencyPairHistoryService {
     private final MarketTime clock;
 
     @Autowired
-    HistoryDataCurrencyPairService(MarketTime clock) {
+    HistoryDataService(MarketTime clock) {
         this.clock = clock;
     }
 
     @Override
-    public Optional<CurrencyPairHistory> getData(Instrument pair, LocalDateTime time) {
+    public Optional<InstrumentHistory> getData(Instrument pair, LocalDateTime time) {
         boolean inverse = pair.isInverse();
         int year = time.getYear();
         Instrument lookupInstrument = pair.getBrokerInstrument();
@@ -191,7 +191,7 @@ class HistoryDataCurrencyPairService implements CurrencyPairHistoryService {
             ohlc = inverse(ohlc);
         }
 
-        return ohlc == null ? Optional.empty() : Optional.of(new CurrencyPairHistory(pair, time, ohlc));
+        return ohlc == null ? Optional.empty() : Optional.of(new InstrumentHistory(pair, time, ohlc));
     }
 
     @Override
@@ -226,7 +226,8 @@ class HistoryDataCurrencyPairService implements CurrencyPairHistoryService {
             result.putAll(caches.get(timeFrame).getUnchecked(new CurrencyPairYear(lookupInstrument, year)).ohlcData);
         }
 
-        result = new TreeMap<>(result.subMap(start, end));
+        // This uses an inclusive end, because that's how Oanda does it
+        result = new TreeMap<>(result.subMap(start, true, end, true));
 
         if (inverse && !result.isEmpty()) {
             for (LocalDateTime time : new ArrayList<>(result.keySet())) {

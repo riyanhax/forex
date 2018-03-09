@@ -23,9 +23,8 @@ public class OandaTrader extends BaseTrader {
     private final Context ctx;
     private Account account;
 
-    public OandaTrader(String accountId, Context ctx, TradingStrategy tradingStrategy, MarketTime clock,
-                InstrumentHistoryService instrumentHistoryService) throws Exception {
-        super(tradingStrategy, clock, instrumentHistoryService);
+    public OandaTrader(String accountId, Context ctx, TradingStrategy tradingStrategy, MarketTime clock) throws Exception {
+        super(tradingStrategy, clock);
         this.accountId = accountId;
         this.ctx = ctx;
         this.account = refresh();
@@ -40,7 +39,7 @@ public class OandaTrader extends BaseTrader {
         return ctx;
     }
 
-    Account getAccount() throws Exception {
+    Account getAccount() throws RequestException {
         if (newTransactionsExist()) {
             account = refresh();
         }
@@ -58,7 +57,7 @@ public class OandaTrader extends BaseTrader {
         return !lastTransactionID.equals(account.getLastTransactionID());
     }
 
-    private Account refresh() throws Exception {
+    private Account refresh() throws RequestException {
         Stopwatch timer = Stopwatch.createStarted();
 
         Account account = ctx.account().get(new AccountID(this.accountId)).getAccount();

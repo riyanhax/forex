@@ -256,7 +256,7 @@ public class SimulatorContext implements Context, OrderListener {
             try {
                 NavigableMap<LocalDateTime, CandlestickData> fourHourCandles = instrumentHistoryService.getFourHourCandles(pair, Range.closed(from, to));
                 fourHourCandles.forEach((time, ohlc) ->
-                        candlesticks.add(new Candlestick(time, null, ohlc, null)));
+                        candlesticks.add(new Candlestick(time, null, null, ohlc)));
             } catch (Exception e) {
                 throw new RequestException(e.getMessage(), e);
             }

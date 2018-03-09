@@ -4,7 +4,6 @@ import broker.ForexBroker;
 import broker.OpenPositionRequest;
 import broker.TradeSummary;
 import market.AccountSnapshot;
-import market.InstrumentHistoryService;
 import market.MarketTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,13 +17,11 @@ public abstract class BaseTrader implements ForexTrader {
     private static final Logger LOG = LoggerFactory.getLogger(BaseTrader.class);
 
     private final MarketTime clock;
-    private final InstrumentHistoryService instrumentHistoryService;
     private final TradingStrategy tradingStrategy;
 
-    public BaseTrader(TradingStrategy tradingStrategy, MarketTime clock, InstrumentHistoryService instrumentHistoryService) {
+    public BaseTrader(TradingStrategy tradingStrategy, MarketTime clock) {
         this.tradingStrategy = tradingStrategy;
         this.clock = clock;
-        this.instrumentHistoryService = instrumentHistoryService;
     }
 
     @Override
@@ -38,7 +35,7 @@ public abstract class BaseTrader implements ForexTrader {
 
         if (positions.isEmpty()) {
             if (!stopTrading) {
-                Optional<OpenPositionRequest> toOpen = tradingStrategy.shouldOpenPosition(clock, instrumentHistoryService);
+                Optional<OpenPositionRequest> toOpen = tradingStrategy.shouldOpenPosition(this, broker, clock);
                 toOpen.ifPresent(request -> {
                     LOG.info("Opening position: {}", request);
                     try {
