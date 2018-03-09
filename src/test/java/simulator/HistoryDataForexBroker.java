@@ -29,7 +29,6 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-import static broker.Quote.pippetesFromDouble;
 import static broker.Quote.pipsFromPippetes;
 import static market.MarketTime.formatRange;
 import static market.MarketTime.formatTimestamp;
@@ -141,7 +140,7 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
             }
 
             TradeSummary positionValue = positions.iterator().next();
-            long pipsProfit = pippetesFromDouble(positionValue.getUnrealizedPL());
+            long pipsProfit = positionValue.getUnrealizedPL();
 
             // Close once we've lost or gained enough pipettes or if it's noon Friday
             long stopLoss = openedPosition.getStopLoss().get();
@@ -215,7 +214,7 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
     }
 
     private static String profitLossDisplay(TradeSummary trade) {
-      return profitLossDisplay(pippetesFromDouble(trade.getRealizedProfitLoss()));
+      return profitLossDisplay(trade.getRealizedProfitLoss());
     }
 
     private static String profitLossDisplay(long pipettes) {

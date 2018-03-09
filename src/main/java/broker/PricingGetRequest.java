@@ -1,12 +1,14 @@
 package broker;
 
+import market.Instrument;
+
 import java.util.Set;
 
 public class PricingGetRequest {
     private final AccountID accountID;
-    private final Set<String> instruments;
+    private final Set<Instrument> instruments;
 
-    public PricingGetRequest(AccountID accountID, Set<String> instruments) {
+    public PricingGetRequest(AccountID accountID, Set<Instrument> instruments) {
         this.accountID = accountID;
         this.instruments = instruments;
     }
@@ -15,7 +17,7 @@ public class PricingGetRequest {
         return accountID;
     }
 
-    public Set<String> getInstruments() {
+    public Set<Instrument> getInstruments() {
         return instruments;
     }
 }

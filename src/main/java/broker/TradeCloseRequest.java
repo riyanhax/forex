@@ -3,7 +3,7 @@ package broker;
 public class TradeCloseRequest {
     private final AccountID accountID;
     private final TradeSpecifier tradeSpecifier;
-    private String units;
+    private int units;
 
     public TradeCloseRequest(AccountID accountID, TradeSpecifier tradeSpecifier) {
         this.accountID = accountID;
@@ -18,7 +18,7 @@ public class TradeCloseRequest {
         return tradeSpecifier;
     }
 
-    public void setUnits(String units) {
+    public void setUnits(int units) {
         this.units = units;
     }
 }

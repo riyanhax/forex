@@ -1,47 +1,60 @@
 package broker;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 
 import java.util.Collection;
 
+import static broker.Quote.invert;
+
 public class CandlestickData {
 
-    private final double o;
-    private final double h;
-    private final double l;
-    private final double c;
+    private final long o;
+    private final long h;
+    private final long l;
+    private final long c;
 
-    public CandlestickData(double o, double h, double l, double c) {
+    public CandlestickData(long o, long h, long l, long c) {
         this.o = o;
         this.h = h;
         this.l = l;
         this.c = c;
     }
 
-    public double getO() {
+    public long getO() {
         return o;
     }
 
-    public double getH() {
+    public long getH() {
         return h;
     }
 
-    public double getL() {
+    public long getL() {
         return l;
     }
 
-    public double getC() {
+    public long getC() {
         return c;
+    }
+
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(this)
+                .add("o", o)
+                .add("h", h)
+                .add("l", l)
+                .add("c", c)
+                .toString();
     }
 
     public static CandlestickData aggregate(Collection<CandlestickData> values) {
         Preconditions.checkArgument(!values.isEmpty());
 
-        double open = values.iterator().next().getO();
-        double close = Iterables.getLast(values).getC();
-        double high = Math.max(open, close);
-        double low = Math.min(open, close);
+        long open = values.iterator().next().getO();
+        long close = Iterables.getLast(values).getC();
+        long high = Math.max(open, close);
+        long low = Math.min(open, close);
 
         for (CandlestickData value : values) {
             high = Math.max(high, value.getH());
@@ -52,7 +65,7 @@ public class CandlestickData {
     }
 
     public static CandlestickData inverse(CandlestickData candlestickData) {
-        return new CandlestickData(1d / candlestickData.getO(), 1d / candlestickData.getL(),
-                1d / candlestickData.getH(), 1d / candlestickData.getC());
+        return new CandlestickData(invert(candlestickData.getO()), invert(candlestickData.getL()),
+                invert(candlestickData.getH()), invert(candlestickData.getC()));
     }
 }

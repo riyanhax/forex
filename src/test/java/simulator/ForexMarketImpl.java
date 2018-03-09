@@ -48,7 +48,7 @@ class ForexMarketImpl implements ForexMarket {
     }
 
     @Override
-    public double getPrice(Instrument instrument) {
+    public long getPrice(Instrument instrument) {
         Optional<CurrencyPairHistory> history = currencyPairService.getData(instrument, clock.now());
 
         return history.get().getOHLC().getO();

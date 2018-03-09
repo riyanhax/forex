@@ -43,7 +43,6 @@ import market.order.Orders;
 import market.order.SellMarketOrder;
 
 import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -54,10 +53,6 @@ import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
-
-import static broker.Quote.doubleFromPippetes;
-import static broker.Quote.pippetesFromDouble;
-import static market.InstrumentHistoryService.DATE_TIME_FORMATTER;
 
 public class SimulatorContext implements Context, OrderListener {
 
@@ -84,29 +79,29 @@ public class SimulatorContext implements Context, OrderListener {
         Account oldPortfolio = mostRecentPortfolio(accountID);
 
         ImmutableMap<Instrument, TradeSummary> positionsByInstrument = Maps.uniqueIndex(oldPortfolio.getTrades(),
-                it -> Instrument.bySymbol.get(it.getInstrument()));
+                TradeSummary::getInstrument);
         Map<Instrument, TradeSummary> newPositions = new HashMap<>(positionsByInstrument);
         TradeSummary existingPosition = positionsByInstrument.get(instrument);
-        long newPipsProfit = pippetesFromDouble(oldPortfolio.getPl());
+        long newPipsProfit = oldPortfolio.getPl();
 
         LocalDateTime now = clock.now();
         if (filled.isSellOrder()) {
             Objects.requireNonNull(existingPosition, "Go long on the inverse pair, instead of shorting the primary pair.");
 
-            long opened = pippetesFromDouble(existingPosition.getPrice());
+            long opened = existingPosition.getPrice();
             long profitLoss = price - opened;
 
             TradeSummary closedTrade = new TradeSummary(
                     existingPosition.getInstrument(),
                     existingPosition.getCurrentUnits(),
                     existingPosition.getPrice(),
-                    doubleFromPippetes(profitLoss),
-                    0,
+                    profitLoss,
+                    0L,
                     existingPosition.getOpenTime(),
-                    formatDateTime(now),
+                    now,
                     now.toString());
 
-            newPipsProfit += pippetesFromDouble(closedTrade.getRealizedProfitLoss());
+            newPipsProfit += closedTrade.getRealizedProfitLoss();
 
             newPositions.remove(instrument);
 
@@ -117,9 +112,9 @@ public class SimulatorContext implements Context, OrderListener {
             closedTradesForAccount.add(closedTrade);
             closedTrades.put(accountID.getId(), closedTradesForAccount);
 
-            long expectedPipettes = pippetesFromDouble(closedTradesForAccount.stream()
-                    .mapToDouble(TradeSummary::getRealizedProfitLoss)
-                    .sum());
+            long expectedPipettes = closedTradesForAccount.stream()
+                    .mapToLong(TradeSummary::getRealizedProfitLoss)
+                    .sum();
             Preconditions.checkArgument(expectedPipettes == newPipsProfit);
 
         } else if (filled.isBuyOrder()) {
@@ -127,13 +122,13 @@ public class SimulatorContext implements Context, OrderListener {
             Preconditions.checkArgument(!positionsByInstrument.containsKey(instrument.getOpposite()), "Shouldn't have more than one position open for a pair at a time!");
 
             newPositions.put(instrument, positionValue(new TradeSummary(
-                    instrument.getSymbol(), 1, doubleFromPippetes(price),
-                    0, 0, formatDateTime(now), null, now.toString())));
+                    instrument, 1, price,
+                    0L, 0L, now, null, now.toString())));
         }
 
         List<TradeSummary> tradeSummaries = new ArrayList<>(newPositions.values());
         Account account = new Account(accountID, getLatestTransactionId(accountID),
-                tradeSummaries, doubleFromPippetes(newPipsProfit));
+                tradeSummaries, newPipsProfit);
 
         mostRecentPortfolio.put(accountID.getId(), account);
     }
@@ -142,12 +137,11 @@ public class SimulatorContext implements Context, OrderListener {
         @Override
         public PricingGetResponse get(PricingGetRequest request) throws RequestException {
             // TODO: Should handle multiple instruments
-            String instrument = request.getInstruments().iterator().next();
-            Instrument pair = Instrument.bySymbol.get(instrument);
+            Instrument pair = request.getInstruments().iterator().next();
 
-            long price = pippetesFromDouble(marketEngine.getPrice(pair));
-            double bid = doubleFromPippetes(adjustPriceForSpread(price, pair, Stance.LONG));
-            double ask = doubleFromPippetes(adjustPriceForSpread(price, pair, Stance.SHORT));
+            long price = marketEngine.getPrice(pair);
+            long bid = adjustPriceForSpread(price, pair, Stance.LONG);
+            long ask = adjustPriceForSpread(price, pair, Stance.SHORT);
 
             List<Price> prices = new ArrayList<>();
             prices.add(new Price(bid, ask));
@@ -162,7 +156,7 @@ public class SimulatorContext implements Context, OrderListener {
 
             // Open a long position on USD/EUR to simulate a short position for EUR/USD
             MarketOrderRequest marketOrder = request.getOrder();
-            Instrument pair = Instrument.bySymbol.get(marketOrder.getInstrument());
+            Instrument pair = marketOrder.getInstrument();
 
             BuyMarketOrder order = Orders.buyMarketOrder(marketOrder.getUnits(), pair);
             OrderRequest submitted = marketEngine.submit(SimulatorContext.this, order);
@@ -176,7 +170,7 @@ public class SimulatorContext implements Context, OrderListener {
         @Override
         public TradeCloseResponse close(TradeCloseRequest request) throws RequestException {
             TradeSummary position = mostRecentPortfolio(request.getAccountID()).getTrades().iterator().next();
-            SellMarketOrder order = Orders.sellMarketOrder(1, Instrument.bySymbol.get(position.getInstrument()));
+            SellMarketOrder order = Orders.sellMarketOrder(1, position.getInstrument());
             OrderRequest submitted = marketEngine.submit(SimulatorContext.this, order);
             accountIdsByOrderId.put(submitted.getId(), request.getAccountID());
 
@@ -201,7 +195,7 @@ public class SimulatorContext implements Context, OrderListener {
 
             return new AccountGetResponse(new Account(accountID, latestTransactionId,
                     new ArrayList<>(trades),
-                    doubleFromPippetes(accountSnapshot.getPipettesProfit())));
+                    accountSnapshot.getPipettesProfit()));
         }
     }
 
@@ -224,22 +218,18 @@ public class SimulatorContext implements Context, OrderListener {
     }
 
     private TradeSummary positionValue(TradeSummary position) {
-        Instrument pair = Instrument.bySymbol.get(position.getInstrument());
-        long price = pippetesFromDouble(marketEngine.getPrice(pair));
+        Instrument instrument = position.getInstrument();
+        long price = marketEngine.getPrice(instrument);
         Stance stance = position.getCurrentUnits() > 0 ? Stance.LONG : Stance.SHORT;
-        long currentPrice = adjustPriceForSpread(price, pair, stance);
+        long currentPrice = adjustPriceForSpread(price, instrument, stance);
 
-        return new TradeSummary(pair.getSymbol(),
+        return new TradeSummary(instrument,
                 1, position.getPrice(),
-                0d,
-                doubleFromPippetes(currentPrice - pippetesFromDouble(position.getPrice())),
+                0L,
+                currentPrice - position.getPrice(),
                 position.getOpenTime(),
                 null,
                 clock.now().toString());
-    }
-
-    private String formatDateTime(LocalDateTime timestamp) {
-        return ZonedDateTime.of(timestamp, MarketTime.ZONE).format(DATE_TIME_FORMATTER);
     }
 
     private class SimulatorInstrumentContext implements InstrumentContext {
@@ -249,14 +239,13 @@ public class SimulatorContext implements Context, OrderListener {
             List<Candlestick> candlesticks = new ArrayList<>();
 
             Instrument pair = Instrument.bySymbol.get(request.getInstrument());
-            LocalDateTime from = LocalDateTime.parse(request.getFrom(), DATE_TIME_FORMATTER.withZone(MarketTime.ZONE));
-            LocalDateTime to = LocalDateTime.parse(request.getTo(), DATE_TIME_FORMATTER.withZone(MarketTime.ZONE));
+            LocalDateTime from = request.getFrom();
+            LocalDateTime to = request.getTo();
 
             try {
                 NavigableMap<LocalDateTime, CandlestickData> fourHourCandles = instrumentHistoryService.getFourHourCandles(pair, Range.closed(from, to));
                 fourHourCandles.forEach((time, ohlc) ->
-                        candlesticks.add(new Candlestick(time.format(DATE_TIME_FORMATTER), null,
-                                ohlc, null)));
+                        candlesticks.add(new Candlestick(time, null, ohlc, null)));
             } catch (Exception e) {
                 throw new RequestException(e.getMessage(), e);
             }

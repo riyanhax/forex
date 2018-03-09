@@ -39,6 +39,7 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import static broker.CandlestickData.inverse;
+import static broker.Quote.pippetesFromDouble;
 import static market.CandleTimeFrame.FIFTEEN_MINUTE;
 import static market.CandleTimeFrame.FIVE_MINUTE;
 import static market.CandleTimeFrame.FOUR_HOURS;
@@ -126,7 +127,8 @@ class HistoryDataCurrencyPairService implements CurrencyPairHistoryService {
                                 double low = Double.parseDouble(parts[part++]);
                                 double close = Double.parseDouble(parts[part]);
 
-                                values.put(dateTimeForLocal, new CandlestickData(open, high, low, close));
+                                values.put(dateTimeForLocal, new CandlestickData(pippetesFromDouble(open), pippetesFromDouble(high),
+                                        pippetesFromDouble(low), pippetesFromDouble(close)));
 
                                 return true;
                             }

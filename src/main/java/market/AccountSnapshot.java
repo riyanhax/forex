@@ -1,7 +1,6 @@
 package market;
 
 import broker.Account;
-import broker.Quote;
 import broker.TradeSummary;
 import com.google.common.base.MoreObjects;
 
@@ -9,8 +8,6 @@ import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-
-import static broker.Quote.pippetesFromDouble;
 
 public class AccountSnapshot implements Comparable<AccountSnapshot> {
 
@@ -27,7 +24,7 @@ public class AccountSnapshot implements Comparable<AccountSnapshot> {
     }
 
     public long getPipettesProfit() {
-        return pippetesFromDouble(account.getPl());
+        return account.getPl();
     }
 
     public LocalDateTime getTimestamp() {
@@ -36,8 +33,7 @@ public class AccountSnapshot implements Comparable<AccountSnapshot> {
 
     public long pipettes() {
         return getPipettesProfit() + account.getTrades().stream()
-                .map(TradeSummary::getUnrealizedPL)
-                .mapToLong(Quote::pippetesFromDouble)
+                .mapToLong(TradeSummary::getUnrealizedPL)
                 .sum();
     }
 

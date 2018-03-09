@@ -1,19 +1,23 @@
 package broker;
 
+import com.google.common.base.MoreObjects;
+import market.Instrument;
+
+import java.time.LocalDateTime;
 import java.util.Comparator;
 
 public class TradeSummary implements Comparable<TradeSummary> {
-    private final String instrument;
+    private final Instrument instrument;
     private final int currentUnits;
-    private final double price;
-    private final double realizedProfitLoss;
-    private final double unrealizedProfitLoss;
-    private final String openTime;
-    private final String closeTime;
+    private final long price;
+    private final long realizedProfitLoss;
+    private final long unrealizedProfitLoss;
+    private final LocalDateTime openTime;
+    private final LocalDateTime closeTime;
     private final String id;
 
-    public TradeSummary(String instrument, int currentUnits, double price, double realizedProfitLoss,
-                        double unrealizedProfitLoss, String openTime, String closeTime, String id) {
+    public TradeSummary(Instrument instrument, int currentUnits, long price, long realizedProfitLoss,
+                        long unrealizedProfitLoss, LocalDateTime openTime, LocalDateTime closeTime, String id) {
         this.instrument = instrument;
         this.currentUnits = currentUnits;
         this.price = price;
@@ -24,7 +28,7 @@ public class TradeSummary implements Comparable<TradeSummary> {
         this.id = id;
     }
 
-    public String getInstrument() {
+    public Instrument getInstrument() {
         return instrument;
     }
 
@@ -32,23 +36,23 @@ public class TradeSummary implements Comparable<TradeSummary> {
         return this.currentUnits;
     }
 
-    public double getPrice() {
+    public long getPrice() {
         return price;
     }
 
-    public double getRealizedProfitLoss() {
+    public long getRealizedProfitLoss() {
         return realizedProfitLoss;
     }
 
-    public double getUnrealizedPL() {
+    public long getUnrealizedPL() {
         return unrealizedProfitLoss;
     }
 
-    public String getOpenTime() {
+    public LocalDateTime getOpenTime() {
         return openTime;
     }
 
-    public String getCloseTime() {
+    public LocalDateTime getCloseTime() {
         return closeTime;
     }
 
@@ -59,5 +63,19 @@ public class TradeSummary implements Comparable<TradeSummary> {
     @Override
     public int compareTo(TradeSummary o) {
         return Comparator.comparing(TradeSummary::getOpenTime).compare(this, o);
+    }
+
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(this)
+                .add("instrument", instrument)
+                .add("currentUnits", currentUnits)
+                .add("price", price)
+                .add("realizedProfitLoss", realizedProfitLoss)
+                .add("unrealizedProfitLoss", unrealizedProfitLoss)
+                .add("openTime", openTime)
+                .add("closeTime", closeTime)
+                .add("id", id)
+                .toString();
     }
 }

@@ -6,7 +6,7 @@ import java.time.LocalDate;
 
 public interface Market extends SimulationAware {
 
-    double getPrice(Instrument instrument);
+    long getPrice(Instrument instrument);
 
     boolean isAvailable();
 

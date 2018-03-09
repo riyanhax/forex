@@ -1,19 +1,21 @@
 package broker;
 
+import java.time.LocalDateTime;
+
 public class Candlestick {
-    private final String time;
+    private final LocalDateTime time;
     private final CandlestickData bid;
     private final CandlestickData ask;
     private final CandlestickData mid;
 
-    public Candlestick(String time, CandlestickData bid, CandlestickData ask, CandlestickData mid) {
+    public Candlestick(LocalDateTime time, CandlestickData bid, CandlestickData ask, CandlestickData mid) {
         this.time = time;
         this.bid = bid;
         this.ask = ask;
         this.mid = mid;
     }
 
-    public String getTime() {
+    public LocalDateTime getTime() {
         return time;
     }
 

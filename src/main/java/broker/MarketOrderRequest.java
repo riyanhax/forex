@@ -1,12 +1,14 @@
 package broker;
 
+import market.Instrument;
+
 public class MarketOrderRequest {
-    private String instrument;
+    private Instrument instrument;
     private int units;
     private StopLossDetails stopLossOnFill;
     private TakeProfitDetails takeProfitOnFill;
 
-    public void setInstrument(String instrument) {
+    public void setInstrument(Instrument instrument) {
         this.instrument = instrument;
     }
 
@@ -22,7 +24,7 @@ public class MarketOrderRequest {
         this.takeProfitOnFill = takeProfitOnFill;
     }
 
-    public String getInstrument() {
+    public Instrument getInstrument() {
         return instrument;
     }
 

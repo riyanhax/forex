@@ -33,12 +33,11 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static broker.Quote.doubleFromPippetes;
+import static java.util.Collections.singleton;
 import static market.MarketTime.ZONE;
 import static market.MarketTime.ZONE_UTC;
 
@@ -67,11 +66,9 @@ public class Oanda implements ForexBroker {
 
     @Override
     public Quote getQuote(ForexTrader trader, Instrument pair) throws Exception {
-        String symbol = pair.getSymbol();
-
         AccountID accountId = new AccountID(trader.getAccountNumber());
 
-        PricingGetRequest request = new PricingGetRequest(accountId, Collections.singleton(symbol));
+        PricingGetRequest request = new PricingGetRequest(accountId, singleton(pair));
         PricingGetResponse resp = getContext(trader).pricing().get(request);
         List<Price> prices = resp.getPrices();
 
@@ -80,7 +77,7 @@ public class Oanda implements ForexBroker {
         }
 
         Price price = prices.iterator().next();
-        LOG.info("Current price for {}: {}", symbol, price.toString());
+        LOG.info("Current price for {}: {}", pair, price.toString());
 
         return new OandaQuote(price);
     }
@@ -116,22 +113,21 @@ public class Oanda implements ForexBroker {
         }
 
         Quote quote = getQuote(trader, pair);
-        String symbol = pair.getSymbol();
         long basePrice = shorting ? quote.getAsk() : quote.getBid();
 
         MarketOrderRequest marketOrderRequest = new MarketOrderRequest();
-        marketOrderRequest.setInstrument(symbol);
+        marketOrderRequest.setInstrument(pair);
         marketOrderRequest.setUnits(shorting ? -1 : 1);
 
         request.getStopLoss().ifPresent(stop -> {
             StopLossDetails stopLoss = new StopLossDetails();
-            stopLoss.setPrice(roundToFiveDecimalPlaces(basePrice - stop * (shorting ? -1 : 1)));
+            stopLoss.setPrice(basePrice - stop * (shorting ? -1 : 1));
             marketOrderRequest.setStopLossOnFill(stopLoss);
         });
 
         request.getTakeProfit().ifPresent(profit -> {
             TakeProfitDetails takeProfit = new TakeProfitDetails();
-            takeProfit.setPrice(roundToFiveDecimalPlaces(basePrice + profit * (shorting ? -1 : 1)));
+            takeProfit.setPrice(basePrice + profit * (shorting ? -1 : 1));
             marketOrderRequest.setTakeProfitOnFill(takeProfit);
         });
 
@@ -145,20 +141,20 @@ public class Oanda implements ForexBroker {
     @Override
     public void closePosition(ForexTrader trader, TradeSummary position, @Nullable Long limit) throws Exception {
 
-        Instrument pair = Instrument.bySymbol.get(position.getInstrument()).getBrokerInstrument();
+        Instrument pair = position.getInstrument().getBrokerInstrument();
 
         Account account = getAccount(trader);
         List<TradeSummary> trades = account.getTrades();
 
         Optional<TradeSummary> tradeSummary = trades.stream()
-                .filter(it -> it.getInstrument().equals(pair.getSymbol()))
+                .filter(it -> it.getInstrument() == pair)
                 .findFirst();
 
         if (tradeSummary.isPresent()) {
 
             TradeSpecifier tradeSpecifier = new TradeSpecifier(tradeSummary.get());
             TradeCloseRequest closeRequest = new TradeCloseRequest(new AccountID(account.getId().getId()), tradeSpecifier);
-            closeRequest.setUnits("ALL");
+            closeRequest.setUnits(position.getCurrentUnits());
 
             TradeCloseResponse response = getContext(trader).trade().close(closeRequest);
             LOG.info(response.toString());
@@ -185,9 +181,5 @@ public class Oanda implements ForexBroker {
 
     private Context getContext(ForexTrader trader) throws Exception {
         return tradersByAccountId.get(trader.getAccountNumber()).getContext();
-    }
-
-    private static String roundToFiveDecimalPlaces(long value) {
-        return "" + doubleFromPippetes(value);
     }
 }

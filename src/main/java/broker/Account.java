@@ -6,9 +6,9 @@ public class Account {
     private final AccountID id;
     private final TransactionID lastTransactionID;
     private final List<TradeSummary> trades;
-    private double profitLoss;
+    private long profitLoss;
 
-    public Account(AccountID id, TransactionID lastTransactionID, List<TradeSummary> trades, double profitLoss) {
+    public Account(AccountID id, TransactionID lastTransactionID, List<TradeSummary> trades, long profitLoss) {
         this.id = id;
         this.lastTransactionID = lastTransactionID;
         this.trades = trades;
@@ -27,7 +27,7 @@ public class Account {
         return trades;
     }
 
-    public double getPl() {
+    public long getPl() {
         return profitLoss;
     }
 }

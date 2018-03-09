@@ -13,17 +13,18 @@ import market.MarketTime;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
+import static broker.CandlePrice.ASK;
+import static broker.CandlePrice.BID;
+import static broker.CandlePrice.MID;
 import static java.time.DayOfWeek.FRIDAY;
+import static java.util.EnumSet.of;
 import static market.MarketTime.END_OF_TRADING_DAY_HOUR;
-import static market.MarketTime.ZONE;
 
 @Service
 class OandaHistoryService implements InstrumentHistoryService {
-
     private final Context ctx;
 
     OandaHistoryService(OandaProperties properties) {
@@ -44,19 +45,15 @@ class OandaHistoryService implements InstrumentHistoryService {
 
         LocalDateTime exclusiveEnd = closed.upperEndpoint();
 
-        ZonedDateTime start = ZonedDateTime.of(closed.lowerEndpoint(), ZONE);
-        ZonedDateTime end = ZonedDateTime.of(exclusiveEnd, ZONE);
-
-        InstrumentCandlesRequest request = new InstrumentCandlesRequest(pair.getBrokerInstrument().getSymbol());
-        request.setPrice("M");
+        InstrumentCandlesRequest request = new InstrumentCandlesRequest(pair.getBrokerInstrument());
+        request.setPrice(of(BID, MID, ASK));
         request.setGranularity(granularity);
-        // These dates get translated to UTC time via the formatter, which is what Oanda expects
-        request.setFrom(start.format(DATE_TIME_FORMATTER));
-        request.setTo(end.format(DATE_TIME_FORMATTER));
+        request.setFrom(closed.lowerEndpoint());
+        request.setTo(exclusiveEnd);
         request.setIncludeFirst(true);
 
         if (granularity == CandlestickGranularity.D) {
-            request.setAlignmentTimezone(MarketTime.ZONE_NAME);
+            request.setAlignmentTimezone(MarketTime.ZONE);
             request.setDailyAlignment(END_OF_TRADING_DAY_HOUR);
         } else if (granularity == CandlestickGranularity.W) {
             request.setWeeklyAlignment(FRIDAY);
@@ -68,8 +65,7 @@ class OandaHistoryService implements InstrumentHistoryService {
             NavigableMap<LocalDateTime, CandlestickData> data = new TreeMap<>();
 
             response.getCandles().forEach(it -> {
-                ZonedDateTime zonedDateTime = parseToZone(it.getTime(), ZONE);
-                LocalDateTime timestamp = zonedDateTime.toLocalDateTime();
+                LocalDateTime timestamp = it.getTime();
                 if (timestamp.equals(exclusiveEnd)) { // Force exclusive endpoint behavior
                     return;
                 }

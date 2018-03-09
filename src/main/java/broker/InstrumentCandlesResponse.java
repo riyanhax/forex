@@ -1,19 +1,21 @@
 package broker;
 
+import market.Instrument;
+
 import java.util.List;
 
 public class InstrumentCandlesResponse {
-    private final String instrument;
+    private final Instrument instrument;
     private final CandlestickGranularity granularity;
     private final List<Candlestick> candles;
 
-    public InstrumentCandlesResponse(String instrument, CandlestickGranularity granularity, List<Candlestick> candles) {
+    public InstrumentCandlesResponse(Instrument instrument, CandlestickGranularity granularity, List<Candlestick> candles) {
         this.instrument = instrument;
         this.granularity = granularity;
         this.candles = candles;
     }
 
-    public String getInstrument() {
+    public Instrument getInstrument() {
         return instrument;
     }
 

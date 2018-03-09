@@ -6,6 +6,7 @@ import broker.AccountChangesResponse;
 import broker.AccountContext;
 import broker.AccountGetResponse;
 import broker.AccountID;
+import broker.CandlePrice;
 import broker.Candlestick;
 import broker.CandlestickData;
 import broker.CandlestickGranularity;
@@ -36,16 +37,29 @@ import com.oanda.v20.instrument.WeeklyAlignment;
 import com.oanda.v20.order.OrderRequest;
 import com.oanda.v20.primitives.InstrumentName;
 import com.oanda.v20.trade.TradeSpecifier;
+import market.Instrument;
 
 import java.time.DayOfWeek;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.TextStyle;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
+import static broker.Quote.doubleFromPippetes;
+import static broker.Quote.pippetesFromDouble;
+import static java.time.format.TextStyle.NARROW;
 import static java.util.Arrays.stream;
+import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
+import static market.InstrumentHistoryService.DATE_TIME_FORMATTER;
+import static market.MarketTime.ZONE;
+import static market.MarketTime.parseTimestamp;
 
 public class OandaContext implements Context {
 
@@ -64,15 +78,18 @@ public class OandaContext implements Context {
         @Override
         public PricingGetResponse get(PricingGetRequest request) throws broker.RequestException {
 
+            com.oanda.v20.account.AccountID accountID = new com.oanda.v20.account.AccountID(request.getAccountID().getId());
+            Set<String> instruments = request.getInstruments().stream().map(Instrument::getSymbol).collect(toSet());
 
-            com.oanda.v20.pricing.PricingGetRequest oandaRequest = new com.oanda.v20.pricing.PricingGetRequest(
-                    new com.oanda.v20.account.AccountID(request.getAccountID().getId()), request.getInstruments());
+            com.oanda.v20.pricing.PricingGetRequest oandaRequest =
+                    new com.oanda.v20.pricing.PricingGetRequest(accountID, instruments);
 
             try {
                 com.oanda.v20.pricing.PricingGetResponse oandaResponse = ctx.pricing.get(oandaRequest);
 
                 return new PricingGetResponse(oandaResponse.getPrices().stream()
-                        .map(it -> new Price(it.getCloseoutBid().doubleValue(), it.getCloseoutAsk().doubleValue()))
+                        .map(it -> new Price(pippetesFromDouble(it.getCloseoutBid().doubleValue()),
+                                pippetesFromDouble(it.getCloseoutAsk().doubleValue())))
                         .collect(toList()));
             } catch (RequestException e) {
                 throw new broker.RequestException(e.getErrorMessage(), e);
@@ -110,7 +127,7 @@ public class OandaContext implements Context {
 
     private OrderRequest convert(MarketOrderRequest order) {
         com.oanda.v20.order.MarketOrderRequest oandaOrder = new com.oanda.v20.order.MarketOrderRequest();
-        oandaOrder.setInstrument(order.getInstrument());
+        oandaOrder.setInstrument(order.getInstrument().getSymbol());
         oandaOrder.setUnits(order.getUnits());
         oandaOrder.setStopLossOnFill(convert(order.getStopLossOnFill()));
         oandaOrder.setTakeProfitOnFill(convert(order.getTakeProfitOnFill()));
@@ -120,14 +137,14 @@ public class OandaContext implements Context {
 
     private com.oanda.v20.transaction.StopLossDetails convert(StopLossDetails stopLossOnFill) {
         com.oanda.v20.transaction.StopLossDetails oandaVersion = new com.oanda.v20.transaction.StopLossDetails();
-        oandaVersion.setPrice(stopLossOnFill.getPrice());
+        oandaVersion.setPrice(doubleFromPippetes(stopLossOnFill.getPrice()));
 
         return oandaVersion;
     }
 
     private com.oanda.v20.transaction.TakeProfitDetails convert(TakeProfitDetails takeProfit) {
         com.oanda.v20.transaction.TakeProfitDetails oandaVersion = new com.oanda.v20.transaction.TakeProfitDetails();
-        oandaVersion.setPrice(takeProfit.getPrice());
+        oandaVersion.setPrice(doubleFromPippetes(takeProfit.getPrice()));
 
         return oandaVersion;
     }
@@ -208,16 +225,29 @@ public class OandaContext implements Context {
         @Override
         public InstrumentCandlesResponse candles(InstrumentCandlesRequest request) throws broker.RequestException {
 
+            ZonedDateTime start = ZonedDateTime.of(request.getFrom(), ZONE);
+            ZonedDateTime end = ZonedDateTime.of(request.getTo(), ZONE);
+            String price = request.getPrice().stream().map(CandlePrice::getSymbol).collect(joining(""));
+
             com.oanda.v20.instrument.InstrumentCandlesRequest oandaRequest = new com.oanda.v20.instrument.InstrumentCandlesRequest(
-                    new InstrumentName(request.getInstrument()));
-            oandaRequest.setPrice(request.getPrice());
+                    new InstrumentName(request.getInstrument().getSymbol()));
+            oandaRequest.setPrice(price);
             oandaRequest.setGranularity(convert(request.getGranularity()));
-            oandaRequest.setFrom(request.getFrom());
-            oandaRequest.setTo(request.getTo());
+            // These dates get translated to UTC time via the formatter, which is what Oanda expects
+            oandaRequest.setFrom(start.format(DATE_TIME_FORMATTER));
+            oandaRequest.setTo(end.format(DATE_TIME_FORMATTER));
             oandaRequest.setIncludeFirst(request.isIncludeFirst());
-            oandaRequest.setAlignmentTimezone(request.getAlignmentTimezone());
-            oandaRequest.setDailyAlignment(request.getDailyAlignment());
-            oandaRequest.setWeeklyAlignment(convert(request.getWeeklyAlignment()));
+
+            if (request.getAlignmentTimezone() != null) {
+                String alignmentTimezone = request.getAlignmentTimezone().getDisplayName(NARROW, Locale.US);
+
+                oandaRequest.setDailyAlignment(request.getDailyAlignment());
+                oandaRequest.setAlignmentTimezone(alignmentTimezone);
+            }
+
+            if (request.getWeeklyAlignment() != null) {
+                oandaRequest.setWeeklyAlignment(convert(request.getWeeklyAlignment()));
+            }
 
             try {
                 com.oanda.v20.instrument.InstrumentCandlesResponse oandaResponse = instrument.candles(oandaRequest);
@@ -251,36 +281,41 @@ public class OandaContext implements Context {
     }
 
     private static InstrumentCandlesResponse convert(com.oanda.v20.instrument.InstrumentCandlesResponse oandaResponse) {
-        return new InstrumentCandlesResponse(oandaResponse.getInstrument().toString(),
+        return new InstrumentCandlesResponse(
+                Instrument.bySymbol.get(oandaResponse.getInstrument().toString()),
                 convert(oandaResponse.getGranularity()),
                 oandaResponse.getCandles().stream().map(OandaContext::convert).collect(toList()));
     }
 
     private static Candlestick convert(com.oanda.v20.instrument.Candlestick data) {
-        return new Candlestick(data.getTime().toString(),
-                convert(data.getAsk()), convert(data.getBid()), convert(data.getMid()));
+        ZonedDateTime zonedDateTime = parseToZone(data.getTime().toString(), ZONE);
+        LocalDateTime timestamp = zonedDateTime.toLocalDateTime();
+
+        return new Candlestick(timestamp, convert(data.getAsk()), convert(data.getBid()), convert(data.getMid()));
     }
 
     private static CandlestickData convert(com.oanda.v20.instrument.CandlestickData data) {
-        return new CandlestickData(data.getO().doubleValue(), data.getH().doubleValue(),
-                data.getL().doubleValue(), data.getC().doubleValue());
+        return data == null ? null : new CandlestickData(pippetesFromDouble(data.getO().doubleValue()), pippetesFromDouble(data.getH().doubleValue()),
+                pippetesFromDouble(data.getL().doubleValue()), pippetesFromDouble(data.getC().doubleValue()));
     }
 
     private static Account convert(com.oanda.v20.account.Account oandaAccount) {
         return new Account(convert(oandaAccount.getId()), convert(oandaAccount.getLastTransactionID()),
                 oandaAccount.getTrades().stream().map(OandaContext::convert).collect(toList()),
-                oandaAccount.getPl().doubleValue());
+                pippetesFromDouble(oandaAccount.getPl().doubleValue()));
     }
 
     private static TradeSummary convert(com.oanda.v20.trade.TradeSummary tradeSummary) {
-        return new TradeSummary(tradeSummary.getInstrument().toString(),
+        Instrument instrument = Instrument.bySymbol.get(tradeSummary.getInstrument().toString());
+        String openTime = tradeSummary.getOpenTime().toString();
+        String closeTime = tradeSummary.getCloseTime() == null ? null : tradeSummary.getCloseTime().toString();
+
+        return new TradeSummary(instrument,
                 (int) tradeSummary.getCurrentUnits().doubleValue(),
-                tradeSummary.getPrice().doubleValue(),
-                tradeSummary.getRealizedPL().doubleValue(),
-                tradeSummary.getUnrealizedPL().doubleValue(),
-                tradeSummary.getOpenTime().toString(),
-                tradeSummary.getCloseTime().toString(),
-                tradeSummary.getId().toString());
+                pippetesFromDouble(tradeSummary.getPrice().doubleValue()),
+                pippetesFromDouble(tradeSummary.getRealizedPL().doubleValue()),
+                pippetesFromDouble(tradeSummary.getUnrealizedPL().doubleValue()),
+                parseTimestamp(openTime), parseTimestamp(closeTime), tradeSummary.getId().toString());
     }
 
     private static AccountID convert(com.oanda.v20.account.AccountID id) {
@@ -289,6 +324,10 @@ public class OandaContext implements Context {
 
     private static TransactionID convert(com.oanda.v20.transaction.TransactionID oandaVersion) {
         return new TransactionID(oandaVersion.toString());
+    }
+
+    private static ZonedDateTime parseToZone(String time, ZoneId zone) {
+        return ZonedDateTime.parse(time.substring(0, 19) + "Z", DATE_TIME_FORMATTER.withZone(zone));
     }
 
     private final com.oanda.v20.Context ctx;

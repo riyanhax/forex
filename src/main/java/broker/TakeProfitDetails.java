@@ -1,13 +1,13 @@
 package broker;
 
 public class TakeProfitDetails {
-    private String price;
+    private long price;
 
-    public void setPrice(String price) {
+    public void setPrice(long price) {
         this.price = price;
     }
 
-    public String getPrice() {
+    public long getPrice() {
         return price;
     }
 }

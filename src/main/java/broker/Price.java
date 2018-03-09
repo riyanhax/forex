@@ -1,19 +1,19 @@
 package broker;
 
 public class Price {
-    private double closeoutBid;
-    private double closeoutAsk;
+    private long closeoutBid;
+    private long closeoutAsk;
 
-    public Price(double closeoutBid, double closeoutAsk) {
+    public Price(long closeoutBid, long closeoutAsk) {
         this.closeoutBid = closeoutBid;
         this.closeoutAsk = closeoutAsk;
     }
 
-    public double getCloseoutBid() {
+    public long getCloseoutBid() {
         return closeoutBid;
     }
 
-    public double getCloseoutAsk() {
+    public long getCloseoutAsk() {
         return closeoutAsk;
     }
 }

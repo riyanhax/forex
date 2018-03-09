@@ -1,31 +1,36 @@
 package broker;
 
+import market.Instrument;
+
 import java.time.DayOfWeek;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Set;
 
 public class InstrumentCandlesRequest {
-    private final String instrument;
-    private String price;
+    private final Instrument instrument;
+    private Set<CandlePrice> price;
     private CandlestickGranularity granularity;
-    private String from;
-    private String to;
+    private LocalDateTime from;
+    private LocalDateTime to;
     private boolean includeFirst;
-    private String alignmentTimezone;
+    private ZoneId alignmentTimezone;
     private int dailyAlignment;
     private DayOfWeek weeklyAlignment;
 
-    public InstrumentCandlesRequest(String instrument) {
+    public InstrumentCandlesRequest(Instrument instrument) {
         this.instrument = instrument;
     }
 
-    public String getInstrument() {
+    public Instrument getInstrument() {
         return instrument;
     }
 
-    public String getPrice() {
+    public Set<CandlePrice> getPrice() {
         return price;
     }
 
-    public void setPrice(String price) {
+    public void setPrice(Set<CandlePrice> price) {
         this.price = price;
     }
 
@@ -37,19 +42,19 @@ public class InstrumentCandlesRequest {
         this.granularity = granularity;
     }
 
-    public String getFrom() {
+    public LocalDateTime getFrom() {
         return from;
     }
 
-    public void setFrom(String from) {
+    public void setFrom(LocalDateTime from) {
         this.from = from;
     }
 
-    public String getTo() {
+    public LocalDateTime getTo() {
         return to;
     }
 
-    public void setTo(String to) {
+    public void setTo(LocalDateTime to) {
         this.to = to;
     }
 
@@ -61,11 +66,11 @@ public class InstrumentCandlesRequest {
         this.includeFirst = includeFirst;
     }
 
-    public String getAlignmentTimezone() {
+    public ZoneId getAlignmentTimezone() {
         return alignmentTimezone;
     }
 
-    public void setAlignmentTimezone(String alignmentTimezone) {
+    public void setAlignmentTimezone(ZoneId alignmentTimezone) {
         this.alignmentTimezone = alignmentTimezone;
     }
 
