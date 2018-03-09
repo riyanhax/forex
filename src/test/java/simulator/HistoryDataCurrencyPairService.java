@@ -1,5 +1,6 @@
 package simulator;
 
+import broker.CandlestickData;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Stopwatch;
 import com.google.common.cache.CacheBuilder;
@@ -14,7 +15,6 @@ import market.CurrencyPairHistory;
 import market.CurrencyPairHistoryService;
 import market.Instrument;
 import market.MarketTime;
-import market.OHLC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +38,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-import static broker.Quote.pippetesFromDouble;
+import static broker.CandlestickData.inverse;
 import static market.CandleTimeFrame.FIFTEEN_MINUTE;
 import static market.CandleTimeFrame.FIVE_MINUTE;
 import static market.CandleTimeFrame.FOUR_HOURS;
@@ -88,10 +88,10 @@ class HistoryDataCurrencyPairService implements CurrencyPairHistoryService {
 
     private static class CurrencyData {
         final CandleTimeFrame timeFrame;
-        final NavigableMap<LocalDateTime, OHLC> ohlcData;
+        final NavigableMap<LocalDateTime, CandlestickData> ohlcData;
         final NavigableSet<LocalDate> availableDates;
 
-        public CurrencyData(CandleTimeFrame timeFrame, NavigableMap<LocalDateTime, OHLC> ohlcData, NavigableSet<LocalDate> availableDates) {
+        public CurrencyData(CandleTimeFrame timeFrame, NavigableMap<LocalDateTime, CandlestickData> ohlcData, NavigableSet<LocalDate> availableDates) {
             this.timeFrame = timeFrame;
             this.ohlcData = ohlcData;
             this.availableDates = availableDates;
@@ -109,8 +109,8 @@ class HistoryDataCurrencyPairService implements CurrencyPairHistoryService {
                     String path = String.format("/history/DAT_ASCII_%s_M1_%d.csv", pairYear.pair.name(), pairYear.year);
                     try (InputStreamReader is = new InputStreamReader(HistoryDataCurrencyPairService.class.getResourceAsStream(path))) {
 
-                        NavigableMap<LocalDateTime, OHLC> result = CharStreams.readLines(is, new LineProcessor<NavigableMap<LocalDateTime, OHLC>>() {
-                            NavigableMap<LocalDateTime, OHLC> values = new TreeMap<>();
+                        NavigableMap<LocalDateTime, CandlestickData> result = CharStreams.readLines(is, new LineProcessor<NavigableMap<LocalDateTime, CandlestickData>>() {
+                            NavigableMap<LocalDateTime, CandlestickData> values = new TreeMap<>();
 
                             @Override
                             public boolean processLine(String line) throws IOException {
@@ -121,18 +121,18 @@ class HistoryDataCurrencyPairService implements CurrencyPairHistoryService {
                                 OffsetDateTime dateTime = parsedDate.atOffset(ZoneOffset.ofHours(-5));
                                 LocalDateTime dateTimeForLocal = dateTime.atZoneSameInstant(clock.getZone()).toLocalDateTime();
 
-                                long open = pippetesFromDouble(Double.parseDouble(parts[part++]));
-                                long high =  pippetesFromDouble(Double.parseDouble(parts[part++]));
-                                long low =   pippetesFromDouble(Double.parseDouble(parts[part++]));
-                                long close = pippetesFromDouble(Double.parseDouble(parts[part]));
+                                double open = Double.parseDouble(parts[part++]);
+                                double high = Double.parseDouble(parts[part++]);
+                                double low = Double.parseDouble(parts[part++]);
+                                double close = Double.parseDouble(parts[part]);
 
-                                values.put(dateTimeForLocal, new OHLC(open, high, low, close));
+                                values.put(dateTimeForLocal, new CandlestickData(open, high, low, close));
 
                                 return true;
                             }
 
                             @Override
-                            public NavigableMap<LocalDateTime, OHLC> getResult() {
+                            public NavigableMap<LocalDateTime, CandlestickData> getResult() {
                                 return values;
                             }
                         });
@@ -183,10 +183,10 @@ class HistoryDataCurrencyPairService implements CurrencyPairHistoryService {
         int year = time.getYear();
         Instrument lookupInstrument = pair.getBrokerInstrument();
         CurrencyData currencyData = minuteCache.getUnchecked(new CurrencyPairYear(lookupInstrument, year));
-        Map<LocalDateTime, OHLC> yearData = currencyData.ohlcData;
-        OHLC ohlc = yearData.get(time);
+        Map<LocalDateTime, CandlestickData> yearData = currencyData.ohlcData;
+        CandlestickData ohlc = yearData.get(time);
         if (inverse && ohlc != null) {
-            ohlc = ohlc.inverse();
+            ohlc = inverse(ohlc);
         }
 
         return ohlc == null ? Optional.empty() : Optional.of(new CurrencyPairHistory(pair, time, ohlc));
@@ -200,17 +200,17 @@ class HistoryDataCurrencyPairService implements CurrencyPairHistoryService {
     }
 
     @Override
-    public NavigableMap<LocalDateTime, OHLC> getOneDayCandles(Instrument pair, Range<LocalDateTime> closed) {
+    public NavigableMap<LocalDateTime, CandlestickData> getOneDayCandles(Instrument pair, Range<LocalDateTime> closed) {
         return getOHLC(ONE_DAY, pair, closed);
     }
 
     @Override
-    public NavigableMap<LocalDateTime, OHLC> getFourHourCandles(Instrument pair, Range<LocalDateTime> closed) {
+    public NavigableMap<LocalDateTime, CandlestickData> getFourHourCandles(Instrument pair, Range<LocalDateTime> closed) {
         return getOHLC(FOUR_HOURS, pair, closed);
     }
 
-    private NavigableMap<LocalDateTime, OHLC> getOHLC(CandleTimeFrame timeFrame, Instrument pair, Range<LocalDateTime> between) {
-        NavigableMap<LocalDateTime, OHLC> result = new TreeMap<>();
+    private NavigableMap<LocalDateTime, CandlestickData> getOHLC(CandleTimeFrame timeFrame, Instrument pair, Range<LocalDateTime> between) {
+        NavigableMap<LocalDateTime, CandlestickData> result = new TreeMap<>();
         LocalDateTime start = timeFrame.calculateStart(between.lowerEndpoint());
         LocalDateTime end = timeFrame.calculateStart(between.upperEndpoint());
 
@@ -228,8 +228,8 @@ class HistoryDataCurrencyPairService implements CurrencyPairHistoryService {
 
         if (inverse && !result.isEmpty()) {
             for (LocalDateTime time : new ArrayList<>(result.keySet())) {
-                OHLC ohlc = result.get(time);
-                result.put(time, ohlc.inverse());
+                CandlestickData candlestickData = result.get(time);
+                result.put(time, inverse(candlestickData));
             }
         }
         return result;
@@ -243,7 +243,7 @@ class HistoryDataCurrencyPairService implements CurrencyPairHistoryService {
                         Stopwatch timer = Stopwatch.createStarted();
 
                         CurrencyData currencyData = delegate.get(pairYear);
-                        NavigableMap<LocalDateTime, OHLC> result = timeFrame.aggregate(currencyData.ohlcData);
+                        NavigableMap<LocalDateTime, CandlestickData> result = timeFrame.aggregate(currencyData.ohlcData);
 
                         LOG.info("Loaded {} ({}) in {}", pairYear, timeFrame, timer);
 

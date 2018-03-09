@@ -1,5 +1,7 @@
 package market;
 
+import broker.CandlestickData;
+
 import java.time.LocalDateTime;
 
 public interface InstrumentHistory {
@@ -8,6 +10,6 @@ public interface InstrumentHistory {
 
     LocalDateTime getTimestamp();
 
-    OHLC getOHLC();
+    CandlestickData getOHLC();
 
 }

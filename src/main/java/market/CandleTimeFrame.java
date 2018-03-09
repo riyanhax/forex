@@ -1,5 +1,7 @@
 package market;
 
+import broker.CandlestickData;
+
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -109,18 +111,18 @@ public enum CandleTimeFrame {
     };
 
 
-    public NavigableMap<LocalDateTime, OHLC> aggregate(NavigableMap<LocalDateTime, OHLC> ohlcData) {
+    public NavigableMap<LocalDateTime, CandlestickData> aggregate(NavigableMap<LocalDateTime, CandlestickData> ohlcData) {
 
-        NavigableMap<LocalDateTime, OHLC> result = new TreeMap<>();
+        NavigableMap<LocalDateTime, CandlestickData> result = new TreeMap<>();
         LocalDateTime firstCandle = calculateStart(ohlcData.firstKey());
         LocalDateTime lastCandle = calculateStart(ohlcData.lastKey());
 
         for (LocalDateTime current = firstCandle; !current.isAfter(lastCandle); current = nextCandle(current)) {
-            SortedMap<LocalDateTime, OHLC> data = ohlcData.subMap(current, nextCandle(current));
+            SortedMap<LocalDateTime, CandlestickData> data = ohlcData.subMap(current, nextCandle(current));
             if (data.isEmpty()) {
                 continue;
             }
-            OHLC candle = OHLC.aggregate(data.values());
+            CandlestickData candle = CandlestickData.aggregate(data.values());
             result.put(current, candle);
         }
 

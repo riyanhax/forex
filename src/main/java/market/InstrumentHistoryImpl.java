@@ -1,14 +1,16 @@
 package market;
 
+import broker.CandlestickData;
+
 import java.time.LocalDateTime;
 
 public class InstrumentHistoryImpl implements InstrumentHistory {
 
     public final Instrument instrument;
     public final LocalDateTime timestamp;
-    public final OHLC ohlc;
+    public final CandlestickData ohlc;
 
-    public InstrumentHistoryImpl(Instrument instrument, LocalDateTime timestamp, OHLC ohlc) {
+    public InstrumentHistoryImpl(Instrument instrument, LocalDateTime timestamp, CandlestickData ohlc) {
         this.instrument = instrument;
         this.timestamp = timestamp;
         this.ohlc = ohlc;
@@ -25,7 +27,7 @@ public class InstrumentHistoryImpl implements InstrumentHistory {
     }
 
     @Override
-    public OHLC getOHLC() {
+    public CandlestickData getOHLC() {
         return ohlc;
     }
 }

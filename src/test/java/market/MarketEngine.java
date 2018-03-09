@@ -18,6 +18,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static broker.Quote.pippetesFromDouble;
+
 public interface MarketEngine extends Market {
 
     OrderRequest getOrder(OrderRequest order);
@@ -48,7 +50,7 @@ public interface MarketEngine extends Market {
         }
 
         @Override
-        public long getPrice(Instrument instrument) {
+        public double getPrice(Instrument instrument) {
             return market.getPrice(instrument);
         }
 
@@ -124,7 +126,7 @@ public interface MarketEngine extends Market {
                 if (order.isExpired(clock.now())) {
                     updated = OrderRequest.cancelled(order, clock);
                 } else {
-                    long price = getPrice(order.getInstrument());
+                    double price = getPrice(order.getInstrument());
                     Optional<Long> limit = order.limit();
                     if (limit.isPresent()) {
                         long limitPrice = limit.get();
@@ -134,7 +136,7 @@ public interface MarketEngine extends Market {
                         }
                     }
 
-                    updated = OrderRequest.executed(order, clock, price);
+                    updated = OrderRequest.executed(order, clock, pippetesFromDouble(price));
                 }
 
                 ordersById.put(orderId, updated);

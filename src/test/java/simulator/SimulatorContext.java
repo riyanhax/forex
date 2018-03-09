@@ -36,7 +36,6 @@ import market.Instrument;
 import market.InstrumentHistoryService;
 import market.MarketEngine;
 import market.MarketTime;
-import market.OHLC;
 import market.OrderListener;
 import market.order.BuyMarketOrder;
 import market.order.OrderRequest;
@@ -146,7 +145,7 @@ public class SimulatorContext implements Context, OrderListener {
             String instrument = request.getInstruments().iterator().next();
             Instrument pair = Instrument.bySymbol.get(instrument);
 
-            long price = marketEngine.getPrice(pair);
+            long price = pippetesFromDouble(marketEngine.getPrice(pair));
             double bid = doubleFromPippetes(adjustPriceForSpread(price, pair, Stance.LONG));
             double ask = doubleFromPippetes(adjustPriceForSpread(price, pair, Stance.SHORT));
 
@@ -226,7 +225,7 @@ public class SimulatorContext implements Context, OrderListener {
 
     private TradeSummary positionValue(TradeSummary position) {
         Instrument pair = Instrument.bySymbol.get(position.getInstrument());
-        long price = marketEngine.getPrice(pair);
+        long price = pippetesFromDouble(marketEngine.getPrice(pair));
         Stance stance = position.getCurrentUnits() > 0 ? Stance.LONG : Stance.SHORT;
         long currentPrice = adjustPriceForSpread(price, pair, stance);
 
@@ -254,10 +253,10 @@ public class SimulatorContext implements Context, OrderListener {
             LocalDateTime to = LocalDateTime.parse(request.getTo(), DATE_TIME_FORMATTER.withZone(MarketTime.ZONE));
 
             try {
-                NavigableMap<LocalDateTime, OHLC> fourHourCandles = instrumentHistoryService.getFourHourCandles(pair, Range.closed(from, to));
+                NavigableMap<LocalDateTime, CandlestickData> fourHourCandles = instrumentHistoryService.getFourHourCandles(pair, Range.closed(from, to));
                 fourHourCandles.forEach((time, ohlc) ->
                         candlesticks.add(new Candlestick(time.format(DATE_TIME_FORMATTER), null,
-                                new CandlestickData(ohlc.open, ohlc.high, ohlc.low, ohlc.close), null)));
+                                ohlc, null)));
             } catch (Exception e) {
                 throw new RequestException(e.getMessage(), e);
             }

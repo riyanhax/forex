@@ -1,11 +1,11 @@
 package simulator;
 
+import broker.CandlestickData;
 import market.CurrencyPairHistory;
 import market.CurrencyPairHistoryService;
 import market.ForexMarket;
 import market.Instrument;
 import market.MarketTime;
-import market.OHLC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,18 +40,18 @@ class ForexMarketImpl implements ForexMarket {
 
             Optional<CurrencyPairHistory> history = currencyPairService.getData(Instrument.EURUSD, clock.now());
             history.ifPresent(h -> {
-                OHLC data = h.getOHLC();
+                CandlestickData data = h.getOHLC();
 
-                LOG.debug("\tEUR/USD Open: {}, High: {}, Low: {}, Close: {}", data.open, data.high, data.low, data.close);
+                LOG.debug("\tEUR/USD Open: {}, High: {}, Low: {}, Close: {}", data.getO(), data.getH(), data.getL(), data.getC());
             });
         }
     }
 
     @Override
-    public long getPrice(Instrument instrument) {
+    public double getPrice(Instrument instrument) {
         Optional<CurrencyPairHistory> history = currencyPairService.getData(instrument, clock.now());
 
-        return history.get().getOHLC().open;
+        return history.get().getOHLC().getO();
     }
 
     @Override

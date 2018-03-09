@@ -10,7 +10,6 @@ import com.google.common.collect.Range;
 import market.Instrument;
 import market.InstrumentHistoryService;
 import market.MarketTime;
-import market.OHLC;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -18,7 +17,6 @@ import java.time.ZonedDateTime;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
-import static broker.Quote.pippetesFromDouble;
 import static java.time.DayOfWeek.FRIDAY;
 import static market.MarketTime.END_OF_TRADING_DAY_HOUR;
 import static market.MarketTime.ZONE;
@@ -33,16 +31,16 @@ class OandaHistoryService implements InstrumentHistoryService {
     }
 
     @Override
-    public NavigableMap<LocalDateTime, OHLC> getOneDayCandles(Instrument pair, Range<LocalDateTime> closed) throws Exception {
+    public NavigableMap<LocalDateTime, CandlestickData> getOneDayCandles(Instrument pair, Range<LocalDateTime> closed) throws Exception {
         return getCandles(CandlestickGranularity.D, closed, pair);
     }
 
     @Override
-    public NavigableMap<LocalDateTime, OHLC> getFourHourCandles(Instrument pair, Range<LocalDateTime> closed) throws Exception {
+    public NavigableMap<LocalDateTime, CandlestickData> getFourHourCandles(Instrument pair, Range<LocalDateTime> closed) throws Exception {
         return getCandles(CandlestickGranularity.H4, closed, pair);
     }
 
-    private NavigableMap<LocalDateTime, OHLC> getCandles(CandlestickGranularity granularity, Range<LocalDateTime> closed, Instrument pair) throws Exception {
+    private NavigableMap<LocalDateTime, CandlestickData> getCandles(CandlestickGranularity granularity, Range<LocalDateTime> closed, Instrument pair) throws Exception {
 
         LocalDateTime exclusiveEnd = closed.upperEndpoint();
 
@@ -67,7 +65,7 @@ class OandaHistoryService implements InstrumentHistoryService {
         try {
             InstrumentCandlesResponse response = ctx.instrument().candles(request);
 
-            NavigableMap<LocalDateTime, OHLC> data = new TreeMap<>();
+            NavigableMap<LocalDateTime, CandlestickData> data = new TreeMap<>();
 
             response.getCandles().forEach(it -> {
                 ZonedDateTime zonedDateTime = parseToZone(it.getTime(), ZONE);
@@ -77,8 +75,7 @@ class OandaHistoryService implements InstrumentHistoryService {
                 }
                 CandlestickData c = it.getMid();
 
-                data.put(timestamp, new OHLC(pippetesFromDouble(c.getO()), pippetesFromDouble(c.getH()),
-                        pippetesFromDouble(c.getL()), pippetesFromDouble(c.getC())));
+                data.put(timestamp, c);
             });
             return data;
         } catch (RequestException e) {
