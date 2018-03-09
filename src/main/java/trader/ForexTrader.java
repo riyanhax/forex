@@ -6,5 +6,7 @@ public interface ForexTrader {
 
     String getAccountNumber();
 
+    TradingStrategy getStrategy();
+
     void processUpdates(ForexBroker broker) throws Exception;
 }

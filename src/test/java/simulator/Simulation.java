@@ -2,8 +2,10 @@ package simulator;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
+import trader.TradingStrategies;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Configuration
 @ConfigurationProperties(prefix = "simulation")
@@ -14,6 +16,7 @@ public class Simulation {
     private long millisDelayBetweenMinutes;
     private long pippeteSpread;
     private int instancesPerTraderType;
+    private List<TradingStrategies> tradingStrategies;
 
     public LocalDateTime getStartTime() {
         return startTime;
@@ -53,5 +56,13 @@ public class Simulation {
 
     public void setInstancesPerTraderType(int instancesPerTraderType) {
         this.instancesPerTraderType = instancesPerTraderType;
+    }
+
+    public List<TradingStrategies> getTradingStrategies() {
+        return tradingStrategies;
+    }
+
+    public void setTradingStrategies(List<TradingStrategies> tradingStrategies) {
+        this.tradingStrategies = tradingStrategies;
     }
 }

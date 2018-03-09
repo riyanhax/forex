@@ -8,7 +8,6 @@ import broker.Context;
 import broker.RequestException;
 import broker.TransactionID;
 import com.google.common.base.Stopwatch;
-import market.InstrumentHistoryService;
 import market.MarketTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

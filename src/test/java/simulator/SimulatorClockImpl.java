@@ -1,7 +1,6 @@
 package simulator;
 
 import market.MarketTime;
-import org.springframework.stereotype.Service;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -9,7 +8,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.TemporalUnit;
 
-@Service
 class SimulatorClockImpl implements MarketTime {
 
     private Instant instant;
@@ -17,6 +15,14 @@ class SimulatorClockImpl implements MarketTime {
     private LocalDate today;
     private LocalDate tomorrow;
     private Clock clock;
+
+    public SimulatorClockImpl(Simulation simulation) {
+        this(simulation.getStartTime());
+    }
+
+    SimulatorClockImpl(LocalDateTime now) {
+        init(now);
+    }
 
     void init(LocalDateTime startTime) {
         instant = startTime.atZone(ZONE).toInstant();

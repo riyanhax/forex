@@ -23,6 +23,9 @@ simulation:
   millisDelayBetweenMinutes: 0
   pippeteSpread: 20
   instancesPerTraderType: 20
+  tradingStrategies: OPEN_RANDOM_POSITION, SMARTER_RANDOM_POSITION
+
+
 
 ---
 spring:

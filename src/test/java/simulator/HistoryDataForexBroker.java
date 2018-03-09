@@ -1,6 +1,7 @@
 package simulator;
 
 import broker.CandlestickData;
+import broker.ForexBroker;
 import broker.OpenPositionRequest;
 import broker.Quote;
 import broker.RequestException;
@@ -11,9 +12,7 @@ import live.Oanda;
 import live.OandaTrader;
 import market.AccountSnapshot;
 import market.Instrument;
-import market.InstrumentHistoryService;
 import market.MarketEngine;
-import market.MarketTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -25,7 +24,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +33,7 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import static broker.Quote.pipsFromPippetes;
+import static java.util.Comparator.comparing;
 import static market.MarketTime.formatRange;
 import static market.MarketTime.formatTimestamp;
 
@@ -43,60 +42,30 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
 
     private static final Logger LOG = LoggerFactory.getLogger(HistoryDataForexBroker.class);
 
-    private final MarketTime clock;
     private final MarketEngine marketEngine;
-    private final InstrumentHistoryService instrumentHistoryService;
 
-    private final Map<TradingStrategy, Collection<OandaTrader>> tradersByStrategy = new HashMap<>();
     private final List<OandaTrader> traders = new ArrayList<>();
-    private final List<TradingStrategy> tradingStrategies;
     private final Map<String, TraderData> tradersByAccountNumber = new HashMap<>();
 
     private Simulation simulation;
     private SimulatorContext context;
-    private Oanda broker;
+    private ForexBroker broker;
 
-    public HistoryDataForexBroker(MarketTime clock, MarketEngine marketEngine,
-                                  InstrumentHistoryService instrumentHistoryService,
-                                  List<TradingStrategy> tradingStrategies) {
-        this.clock = clock;
+    public HistoryDataForexBroker(Oanda broker, MarketEngine marketEngine,
+                                  LiveTraders traders, SimulatorContext context) {
+        this.broker = broker;
         this.marketEngine = marketEngine;
-        this.instrumentHistoryService = instrumentHistoryService;
-        this.tradingStrategies = tradingStrategies;
+        this.traders.addAll(traders.getTraders());
+        this.context = context;
     }
 
     @Override
     public void init(Simulation simulation) {
         this.simulation = simulation;
 
-        this.tradersByStrategy.clear();
-        this.traders.clear();
-        this.tradersByAccountNumber.clear();
-        this.context = new SimulatorContext(clock, instrumentHistoryService, marketEngine, simulation);
-
-        marketEngine.init(simulation);
-
-        tradingStrategies.forEach(it -> {
-            try {
-                tradersByStrategy.put(it, createInstances(it, simulation));
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
-
-        this.traders.addAll(tradersByStrategy.values().stream().flatMap(Collection::stream).collect(Collectors.toList()));
         traders.forEach(trader -> tradersByAccountNumber.put(trader.getAccountNumber(), new TraderData()));
-
-        this.broker = new Oanda(clock, new LiveTraders(traders));
     }
 
-    private Collection<OandaTrader> createInstances(TradingStrategy tradingStrategy, Simulation simulation) throws Exception {
-        List<OandaTrader> traders = new ArrayList<>();
-        for (int i = 0; i < simulation.getInstancesPerTraderType(); i++) {
-            traders.add(new OandaTrader(tradingStrategy.toString() + "-" + i, context, tradingStrategy, clock));
-        }
-        return traders;
-    }
 
     @Override
     public void processUpdates() throws Exception {
@@ -168,7 +137,10 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
     @Override
     public void done() throws Exception {
 
-        for (Map.Entry<TradingStrategy, Collection<OandaTrader>> e : tradersByStrategy.entrySet()) {
+        Map<TradingStrategy, List<OandaTrader>> tradersByStrategy = traders.stream()
+                .collect(Collectors.groupingBy(ForexTrader::getStrategy));
+
+        for (Map.Entry<TradingStrategy, List<OandaTrader>> e : tradersByStrategy.entrySet()) {
             TradingStrategy factory = e.getKey();
             Collection<OandaTrader> traders = e.getValue();
 
@@ -176,7 +148,7 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
 
             long averageProfit = 0;
 
-            SortedSet<AccountSnapshot> portfolios = new TreeSet<>(Comparator.comparing(AccountSnapshot::pipettes));
+            SortedSet<AccountSnapshot> portfolios = new TreeSet<>(comparing(AccountSnapshot::pipettes));
             SortedSet<TradeSummary> allTrades = new TreeSet<>();
 
             for (OandaTrader trader : traders) {
@@ -197,7 +169,7 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
 
             averageProfit /= traders.size();
 
-            SortedSet<TradeSummary> tradesSortedByProfit = new TreeSet<>(Comparator.comparing(TradeSummary::getRealizedProfitLoss));
+            SortedSet<TradeSummary> tradesSortedByProfit = new TreeSet<>(comparing(TradeSummary::getRealizedProfitLoss));
             tradesSortedByProfit.addAll(allTrades);
             TradeSummary worstTrade = tradesSortedByProfit.first();
             TradeSummary bestTrade = tradesSortedByProfit.last();
@@ -215,11 +187,11 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
     }
 
     private static String profitLossDisplay(AccountSnapshot portfolio) {
-       return profitLossDisplay(portfolio.pipettes());
+        return profitLossDisplay(portfolio.pipettes());
     }
 
     private static String profitLossDisplay(TradeSummary trade) {
-      return profitLossDisplay(trade.getRealizedProfitLoss());
+        return profitLossDisplay(trade.getRealizedProfitLoss());
     }
 
     private static String profitLossDisplay(long pipettes) {

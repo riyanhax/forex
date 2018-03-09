@@ -25,6 +25,11 @@ public abstract class BaseTrader implements ForexTrader {
     }
 
     @Override
+    public TradingStrategy getStrategy() {
+        return tradingStrategy;
+    }
+
+    @Override
     public void processUpdates(ForexBroker broker) throws Exception {
 
         AccountSnapshot portfolio = broker.getAccountSnapshot(this);
