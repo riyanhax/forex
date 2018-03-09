@@ -1,6 +1,6 @@
 package broker;
 
-import market.ForexPortfolioValue;
+import market.AccountSnapshot;
 import market.Instrument;
 import trader.ForexTrader;
 
@@ -15,7 +15,7 @@ public interface ForexBroker {
 
     void processUpdates() throws Exception;
 
-    ForexPortfolioValue getPortfolioValue(ForexTrader trader) throws Exception;
+    AccountSnapshot getAccountSnapshot(ForexTrader trader) throws Exception;
 
     Quote getQuote(ForexTrader trader, Instrument pair) throws Exception;
 

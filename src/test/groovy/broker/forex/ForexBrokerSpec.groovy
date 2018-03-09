@@ -21,13 +21,13 @@ class ForexBrokerSpec extends Specification {
 //    def 'should close existing position when buying/selling the same instrument'() {
 //
 //        when: 'an existing position is closed'
-//        def actual = broker.updatePortfolio(portfolio, order, 1.1d)
+//        def actual = broker.updatePortfolio(account, order, 1.1d)
 //
-//        then: 'the portfolio is correct'
+//        then: 'the account is correct'
 //        actual == expected
 //
 //        where:
-//        portfolio                                                             | order                       | expected
+//        account                                                             | order                       | expected
 //        new ForexPortfolio(500, [new ForexPosition(EURUSD, 10, 1.2d)] as Set) | sellMarketOrder(10, EURUSD) | new ForexPortfolio(511, [] as Set)
 //        new ForexPortfolio(500, [new ForexPosition(EURUSD, 10, 1.2d)] as Set) | sellMarketOrder(20, EURUSD) | new ForexPortfolio(511, [new ForexPosition(EURUSD, -10, 1.1d)] as Set)
 //        new ForexPortfolio(500, [new ForexPosition(EURUSD, 10, 1.2d)] as Set) | buyMarketOrder(10, EURUSD)  | new ForexPortfolio(489, [new ForexPosition(EURUSD, 20, 1.15d)] as Set)

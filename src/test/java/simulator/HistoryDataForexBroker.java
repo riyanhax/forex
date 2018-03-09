@@ -6,7 +6,7 @@ import broker.TradeSummary;
 import live.LiveTraders;
 import live.Oanda;
 import live.OandaTrader;
-import market.ForexPortfolioValue;
+import market.AccountSnapshot;
 import market.Instrument;
 import market.InstrumentHistoryService;
 import market.MarketEngine;
@@ -118,7 +118,7 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
         // Update portfolio snapshots
         traders.forEach(it -> {
             try {
-                getTraderData(it).addPortfolioValueSnapshot(getPortfolioValue(it));
+                getTraderData(it).addSnapshot(getAccountSnapshot(it));
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -133,8 +133,8 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
         OpenPositionRequest openedPosition = getTraderData(trader).getOpenedPosition();
 
         if (openedPosition != null) {
-            ForexPortfolioValue portfolioValue = getPortfolioValue(trader);
-            List<TradeSummary> positions = portfolioValue.getPositionValues();
+            AccountSnapshot accountSnapshot = getAccountSnapshot(trader);
+            List<TradeSummary> positions = accountSnapshot.getPositionValues();
             if (positions.isEmpty()) {
                 // Not yet been filled
                 return;
@@ -172,11 +172,11 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
 
             long averageProfit = 0;
 
-            SortedSet<ForexPortfolioValue> portfolios = new TreeSet<>(Comparator.comparing(ForexPortfolioValue::pipettes));
+            SortedSet<AccountSnapshot> portfolios = new TreeSet<>(Comparator.comparing(AccountSnapshot::pipettes));
             SortedSet<TradeSummary> allTrades = new TreeSet<>();
 
             for (OandaTrader trader : traders) {
-                ForexPortfolioValue end = getPortfolioValue(trader);
+                AccountSnapshot end = getAccountSnapshot(trader);
                 long endPips = end.getPipettesProfit();
                 LOG.info("End: {} at {}", profitLossDisplay(endPips), formatTimestamp(end.getTimestamp()));
 
@@ -198,8 +198,8 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
             TradeSummary worstTrade = tradesSortedByProfit.first();
             TradeSummary bestTrade = tradesSortedByProfit.last();
 
-            ForexPortfolioValue drawdownPortfolio = portfolios.first();
-            ForexPortfolioValue profitPortfolio = portfolios.last();
+            AccountSnapshot drawdownPortfolio = portfolios.first();
+            AccountSnapshot profitPortfolio = portfolios.last();
 
             LOG.info("Worst trade: {} from {}", profitLossDisplay(worstTrade), formatRange(worstTrade.getOpenTime(), worstTrade.getCloseTime()));
             LOG.info("Best trade: {} from {}", profitLossDisplay(bestTrade), formatRange(bestTrade.getOpenTime(), bestTrade.getCloseTime()));
@@ -210,7 +210,7 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
         }
     }
 
-    private static String profitLossDisplay(ForexPortfolioValue portfolio) {
+    private static String profitLossDisplay(AccountSnapshot portfolio) {
        return profitLossDisplay(portfolio.pipettes());
     }
 
@@ -223,8 +223,8 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
     }
 
     @Override
-    public ForexPortfolioValue getPortfolioValue(ForexTrader trader) throws Exception {
-        return broker.getPortfolioValue(trader);
+    public AccountSnapshot getAccountSnapshot(ForexTrader trader) throws Exception {
+        return broker.getAccountSnapshot(trader);
     }
 
     @Override

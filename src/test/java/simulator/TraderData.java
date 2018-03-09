@@ -1,36 +1,36 @@
 package simulator;
 
 import broker.OpenPositionRequest;
-import market.ForexPortfolioValue;
+import market.AccountSnapshot;
 
 public class TraderData {
 
-    private ForexPortfolioValue drawdownPortfolio = null;
-    private ForexPortfolioValue profitPortfolio = null;
-    private ForexPortfolioValue mostRecentPortfolio = null;
+    private AccountSnapshot drawdownPortfolio = null;
+    private AccountSnapshot profitPortfolio = null;
+    private AccountSnapshot mostRecentPortfolio = null;
 
     // This should be managed in the market
     private OpenPositionRequest openedPosition;
 
-    public void addPortfolioValueSnapshot(ForexPortfolioValue portfolioValue) {
-        if (drawdownPortfolio == null || drawdownPortfolio.pipettes() > portfolioValue.pipettes()) {
-            drawdownPortfolio = portfolioValue;
+    public void addSnapshot(AccountSnapshot accountSnapshot) {
+        if (drawdownPortfolio == null || drawdownPortfolio.pipettes() > accountSnapshot.pipettes()) {
+            drawdownPortfolio = accountSnapshot;
         }
-        if (profitPortfolio == null || profitPortfolio.pipettes() < portfolioValue.pipettes()) {
-            profitPortfolio = portfolioValue;
+        if (profitPortfolio == null || profitPortfolio.pipettes() < accountSnapshot.pipettes()) {
+            profitPortfolio = accountSnapshot;
         }
-        mostRecentPortfolio = portfolioValue;
+        mostRecentPortfolio = accountSnapshot;
     }
 
-    public ForexPortfolioValue getDrawdownPortfolio() {
+    public AccountSnapshot getDrawdownPortfolio() {
         return drawdownPortfolio;
     }
 
-    public ForexPortfolioValue getProfitPortfolio() {
+    public AccountSnapshot getProfitPortfolio() {
         return profitPortfolio;
     }
 
-    public ForexPortfolioValue getMostRecentPortfolio() {
+    public AccountSnapshot getMostRecentPortfolio() {
         return mostRecentPortfolio;
     }
 

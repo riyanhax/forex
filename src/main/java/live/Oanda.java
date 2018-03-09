@@ -19,8 +19,7 @@ import broker.TradeCloseResponse;
 import broker.TradeSpecifier;
 import broker.TradeSummary;
 import com.google.common.collect.Maps;
-import market.ForexPortfolio;
-import market.ForexPortfolioValue;
+import market.AccountSnapshot;
 import market.Instrument;
 import market.InstrumentHistoryService;
 import market.MarketTime;
@@ -40,7 +39,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import static broker.Quote.doubleFromPippetes;
-import static broker.Quote.pippetesFromDouble;
 import static market.MarketTime.ZONE;
 import static market.MarketTime.ZONE_UTC;
 
@@ -59,13 +57,12 @@ public class Oanda implements ForexBroker {
     }
 
     @Override
-    public ForexPortfolioValue getPortfolioValue(ForexTrader trader) throws Exception {
+    public AccountSnapshot getAccountSnapshot(ForexTrader trader) throws Exception {
         LocalDateTime now = clock.now();
 
         Account account = getAccount(trader);
-        ForexPortfolio portfolio = new ForexPortfolio(pippetesFromDouble(account.getPl()), account.getTrades());
 
-        return new ForexPortfolioValue(portfolio, now, account.getTrades());
+        return new AccountSnapshot(account, now);
     }
 
     @Override

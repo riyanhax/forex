@@ -3,7 +3,7 @@ package trader;
 import broker.ForexBroker;
 import broker.OpenPositionRequest;
 import broker.TradeSummary;
-import market.ForexPortfolioValue;
+import market.AccountSnapshot;
 import market.InstrumentHistoryService;
 import market.MarketTime;
 import org.slf4j.Logger;
@@ -30,7 +30,7 @@ public abstract class BaseTrader implements ForexTrader {
     @Override
     public void processUpdates(ForexBroker broker) throws Exception {
 
-        ForexPortfolioValue portfolio = broker.getPortfolioValue(this);
+        AccountSnapshot portfolio = broker.getAccountSnapshot(this);
         List<TradeSummary> positions = portfolio.getPositionValues();
 
         LocalDateTime now = clock.now();

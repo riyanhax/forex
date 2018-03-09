@@ -31,8 +31,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Range;
-import market.ForexPortfolio;
-import market.ForexPortfolioValue;
+import market.AccountSnapshot;
 import market.Instrument;
 import market.InstrumentHistoryService;
 import market.MarketEngine;
@@ -67,7 +66,7 @@ public class SimulatorContext implements Context, OrderListener {
     private final MarketEngine marketEngine;
     private final Simulation simulation;
     private final InstrumentHistoryService instrumentHistoryService;
-    private final Map<String, ForexPortfolio> mostRecentPortfolio = new HashMap<>();
+    private final Map<String, Account> mostRecentPortfolio = new HashMap<>();
     private final Map<String, AccountID> accountIdsByOrderId = new HashMap<>();
     private final Map<String, SortedSet<TradeSummary>> closedTrades = new HashMap<>();
 
@@ -83,13 +82,13 @@ public class SimulatorContext implements Context, OrderListener {
         long price = adjustPriceForSpread(executionPrice, instrument, filled.isBuyOrder() ? Stance.LONG : Stance.SHORT);
 
         AccountID accountID = accountIdsByOrderId.remove(filled.getId());
-        ForexPortfolio oldPortfolio = mostRecentPortfolio(accountID);
+        Account oldPortfolio = mostRecentPortfolio(accountID);
 
-        ImmutableMap<Instrument, TradeSummary> positionsByInstrument = Maps.uniqueIndex(oldPortfolio.getPositions(),
+        ImmutableMap<Instrument, TradeSummary> positionsByInstrument = Maps.uniqueIndex(oldPortfolio.getTrades(),
                 it -> Instrument.bySymbol.get(it.getInstrument()));
         Map<Instrument, TradeSummary> newPositions = new HashMap<>(positionsByInstrument);
         TradeSummary existingPosition = positionsByInstrument.get(instrument);
-        long newPipsProfit = oldPortfolio.getPipettesProfit();
+        long newPipsProfit = pippetesFromDouble(oldPortfolio.getPl());
 
         LocalDateTime now = clock.now();
         if (filled.isSellOrder()) {
@@ -133,8 +132,11 @@ public class SimulatorContext implements Context, OrderListener {
                     0, 0, formatDateTime(now), null, now.toString())));
         }
 
-        ForexPortfolio portfolio = new ForexPortfolio(newPipsProfit, new ArrayList<>(newPositions.values()));
-        mostRecentPortfolio.put(accountID.getId(), portfolio);
+        List<TradeSummary> tradeSummaries = new ArrayList<>(newPositions.values());
+        Account account = new Account(accountID, getLatestTransactionId(accountID),
+                tradeSummaries, doubleFromPippetes(newPipsProfit));
+
+        mostRecentPortfolio.put(accountID.getId(), account);
     }
 
     private class SimulatorPricingContext implements PricingContext {
@@ -174,7 +176,7 @@ public class SimulatorContext implements Context, OrderListener {
     private class SimulatorTradeContext implements TradeContext {
         @Override
         public TradeCloseResponse close(TradeCloseRequest request) throws RequestException {
-            TradeSummary position = mostRecentPortfolio(request.getAccountID()).getPositions().iterator().next();
+            TradeSummary position = mostRecentPortfolio(request.getAccountID()).getTrades().iterator().next();
             SellMarketOrder order = Orders.sellMarketOrder(1, Instrument.bySymbol.get(position.getInstrument()));
             OrderRequest submitted = marketEngine.submit(SimulatorContext.this, order);
             accountIdsByOrderId.put(submitted.getId(), request.getAccountID());
@@ -189,32 +191,31 @@ public class SimulatorContext implements Context, OrderListener {
             return new AccountChangesResponse(getLatestTransactionId(request.getAccountID()));
         }
 
-        private TransactionID getLatestTransactionId(AccountID accountID) {
-            String transactionId = clock.now().toString();
-            return new TransactionID(transactionId);
-        }
-
         @Override
         public AccountGetResponse get(AccountID accountID) throws RequestException {
             TransactionID latestTransactionId = getLatestTransactionId(accountID);
 
-            ForexPortfolio portfolio = mostRecentPortfolio(accountID);
-            ForexPortfolioValue portfolioValue = portfolioValue(portfolio);
+            Account account = mostRecentPortfolio(accountID);
+            AccountSnapshot accountSnapshot = accountSnapshot(account);
 
-            List<TradeSummary> trades = portfolioValue.getPositionValues();
+            List<TradeSummary> trades = accountSnapshot.getPositionValues();
 
-            Account account = new Account(accountID, latestTransactionId,
-                    new ArrayList<>(trades), doubleFromPippetes(portfolioValue.getPipettesProfit()));
-
-            return new AccountGetResponse(account);
+            return new AccountGetResponse(new Account(accountID, latestTransactionId,
+                    new ArrayList<>(trades),
+                    doubleFromPippetes(accountSnapshot.getPipettesProfit())));
         }
     }
 
-    private ForexPortfolioValue portfolioValue(ForexPortfolio portfolio) {
-        List<TradeSummary> positions = portfolio.getPositions();
-        List<TradeSummary> positionValues = positionValues(positions);
+    private TransactionID getLatestTransactionId(AccountID accountID) {
+        String transactionId = clock.now().toString();
+        return new TransactionID(transactionId);
+    }
 
-        return new ForexPortfolioValue(portfolio, clock.now(), positionValues);
+    private AccountSnapshot accountSnapshot(Account account) {
+        Account newAccount = new Account(account.getId(), account.getLastTransactionID(),
+                positionValues(account.getTrades()), account.getPl());
+
+        return new AccountSnapshot(newAccount, clock.now());
     }
 
     private List<TradeSummary> positionValues(List<TradeSummary> positions) {
@@ -277,9 +278,10 @@ public class SimulatorContext implements Context, OrderListener {
         return closedTrades.get(id);
     }
 
-    private ForexPortfolio mostRecentPortfolio(AccountID accountID) {
+    private Account mostRecentPortfolio(AccountID accountID) {
         return mostRecentPortfolio.getOrDefault(accountID.getId(),
-                new ForexPortfolio(0, Collections.emptyList()));
+                new Account(accountID, getLatestTransactionId(accountID),
+                        Collections.emptyList(), 0));
     }
 
     @Override
