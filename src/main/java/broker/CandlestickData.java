@@ -52,9 +52,7 @@ public class CandlestickData {
     }
 
     public static CandlestickData inverse(CandlestickData candlestickData) {
-        // TODO IMPORTANT: O should be close, right?
-        // TODO IMPORTANT: H and C are reversed, which is how previous commit was
         return new CandlestickData(1d / candlestickData.getO(), 1d / candlestickData.getL(),
-                1d / candlestickData.getC(), 1d / candlestickData.getH());
+                1d / candlestickData.getH(), 1d / candlestickData.getC());
     }
 }
