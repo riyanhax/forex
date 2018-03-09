@@ -54,6 +54,8 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import static java.lang.Math.abs;
+
 public class SimulatorContext implements Context, OrderListener {
 
     private final MarketTime clock;
@@ -157,8 +159,14 @@ public class SimulatorContext implements Context, OrderListener {
             // Open a long position on USD/EUR to simulate a short position for EUR/USD
             MarketOrderRequest marketOrder = request.getOrder();
             Instrument pair = marketOrder.getInstrument();
+            int units = marketOrder.getUnits();
 
-            BuyMarketOrder order = Orders.buyMarketOrder(marketOrder.getUnits(), pair);
+            if (units < 0) {
+                pair = pair.getOpposite();
+                units = abs(units);
+            }
+
+            BuyMarketOrder order = Orders.buyMarketOrder(units, pair);
             OrderRequest submitted = marketEngine.submit(SimulatorContext.this, order);
             accountIdsByOrderId.put(submitted.getId(), request.getAccountID());
 
@@ -222,11 +230,14 @@ public class SimulatorContext implements Context, OrderListener {
         long price = marketEngine.getPrice(instrument);
         Stance stance = position.getCurrentUnits() > 0 ? Stance.LONG : Stance.SHORT;
         long currentPrice = adjustPriceForSpread(price, instrument, stance);
+        long unrealizedProfitLoss = currentPrice - position.getPrice();
+
 
         return new TradeSummary(instrument,
-                1, position.getPrice(),
+                position.getCurrentUnits(),
+                position.getPrice(),
                 0L,
-                currentPrice - position.getPrice(),
+                unrealizedProfitLoss,
                 position.getOpenTime(),
                 null,
                 clock.now().toString());
@@ -238,7 +249,7 @@ public class SimulatorContext implements Context, OrderListener {
 
             List<Candlestick> candlesticks = new ArrayList<>();
 
-            Instrument pair = Instrument.bySymbol.get(request.getInstrument());
+            Instrument pair = request.getInstrument();
             LocalDateTime from = request.getFrom();
             LocalDateTime to = request.getTo();
 

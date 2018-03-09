@@ -35,7 +35,6 @@ import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static java.util.Collections.singleton;
 import static market.MarketTime.ZONE;
@@ -141,26 +140,12 @@ public class Oanda implements ForexBroker {
     @Override
     public void closePosition(ForexTrader trader, TradeSummary position, @Nullable Long limit) throws Exception {
 
-        Instrument pair = position.getInstrument().getBrokerInstrument();
+        TradeSpecifier tradeSpecifier = new TradeSpecifier(position);
+        TradeCloseRequest closeRequest = new TradeCloseRequest(getAccount(trader).getId(), tradeSpecifier);
+        closeRequest.setUnits(position.getCurrentUnits());
 
-        Account account = getAccount(trader);
-        List<TradeSummary> trades = account.getTrades();
-
-        Optional<TradeSummary> tradeSummary = trades.stream()
-                .filter(it -> it.getInstrument() == pair)
-                .findFirst();
-
-        if (tradeSummary.isPresent()) {
-
-            TradeSpecifier tradeSpecifier = new TradeSpecifier(tradeSummary.get());
-            TradeCloseRequest closeRequest = new TradeCloseRequest(new AccountID(account.getId().getId()), tradeSpecifier);
-            closeRequest.setUnits(position.getCurrentUnits());
-
-            TradeCloseResponse response = getContext(trader).trade().close(closeRequest);
-            LOG.info(response.toString());
-        } else {
-            LOG.error("Didn't find a matching trade with Oanda! Position: {}  Oanda Trades: {}", position, trades);
-        }
+        TradeCloseResponse response = getContext(trader).trade().close(closeRequest);
+        LOG.info(response.toString());
     }
 
     @Override
