@@ -319,6 +319,6 @@ public class SimulatorContext implements Context, OrderListener {
     }
 
     private long halfSpread(Instrument pair) {
-        return (simulation.pippeteSpread / 2);
+        return (simulation.getPippeteSpread() / 2);
     }
 }

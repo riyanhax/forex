@@ -92,7 +92,7 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
 
     private Collection<OandaTrader> createInstances(TradingStrategy tradingStrategy, Simulation simulation) throws Exception {
         List<OandaTrader> traders = new ArrayList<>();
-        for (int i = 0; i < simulation.instancesPerTraderType; i++) {
+        for (int i = 0; i < simulation.getInstancesPerTraderType(); i++) {
             traders.add(new OandaTrader(tradingStrategy.toString() + "-" + i, context, tradingStrategy, clock));
         }
         return traders;
@@ -210,7 +210,7 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
             LOG.info("Profitable trades: {}/{}", allTrades.stream().filter(it -> it.getRealizedProfitLoss() > 0).count(), allTrades.size());
             LOG.info("Highest drawdown: {} at {}", profitLossDisplay(drawdownPortfolio), formatTimestamp(drawdownPortfolio.getTimestamp()));
             LOG.info("Highest profit: {} at {}", profitLossDisplay(profitPortfolio), formatTimestamp(profitPortfolio.getTimestamp()));
-            LOG.info("Average profit: {} from {}", profitLossDisplay(averageProfit), formatRange(simulation.startTime, simulation.endTime));
+            LOG.info("Average profit: {} from {}", profitLossDisplay(averageProfit), formatRange(simulation.getStartTime(), simulation.getEndTime()));
         }
     }
 

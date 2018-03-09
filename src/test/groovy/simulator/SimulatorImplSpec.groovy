@@ -16,7 +16,7 @@ class SimulatorImplSpec extends Specification {
         given: 'a simulation with a start and end timestamp'
         def start = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 30)
         def end = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 37)
-        Simulation simulation = new Simulation(start, end, 0L);
+        Simulation simulation = new Simulation(startTime: start, endTime: end, millisDelayBetweenMinutes: 0L);
 
         SimulatorImpl simulator = new SimulatorImpl(simulation, clock, broker)
         simulator.init()
@@ -47,7 +47,7 @@ class SimulatorImplSpec extends Specification {
         def start = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 30)
         def end = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 32)
 
-        Simulation simulation = new Simulation(start, end, 0L);
+        Simulation simulation = new Simulation(startTime: start, endTime: end, millisDelayBetweenMinutes: 0L);
         SimulatorImpl simulator = new SimulatorImpl(simulation, clock, broker)
 
         when: 'the simulation is over'
@@ -66,7 +66,7 @@ class SimulatorImplSpec extends Specification {
         def start = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 30)
         def end = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 32)
 
-        Simulation simulation = new Simulation(start, end, 0L);
+        Simulation simulation = new Simulation(startTime: start, endTime: end, millisDelayBetweenMinutes: 0L);
         SimulatorImpl simulator = new SimulatorImpl(simulation, clock, broker)
 
         when: 'the simulation is ran'

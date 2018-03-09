@@ -30,6 +30,7 @@ public class SimulatorApplication {
         return args -> watcher.run();
     }
 
+
     @Bean
     public TradingStrategy randomPosition() {
         return TradingStrategies.OPEN_RANDOM_POSITION;

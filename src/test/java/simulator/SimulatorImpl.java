@@ -14,12 +14,7 @@ class SimulatorImpl extends BaseWatcher<SimulatorClockImpl, SimulatorForexBroker
     private final Simulation simulation;
 
     @Autowired
-    public SimulatorImpl(SimulatorClockImpl clock,
-                         SimulatorForexBroker broker) {
-        this(new Simulation(), clock, broker);
-    }
-
-    SimulatorImpl(Simulation simulation,
+    public SimulatorImpl(Simulation simulation,
                   SimulatorClockImpl clock,
                   SimulatorForexBroker broker) {
         super(clock, broker);
@@ -36,17 +31,17 @@ class SimulatorImpl extends BaseWatcher<SimulatorClockImpl, SimulatorForexBroker
 
     @Override
     public boolean keepGoing(LocalDateTime now) {
-        return now.isBefore(simulation.endTime);
+        return now.isBefore(simulation.getEndTime());
     }
 
     @Override
     public long millisUntilNextInterval() {
-        return simulation.millisDelayBetweenMinutes;
+        return simulation.getMillisDelayBetweenMinutes();
     }
 
     @Override
     protected void init() throws Exception {
-        clock.init(simulation.startTime);
+        clock.init(simulation.getStartTime());
         broker.init(simulation);
 
         super.init();
@@ -55,7 +50,7 @@ class SimulatorImpl extends BaseWatcher<SimulatorClockImpl, SimulatorForexBroker
     @Override
     protected void nextMinute() throws Exception {
         LocalDateTime previous = clock.now();
-        if (!previous.isBefore(simulation.endTime)) {
+        if (!previous.isBefore(simulation.getEndTime())) {
             throw new IllegalStateException("Can't advance beyond the end of the simulation!");
         }
 

@@ -1,27 +1,57 @@
 package simulator;
 
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
+
 import java.time.LocalDateTime;
 
-import static java.time.LocalDateTime.of;
-import static java.time.Month.DECEMBER;
-import static java.time.Month.JANUARY;
-
+@Configuration
+@ConfigurationProperties(prefix = "simulation")
 public class Simulation {
 
-    public final LocalDateTime startTime;
-    public final LocalDateTime endTime;
-    public final long millisDelayBetweenMinutes;
-    public final long pippeteSpread = 20L;
-    public final int instancesPerTraderType = 10;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
+    private long millisDelayBetweenMinutes;
+    private long pippeteSpread;
+    private int instancesPerTraderType;
 
-    public Simulation() {
-        this(of(2017, JANUARY, 1, 1, 0), of(2017, DECEMBER, 31, 23, 59), 0L);
-
+    public LocalDateTime getStartTime() {
+        return startTime;
     }
 
-    public Simulation(LocalDateTime startTime, LocalDateTime endTime, long realDelayPerMinute) {
+    public void setStartTime(LocalDateTime startTime) {
         this.startTime = startTime;
+    }
+
+    public LocalDateTime getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(LocalDateTime endTime) {
         this.endTime = endTime;
-        this.millisDelayBetweenMinutes = realDelayPerMinute;
+    }
+
+    public long getMillisDelayBetweenMinutes() {
+        return millisDelayBetweenMinutes;
+    }
+
+    public void setMillisDelayBetweenMinutes(long millisDelayBetweenMinutes) {
+        this.millisDelayBetweenMinutes = millisDelayBetweenMinutes;
+    }
+
+    public long getPippeteSpread() {
+        return pippeteSpread;
+    }
+
+    public void setPippeteSpread(long pippeteSpread) {
+        this.pippeteSpread = pippeteSpread;
+    }
+
+    public int getInstancesPerTraderType() {
+        return instancesPerTraderType;
+    }
+
+    public void setInstancesPerTraderType(int instancesPerTraderType) {
+        this.instancesPerTraderType = instancesPerTraderType;
     }
 }
