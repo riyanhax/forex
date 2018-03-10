@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.time.LocalDate;
@@ -55,6 +56,42 @@ import static market.CandleTimeFrame.THIRTY_MINUTE;
 class HistoryDataService implements InstrumentHistoryService {
 
     private static final Logger LOG = LoggerFactory.getLogger(HistoryDataService.class);
+
+    private static class CandleRequest {
+        final CandleTimeFrame timeFrame;
+        final Instrument pair;
+        final Range<LocalDateTime> between;
+
+        private CandleRequest(CandleTimeFrame timeFrame, Instrument pair, Range<LocalDateTime> between) {
+            this.timeFrame = timeFrame;
+            this.pair = pair;
+            this.between = between;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            CandleRequest that = (CandleRequest) o;
+            return timeFrame == that.timeFrame &&
+                    pair == that.pair &&
+                    Objects.equals(between, that.between);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(timeFrame, pair, between);
+        }
+
+        @Override
+        public String toString() {
+            return MoreObjects.toStringHelper(this)
+                    .add("timeFrame", timeFrame)
+                    .add("pair", pair)
+                    .add("between", between)
+                    .toString();
+        }
+    }
 
     private static class CurrencyPairYear {
         final Instrument pair;
@@ -214,10 +251,19 @@ class HistoryDataService implements InstrumentHistoryService {
 
     @Override
     public NavigableMap<LocalDateTime, CandlestickData> getOneMinuteCandles(Instrument instrument, Range<LocalDateTime> closed) {
-        return getOHLC(ONE_MINUTE, instrument, closed);
+        return loadCandleData(new CandleRequest(CandleTimeFrame.ONE_MINUTE, instrument, closed)); // No need to cache one minute data
     }
 
     private NavigableMap<LocalDateTime, CandlestickData> getOHLC(CandleTimeFrame timeFrame, Instrument pair, Range<LocalDateTime> between) {
+        return candleRequestCache.getUnchecked(new CandleRequest(timeFrame, pair, between));
+    }
+
+    private NavigableMap<LocalDateTime, CandlestickData> loadCandleData(CandleRequest candleRequest) {
+
+        Range<LocalDateTime> between = candleRequest.between;
+        CandleTimeFrame timeFrame = candleRequest.timeFrame;
+        Instrument pair = candleRequest.pair;
+
         LocalDateTime requestedEnd = between.upperEndpoint();
 
         NavigableMap<LocalDateTime, CandlestickData> result = new TreeMap<>();
@@ -272,11 +318,20 @@ class HistoryDataService implements InstrumentHistoryService {
         return result;
     }
 
+    private LoadingCache<CandleRequest, NavigableMap<LocalDateTime, CandlestickData>> candleRequestCache = CacheBuilder.newBuilder()
+            .maximumSize(300)
+            .build(new CacheLoader<CandleRequest, NavigableMap<LocalDateTime, CandlestickData>>() {
+                @Override
+                public NavigableMap<LocalDateTime, CandlestickData> load(@Nonnull CandleRequest request) throws Exception {
+                    return loadCandleData(request);
+                }
+            });
+
     private static LoadingCache<CurrencyPairYear, CurrencyData> timeFrameAggregateCache(LoadingCache<CurrencyPairYear, CurrencyData> delegate, CandleTimeFrame timeFrame) {
         return CacheBuilder.newBuilder()
                 .build(new CacheLoader<CurrencyPairYear, CurrencyData>() {
                     @Override
-                    public CurrencyData load(CurrencyPairYear pairYear) throws Exception {
+                    public CurrencyData load(@Nonnull CurrencyPairYear pairYear) throws Exception {
                         Stopwatch timer = Stopwatch.createStarted();
 
                         CurrencyData currencyData = delegate.get(pairYear);

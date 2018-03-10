@@ -21,8 +21,8 @@ simulation:
   startTime: 2017-01-01 01:00
   endTime: 2017-12-31 23:59
   millisDelayBetweenMinutes: 0
-  pippeteSpread: 20
-  instancesPerTraderType: 20
+  pippeteSpread: 2
+  instancesPerTraderType: 2
   tradingStrategies: OPEN_RANDOM_POSITION, SMARTER_RANDOM_POSITION
 
 
