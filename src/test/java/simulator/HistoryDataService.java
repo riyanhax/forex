@@ -34,6 +34,7 @@ import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
@@ -217,9 +218,11 @@ class HistoryDataService implements InstrumentHistoryService {
     }
 
     private NavigableMap<LocalDateTime, CandlestickData> getOHLC(CandleTimeFrame timeFrame, Instrument pair, Range<LocalDateTime> between) {
+        LocalDateTime requestedEnd = between.upperEndpoint();
+
         NavigableMap<LocalDateTime, CandlestickData> result = new TreeMap<>();
         LocalDateTime start = timeFrame.calculateStart(between.lowerEndpoint());
-        LocalDateTime end = timeFrame.calculateStart(between.upperEndpoint());
+        LocalDateTime end = timeFrame.calculateStart(requestedEnd);
 
         int startYear = start.getYear();
         int endYear = end.getYear();
@@ -233,6 +236,32 @@ class HistoryDataService implements InstrumentHistoryService {
 
         // This uses an inclusive end, because that's how Oanda does it
         result = new TreeMap<>(result.subMap(start, true, end, true));
+
+        // We have to create a pseudo-candle for the last one
+        if (end.isBefore(requestedEnd)) {
+            NavigableMap<LocalDateTime, CandlestickData> candlesToAggregate = new TreeMap<>();
+
+            LocalDateTime candleStart = end;
+            SortedSet<CandleTimeFrame> smallerTimeFrames = CandleTimeFrame.descendingSmallerThan(timeFrame);
+            for (CandleTimeFrame candleType : smallerTimeFrames) {
+                LocalDateTime nextCandle = candleType.nextCandle(candleStart);
+
+                while (!nextCandle.isAfter(requestedEnd)) {
+                    Range<LocalDateTime> range = Range.closed(candleStart, nextCandle);
+                    candlesToAggregate.putAll(getOHLC(candleType, pair, range));
+                    candleStart = nextCandle;
+
+                    nextCandle = candleType.nextCandle(candleStart);
+                }
+
+                if (candleStart.isAfter(requestedEnd)) {
+                    break;
+                }
+            }
+
+            CandlestickData aggregate = CandlestickData.aggregate(candlesToAggregate.values());
+            result.put(end, aggregate);
+        }
 
         if (inverse && !result.isEmpty()) {
             for (LocalDateTime time : new ArrayList<>(result.keySet())) {

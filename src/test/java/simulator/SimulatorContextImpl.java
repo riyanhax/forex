@@ -297,6 +297,8 @@ class SimulatorContextImpl implements OrderListener, SimulatorContext {
             LocalDateTime from = request.getFrom();
             LocalDateTime to = request.getTo();
 
+            Preconditions.checkArgument(!to.isAfter(clock.now()), "Can't request candles after the current minute!");
+
             try {
                 NavigableMap<LocalDateTime, CandlestickData> fourHourCandles = instrumentHistoryService.getFourHourCandles(pair, Range.closed(from, to));
                 fourHourCandles.forEach((time, ohlc) ->
