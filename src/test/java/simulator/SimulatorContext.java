@@ -2,7 +2,6 @@ package simulator;
 
 import broker.Context;
 import broker.RequestException;
-import broker.TradeSummary;
 
 import java.util.SortedSet;
 
@@ -15,5 +14,5 @@ public interface SimulatorContext extends Context {
 
     TraderData getTraderData(String accountNumber);
 
-    SortedSet<TradeSummary> closedTradesForAccountId(String accountNumber);
+    SortedSet<TradeHistory> closedTradesForAccountId(String accountNumber);
 }

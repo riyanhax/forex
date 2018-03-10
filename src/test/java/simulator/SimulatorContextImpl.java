@@ -64,7 +64,7 @@ class SimulatorContextImpl implements OrderListener, SimulatorContext {
     private final InstrumentHistoryService instrumentHistoryService;
     private final Map<String, Account> mostRecentPortfolio = new HashMap<>();
     private final Map<String, AccountID> accountIdsByOrderId = new HashMap<>();
-    private final Map<String, SortedSet<TradeSummary>> closedTrades = new HashMap<>();
+    private final Map<String, SortedSet<TradeHistory>> closedTrades = new HashMap<>();
     private final Map<String, TraderData> traderDataById = new HashMap<>();
 
     @Override
@@ -99,6 +99,9 @@ class SimulatorContextImpl implements OrderListener, SimulatorContext {
         long executionPrice = filled.getExecutionPrice().get();
         long price = adjustPriceForSpread(executionPrice, instrument, filled.isBuyOrder() ? Stance.LONG : Stance.SHORT);
 
+        Preconditions.checkArgument((filled.isBuyOrder() && price > executionPrice) ||
+                filled.isSellOrder() && price < executionPrice, "The spread doesn't seem to be used correctly!");
+
         AccountID accountID = accountIdsByOrderId.remove(filled.getId());
         Account oldPortfolio = mostRecentPortfolio(accountID);
 
@@ -129,15 +132,25 @@ class SimulatorContextImpl implements OrderListener, SimulatorContext {
 
             newPositions.remove(instrument);
 
-            SortedSet<TradeSummary> closedTradesForAccount = closedTrades.get(accountID.getId());
+            NavigableMap<LocalDateTime, CandlestickData> candles;
+            try {
+                Range<LocalDateTime> tradeTime = Range.closed(existingPosition.getOpenTime(), now);
+                candles = instrumentHistoryService.getOneMinuteCandles(instrument, tradeTime);
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+
+            TradeHistory history = new TradeHistory(closedTrade, candles);
+
+            SortedSet<TradeHistory> closedTradesForAccount = closedTrades.get(accountID.getId());
             if (closedTradesForAccount == null) {
                 closedTradesForAccount = new TreeSet<>();
             }
-            closedTradesForAccount.add(closedTrade);
+            closedTradesForAccount.add(history);
             closedTrades.put(accountID.getId(), closedTradesForAccount);
 
             long expectedPipettes = closedTradesForAccount.stream()
-                    .mapToLong(TradeSummary::getRealizedProfitLoss)
+                    .mapToLong(TradeHistory::getRealizedProfitLoss)
                     .sum();
             Preconditions.checkArgument(expectedPipettes == newPipsProfit);
 
@@ -145,9 +158,14 @@ class SimulatorContextImpl implements OrderListener, SimulatorContext {
             Preconditions.checkArgument(existingPosition == null, "Shouldn't have more than one position open for a pair at a time!");
             Preconditions.checkArgument(!positionsByInstrument.containsKey(instrument.getOpposite()), "Shouldn't have more than one position open for a pair at a time!");
 
-            newPositions.put(instrument, positionValue(new TradeSummary(
+            TradeSummary filledPosition = positionValue(new TradeSummary(
                     instrument, 1, price,
-                    0L, 0L, now, null, now.toString())));
+                    0L, 0L, now, null, now.toString()));
+
+            Preconditions.checkArgument(filledPosition.getUnrealizedPL() == -simulatorProperties.getPippeteSpread(),
+                    "Immediately after filling a position it should have an unrealized loss of the spread!");
+
+            newPositions.put(instrument, filledPosition);
         }
 
         List<TradeSummary> tradeSummaries = new ArrayList<>(newPositions.values());
@@ -165,8 +183,8 @@ class SimulatorContextImpl implements OrderListener, SimulatorContext {
             Instrument pair = request.getInstruments().iterator().next();
 
             long price = marketEngine.getPrice(pair);
-            long bid = adjustPriceForSpread(price, pair, Stance.LONG);
-            long ask = adjustPriceForSpread(price, pair, Stance.SHORT);
+            long bid = adjustPriceForSpread(price, pair, Stance.SHORT);
+            long ask = adjustPriceForSpread(price, pair, Stance.LONG);
 
             List<Price> prices = new ArrayList<>();
             prices.add(new Price(bid, ask));
@@ -215,7 +233,7 @@ class SimulatorContextImpl implements OrderListener, SimulatorContext {
     private class SimulatorAccountContext implements AccountContext {
         @Override
         public AccountChangesResponse changes(AccountChangesRequest request) throws RequestException {
-             return new AccountChangesResponse(getLatestTransactionId(request.getAccountID()));
+            return new AccountChangesResponse(getLatestTransactionId(request.getAccountID()));
         }
 
         @Override
@@ -254,10 +272,10 @@ class SimulatorContextImpl implements OrderListener, SimulatorContext {
     private TradeSummary positionValue(TradeSummary position) {
         Instrument instrument = position.getInstrument();
         long price = marketEngine.getPrice(instrument);
-        Stance stance = position.getCurrentUnits() > 0 ? Stance.LONG : Stance.SHORT;
+        // If the trade is currently long, then we are quoting a SHORT for selling
+        Stance stance = position.getCurrentUnits() > 0 ? Stance.SHORT : Stance.LONG;
         long currentPrice = adjustPriceForSpread(price, instrument, stance);
         long unrealizedProfitLoss = currentPrice - position.getPrice();
-
 
         return new TradeSummary(instrument,
                 position.getCurrentUnits(),
@@ -292,7 +310,7 @@ class SimulatorContextImpl implements OrderListener, SimulatorContext {
     }
 
     SimulatorContextImpl(MarketTime clock, InstrumentHistoryService instrumentHistoryService,
-                                MarketEngine marketEngine, SimulatorProperties simulatorProperties) {
+                         MarketEngine marketEngine, SimulatorProperties simulatorProperties) {
         this.clock = clock;
         this.instrumentHistoryService = instrumentHistoryService;
         this.marketEngine = marketEngine;
@@ -300,7 +318,7 @@ class SimulatorContextImpl implements OrderListener, SimulatorContext {
     }
 
     @Override
-    public SortedSet<TradeSummary> closedTradesForAccountId(String id) {
+    public SortedSet<TradeHistory> closedTradesForAccountId(String id) {
         return closedTrades.get(id);
     }
 
@@ -342,7 +360,7 @@ class SimulatorContextImpl implements OrderListener, SimulatorContext {
         long ask = price + halfSpread;
 
         // Selling gets the bid price, buying gets the ask price.
-        return stance == Stance.LONG ? bid : ask;
+        return stance == Stance.LONG ? ask : bid;
     }
 
     private long halfSpread(Instrument pair) {

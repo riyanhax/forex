@@ -211,6 +211,11 @@ class HistoryDataService implements InstrumentHistoryService {
         return getOHLC(FOUR_HOURS, pair, closed);
     }
 
+    @Override
+    public NavigableMap<LocalDateTime, CandlestickData> getOneMinuteCandles(Instrument instrument, Range<LocalDateTime> closed) {
+        return getOHLC(ONE_MINUTE, instrument, closed);
+    }
+
     private NavigableMap<LocalDateTime, CandlestickData> getOHLC(CandleTimeFrame timeFrame, Instrument pair, Range<LocalDateTime> between) {
         NavigableMap<LocalDateTime, CandlestickData> result = new TreeMap<>();
         LocalDateTime start = timeFrame.calculateStart(between.lowerEndpoint());

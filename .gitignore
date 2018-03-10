@@ -7,3 +7,4 @@ bin/
 .gradle/
 out/
 app.log*
+.DS_Store
