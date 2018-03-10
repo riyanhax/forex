@@ -1,25 +1,25 @@
 package simulator
 
+import broker.ForexBroker
+import live.LiveTraders
 import spock.lang.Specification
 
 import java.time.LocalDateTime
 import java.time.Month
 
-class SimulatorImplSpec extends Specification {
+class SimulatorSpec extends Specification {
 
-    def clock = new SimulatorClockImpl()
-    def broker = Mock(SimulatorForexBroker)
+    def broker = Mock(ForexBroker)
 
     def 'should run simulation from start to end time'() {
-
 
         given: 'a simulation with a start and end timestamp'
         def start = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 30)
         def end = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 37)
-        Simulation simulation = new Simulation(startTime: start, endTime: end, millisDelayBetweenMinutes: 0L);
+        SimulatorProperties simulation = new SimulatorProperties(startTime: start, endTime: end, millisDelayBetweenMinutes: 0L);
 
-        SimulatorImpl simulator = new SimulatorImpl(simulation, clock, broker)
-        simulator.init()
+        def clock = new SimulatorClock(simulation)
+        Simulator simulator = new Simulator(simulation, clock, broker, Mock(SimulatorContext), new LiveTraders([]))
 
         def times = []
 
@@ -47,8 +47,8 @@ class SimulatorImplSpec extends Specification {
         def start = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 30)
         def end = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 32)
 
-        Simulation simulation = new Simulation(startTime: start, endTime: end, millisDelayBetweenMinutes: 0L);
-        SimulatorImpl simulator = new SimulatorImpl(simulation, clock, broker)
+        SimulatorProperties simulation = new SimulatorProperties(startTime: start, endTime: end, millisDelayBetweenMinutes: 0L);
+        Simulator simulator = new Simulator(simulation, new SimulatorClock(simulation), broker, Mock(SimulatorContext), new LiveTraders([]))
 
         when: 'the simulation is over'
         simulator.run()
@@ -62,12 +62,15 @@ class SimulatorImplSpec extends Specification {
 
     def 'should notify broker at each interval'() {
 
+        def context = Mock(SimulatorContext)
+        context.isAvailable() >> true
+
         given: 'a simulation with a start and end timestamp'
         def start = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 30)
         def end = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 32)
 
-        Simulation simulation = new Simulation(startTime: start, endTime: end, millisDelayBetweenMinutes: 0L);
-        SimulatorImpl simulator = new SimulatorImpl(simulation, clock, broker)
+        SimulatorProperties simulation = new SimulatorProperties(startTime: start, endTime: end, millisDelayBetweenMinutes: 0L);
+        Simulator simulator = new Simulator(simulation, new SimulatorClock(simulation), broker, context, new LiveTraders([]))
 
         when: 'the simulation is ran'
         simulator.run()

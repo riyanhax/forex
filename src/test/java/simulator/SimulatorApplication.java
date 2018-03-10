@@ -23,7 +23,7 @@ import java.util.Collection;
 import java.util.List;
 
 @SpringBootApplication(
-        scanBasePackageClasses = {SimulatorForexBroker.class, MarketConfig.class,
+        scanBasePackageClasses = {SimulatorApplication.class, MarketConfig.class,
                 BrokerConfig.class, TraderConfig.class},
         exclude = {EmbeddedServletContainerAutoConfiguration.class,
                 WebMvcAutoConfiguration.class})
@@ -40,18 +40,15 @@ public class SimulatorApplication {
     }
 
     @Bean
-    public MarketTime clock(Simulation simulation) {
-        return new SimulatorClockImpl(simulation);
+    public MarketTime clock(SimulatorProperties simulatorProperties) {
+        return new SimulatorClock(simulatorProperties);
     }
 
     @Bean
-    SimulatorContext context(Simulation simulation, MarketTime clock,
+    SimulatorContext context(SimulatorProperties simulatorProperties, MarketTime clock,
                              InstrumentHistoryService instrumentHistoryService,
                              MarketEngine marketEngine) {
-
-        marketEngine.init(simulation);
-
-        return new SimulatorContext(clock, instrumentHistoryService, marketEngine, simulation);
+        return new SimulatorContextImpl(clock, instrumentHistoryService, marketEngine, simulatorProperties);
     }
 
     @Bean
@@ -60,13 +57,13 @@ public class SimulatorApplication {
     }
 
     @Bean
-    LiveTraders traders(Simulation simulation, MarketTime clock,
+    LiveTraders traders(SimulatorProperties simulatorProperties, MarketTime clock,
                         SimulatorContext context) {
 
         List<OandaTrader> traders = new ArrayList<>();
-        simulation.getTradingStrategies().forEach(it -> {
+        simulatorProperties.getTradingStrategies().forEach(it -> {
             try {
-                traders.addAll(createInstances(it, simulation, context, clock));
+                traders.addAll(createInstances(it, simulatorProperties, context, clock));
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -76,11 +73,11 @@ public class SimulatorApplication {
     }
 
     private Collection<OandaTrader> createInstances(TradingStrategy tradingStrategy,
-                                                    Simulation simulation,
+                                                    SimulatorProperties simulatorProperties,
                                                     SimulatorContext context,
                                                     MarketTime clock) throws Exception {
         List<OandaTrader> traders = new ArrayList<>();
-        for (int i = 0; i < simulation.getInstancesPerTraderType(); i++) {
+        for (int i = 0; i < simulatorProperties.getInstancesPerTraderType(); i++) {
             traders.add(new OandaTrader(tradingStrategy.toString() + "-" + i, context, tradingStrategy, clock));
         }
         return traders;

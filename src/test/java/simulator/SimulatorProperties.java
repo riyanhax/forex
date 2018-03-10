@@ -9,7 +9,7 @@ import java.util.List;
 
 @Configuration
 @ConfigurationProperties(prefix = "simulation")
-public class Simulation {
+public class SimulatorProperties {
 
     private LocalDateTime startTime;
     private LocalDateTime endTime;

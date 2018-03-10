@@ -29,10 +29,6 @@ class ForexMarketImpl implements ForexMarket {
     }
 
     @Override
-    public void init(Simulation simulation) {
-    }
-
-    @Override
     public void processUpdates() {
 
         if (LOG.isDebugEnabled()) {

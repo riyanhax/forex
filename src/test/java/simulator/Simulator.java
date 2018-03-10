@@ -1,92 +1,98 @@
 package simulator;
 
-import broker.CandlestickData;
 import broker.ForexBroker;
-import broker.OpenPositionRequest;
-import broker.Quote;
-import broker.RequestException;
 import broker.TradeSummary;
-import com.google.common.collect.Range;
 import live.LiveTraders;
-import live.Oanda;
 import live.OandaTrader;
 import market.AccountSnapshot;
-import market.Instrument;
-import market.MarketEngine;
+import market.BaseWatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import trader.ForexTrader;
 import trader.TradingStrategy;
 
-import javax.annotation.Nullable;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.NavigableMap;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import static broker.Quote.pipsFromPippetes;
+import static java.time.temporal.ChronoUnit.MINUTES;
 import static java.util.Comparator.comparing;
 import static market.MarketTime.formatRange;
 import static market.MarketTime.formatTimestamp;
 
 @Service
-class HistoryDataForexBroker implements SimulatorForexBroker {
+class Simulator extends BaseWatcher<SimulatorClock, ForexBroker> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(HistoryDataForexBroker.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Simulator.class);
+    private final SimulatorProperties simulatorProperties;
+    private final SimulatorContext context;
+    private final LiveTraders traders;
 
-    private final MarketEngine marketEngine;
+    @Autowired
+    public Simulator(SimulatorProperties simulatorProperties,
+                     SimulatorClock clock,
+                     ForexBroker broker,
+                     SimulatorContext context,
+                     LiveTraders traders) {
+        super(clock, broker);
 
-    private final List<OandaTrader> traders = new ArrayList<>();
-
-    private Simulation simulation;
-    private SimulatorContext context;
-    private ForexBroker broker;
-
-    public HistoryDataForexBroker(Oanda broker, MarketEngine marketEngine,
-                                  LiveTraders traders, SimulatorContext context) {
-        this.broker = broker;
-        this.marketEngine = marketEngine;
-        this.traders.addAll(traders.getTraders());
+        this.simulatorProperties = simulatorProperties;
         this.context = context;
+        this.traders = traders;
     }
 
     @Override
-    public void init(Simulation simulation) {
-        this.simulation = simulation;
+    public void run() throws Exception {
+        super.run();
 
+        done();
     }
 
+    @Override
+    public boolean keepGoing(LocalDateTime now) {
+        return now.isBefore(simulatorProperties.getEndTime());
+    }
 
     @Override
-    public void processUpdates() throws Exception {
+    public long millisUntilNextInterval() {
+        return simulatorProperties.getMillisDelayBetweenMinutes();
+    }
 
-        if (isClosed()) {
+    @Override
+    protected void nextMinute() throws Exception {
+        LocalDateTime previous = clock.now();
+        if (!previous.isBefore(simulatorProperties.getEndTime())) {
+            throw new IllegalStateException("Can't advance beyond the end of the simulation!");
+        }
+
+        clock.advance(1, MINUTES);
+
+        if (!context.isAvailable()) {
             return;
         }
 
-        // Update prices and process any limit/stop orders
-        marketEngine.processUpdates();
+        context.beforeTraders();
 
-        for (OandaTrader trader : traders) {
-            // Allow traders to make/close positions
-            trader.processUpdates(this);
-        }
+        super.nextMinute();
 
-        // Process any submitted orders
-        marketEngine.processUpdates();
+        context.afterTraders();
     }
 
     @Override
-    public void done() throws Exception {
+    public boolean logTime(LocalDateTime now) {
+        return now.getMinute() == 0 && now.getHour() == 0 && now.getSecond() == 0;
+    }
 
-        Map<TradingStrategy, List<OandaTrader>> tradersByStrategy = traders.stream()
+    private void done() {
+
+        Map<TradingStrategy, List<OandaTrader>> tradersByStrategy = traders.getTraders().stream()
                 .collect(Collectors.groupingBy(ForexTrader::getStrategy));
 
         for (Map.Entry<TradingStrategy, List<OandaTrader>> e : tradersByStrategy.entrySet()) {
@@ -101,7 +107,7 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
             SortedSet<TradeSummary> allTrades = new TreeSet<>();
 
             for (OandaTrader trader : traders) {
-                AccountSnapshot end = getAccountSnapshot(trader);
+                AccountSnapshot end = context.getTraderData(trader.getAccountNumber()).getMostRecentPortfolio();
                 long endPips = end.getPipettesProfit();
                 LOG.info("End: {} at {}", profitLossDisplay(endPips), formatTimestamp(end.getTimestamp()));
 
@@ -131,7 +137,7 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
             LOG.info("Profitable trades: {}/{}", allTrades.stream().filter(it -> it.getRealizedProfitLoss() > 0).count(), allTrades.size());
             LOG.info("Highest drawdown: {} at {}", profitLossDisplay(drawdownPortfolio), formatTimestamp(drawdownPortfolio.getTimestamp()));
             LOG.info("Highest profit: {} at {}", profitLossDisplay(profitPortfolio), formatTimestamp(profitPortfolio.getTimestamp()));
-            LOG.info("Average profit: {} from {}", profitLossDisplay(averageProfit), formatRange(simulation.getStartTime(), simulation.getEndTime()));
+            LOG.info("Average profit: {} from {}", profitLossDisplay(averageProfit), formatRange(simulatorProperties.getStartTime(), simulatorProperties.getEndTime()));
         }
     }
 
@@ -146,45 +152,4 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
     private static String profitLossDisplay(long pipettes) {
         return String.format("%s pips, (%d pipettes)", pipsFromPippetes(pipettes), pipettes);
     }
-
-    @Override
-    public AccountSnapshot getAccountSnapshot(ForexTrader trader) throws Exception {
-        return broker.getAccountSnapshot(trader);
-    }
-
-    @Override
-    public Quote getQuote(ForexTrader trader, Instrument pair) throws Exception {
-        return broker.getQuote(trader, pair);
-    }
-
-    @Override
-    public boolean isClosed() {
-        return broker.isClosed() || !marketEngine.isAvailable();
-    }
-
-    @Override
-    public boolean isClosed(LocalDate time) {
-        return broker.isClosed(time) || !marketEngine.isAvailable(time);
-    }
-
-    @Override
-    public void openPosition(ForexTrader trader, OpenPositionRequest request) throws Exception {
-        broker.openPosition(trader, request);
-    }
-
-    @Override
-    public void closePosition(ForexTrader trader, TradeSummary position, @Nullable Long limit) throws Exception {
-        broker.closePosition(trader, position, limit);
-    }
-
-    @Override
-    public NavigableMap<LocalDateTime, CandlestickData> getOneDayCandles(ForexTrader trader, Instrument pair, Range<LocalDateTime> closed) throws RequestException {
-        return broker.getOneDayCandles(trader, pair, closed);
-    }
-
-    @Override
-    public NavigableMap<LocalDateTime, CandlestickData> getFourHourCandles(ForexTrader trader, Instrument pair, Range<LocalDateTime> closed) throws RequestException {
-        return broker.getFourHourCandles(trader, pair, closed);
-    }
-
 }

@@ -8,23 +8,22 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.TemporalUnit;
 
-class SimulatorClockImpl implements MarketTime {
+class SimulatorClock implements MarketTime {
 
     private Instant instant;
     private LocalDateTime now;
     private LocalDate today;
     private LocalDate tomorrow;
-    private Clock clock;
 
-    public SimulatorClockImpl(Simulation simulation) {
-        this(simulation.getStartTime());
+    SimulatorClock(SimulatorProperties simulatorProperties) {
+        this(simulatorProperties.getStartTime());
     }
 
-    SimulatorClockImpl(LocalDateTime now) {
+    SimulatorClock(LocalDateTime now) {
         init(now);
     }
 
-    void init(LocalDateTime startTime) {
+    private void init(LocalDateTime startTime) {
         instant = startTime.atZone(ZONE).toInstant();
         configure();
     }
@@ -35,7 +34,7 @@ class SimulatorClockImpl implements MarketTime {
     }
 
     private void configure() {
-        clock = Clock.fixed(instant, ZONE);
+        Clock clock = Clock.fixed(instant, ZONE);
         now = LocalDateTime.now(clock);
         today = now.toLocalDate();
         tomorrow = today.plusDays(1);

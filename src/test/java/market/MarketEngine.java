@@ -8,7 +8,6 @@ import market.order.OrderStatus;
 import market.order.SellLimitOrder;
 import market.order.SellMarketOrder;
 import org.slf4j.LoggerFactory;
-import simulator.Simulation;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -60,14 +59,6 @@ public interface MarketEngine extends Market {
         @Override
         public boolean isAvailable(LocalDate date) {
             return market.isAvailable(date);
-        }
-
-        @Override
-        public void init(Simulation simulation) {
-            ordersById.clear();
-            listenersByOrder.clear();
-
-            market.init(simulation);
         }
 
         @Override

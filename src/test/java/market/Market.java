@@ -1,10 +1,8 @@
 package market;
 
-import simulator.SimulationAware;
-
 import java.time.LocalDate;
 
-public interface Market extends SimulationAware {
+public interface Market {
 
     long getPrice(Instrument instrument);
 
