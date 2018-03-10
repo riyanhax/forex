@@ -25,6 +25,7 @@ import broker.Stance;
 import broker.TradeCloseRequest;
 import broker.TradeCloseResponse;
 import broker.TradeContext;
+import broker.TradeSpecifier;
 import broker.TradeSummary;
 import broker.TransactionID;
 import com.google.common.base.Preconditions;
@@ -65,6 +66,7 @@ public class SimulatorContext implements Context, OrderListener {
     private final Map<String, Account> mostRecentPortfolio = new HashMap<>();
     private final Map<String, AccountID> accountIdsByOrderId = new HashMap<>();
     private final Map<String, SortedSet<TradeSummary>> closedTrades = new HashMap<>();
+    private final Map<String, TraderData> traderDataById = new HashMap<>();
 
     @Override
     public void orderCancelled(OrderRequest filled) {
@@ -133,6 +135,7 @@ public class SimulatorContext implements Context, OrderListener {
                 tradeSummaries, newPipsProfit);
 
         mostRecentPortfolio.put(accountID.getId(), account);
+        getTraderData(accountID.getId()).addSnapshot(accountSnapshot(account));
     }
 
     private class SimulatorPricingContext implements PricingContext {
@@ -170,6 +173,9 @@ public class SimulatorContext implements Context, OrderListener {
             OrderRequest submitted = marketEngine.submit(SimulatorContext.this, order);
             accountIdsByOrderId.put(submitted.getId(), request.getAccountID());
 
+            TraderData traderData = getTraderData(request.getAccountID().getId());
+            traderData.setOpenedPosition(marketOrder);
+
             return new OrderCreateResponse();
         }
     }
@@ -189,6 +195,9 @@ public class SimulatorContext implements Context, OrderListener {
     private class SimulatorAccountContext implements AccountContext {
         @Override
         public AccountChangesResponse changes(AccountChangesRequest request) throws RequestException {
+            // Kind of hacky, but this is called before each trader does something, so we're managing them here
+            handleStopLossTakeProfits(mostRecentPortfolio(request.getAccountID()));
+
             return new AccountChangesResponse(getLatestTransactionId(request.getAccountID()));
         }
 
@@ -320,5 +329,53 @@ public class SimulatorContext implements Context, OrderListener {
 
     private long halfSpread(Instrument pair) {
         return (simulation.getPippeteSpread() / 2);
+    }
+
+    /*
+     * All of this logic should be moved to be handled with orders in the market.
+     * @param trader
+     */
+    void handleStopLossTakeProfits(Account account) throws RequestException {
+        TraderData traderData = getTraderData(account.getId().getId());
+        MarketOrderRequest openedPosition = traderData.getOpenedPosition();
+
+        if (openedPosition != null) {
+            AccountSnapshot accountSnapshot = accountSnapshot(account);
+            List<TradeSummary> positions = accountSnapshot.getPositionValues();
+            if (positions.isEmpty()) {
+                // Not yet been filled
+                return;
+            }
+
+            TradeSummary positionValue = positions.iterator().next();
+            long pipsProfit = positionValue.getUnrealizedPL();
+
+            // Close once we've lost or gained enough pipettes or if it's noon Friday
+            long stopLossPrice = openedPosition.getStopLossOnFill().getPrice();
+            long takeProfitPrice = openedPosition.getTakeProfitOnFill().getPrice();
+
+            long stopLoss = openedPosition.getUnits() > 0 ? positionValue.getPrice() - stopLossPrice :
+                    stopLossPrice - positionValue.getPrice();
+            long takeProfit = openedPosition.getUnits() > 0 ? takeProfitPrice - positionValue.getPrice() :
+                    positionValue.getPrice() - takeProfitPrice;
+
+            if (pipsProfit < -stopLoss || pipsProfit > takeProfit) {
+                trade().close(new TradeCloseRequest(account.getId(), new TradeSpecifier(positionValue.getId())));
+
+                // Skipping trader because this was their theoretical action in the old format
+                // This may not be necessary in reality
+                traderData.setOpenedPosition(null);
+            }
+        }
+    }
+
+    TraderData getTraderData(String accountNumber) {
+        TraderData traderData = traderDataById.get(accountNumber);
+        if (traderData == null) {
+            traderData = new TraderData();
+            traderDataById.put(accountNumber, traderData);
+        }
+
+        return traderData;
     }
 }

@@ -1,6 +1,6 @@
 package simulator;
 
-import broker.OpenPositionRequest;
+import broker.MarketOrderRequest;
 import market.AccountSnapshot;
 
 public class TraderData {
@@ -10,7 +10,7 @@ public class TraderData {
     private AccountSnapshot mostRecentPortfolio = null;
 
     // This should be managed in the market
-    private OpenPositionRequest openedPosition;
+    private MarketOrderRequest openedPosition;
 
     public void addSnapshot(AccountSnapshot accountSnapshot) {
         if (drawdownPortfolio == null || drawdownPortfolio.pipettes() > accountSnapshot.pipettes()) {
@@ -34,11 +34,11 @@ public class TraderData {
         return mostRecentPortfolio;
     }
 
-    public OpenPositionRequest getOpenedPosition() {
+    public MarketOrderRequest getOpenedPosition() {
         return openedPosition;
     }
 
-    public void setOpenedPosition(OpenPositionRequest positionRequest) {
+    public void setOpenedPosition(MarketOrderRequest positionRequest) {
         this.openedPosition = positionRequest;
     }
 }

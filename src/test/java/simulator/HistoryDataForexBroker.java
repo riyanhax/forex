@@ -24,7 +24,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -45,7 +44,6 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
     private final MarketEngine marketEngine;
 
     private final List<OandaTrader> traders = new ArrayList<>();
-    private final Map<String, TraderData> tradersByAccountNumber = new HashMap<>();
 
     private Simulation simulation;
     private SimulatorContext context;
@@ -63,7 +61,6 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
     public void init(Simulation simulation) {
         this.simulation = simulation;
 
-        traders.forEach(trader -> tradersByAccountNumber.put(trader.getAccountNumber(), new TraderData()));
     }
 
 
@@ -78,60 +75,12 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
         marketEngine.processUpdates();
 
         for (OandaTrader trader : traders) {
-            // TODO: The market needs to manage stop loss/take profit orders
-            handleStopLossTakeProfits(trader);
-
             // Allow traders to make/close positions
             trader.processUpdates(this);
         }
 
         // Process any submitted orders
         marketEngine.processUpdates();
-
-        // Update portfolio snapshots
-        traders.forEach(it -> {
-            try {
-                getTraderData(it).addSnapshot(getAccountSnapshot(it));
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
-    }
-
-    /*
-     * All of this logic should be moved to be handled with orders in the market.
-     * @param trader
-     */
-    private void handleStopLossTakeProfits(OandaTrader trader) throws Exception {
-        OpenPositionRequest openedPosition = getTraderData(trader).getOpenedPosition();
-
-        if (openedPosition != null) {
-            AccountSnapshot accountSnapshot = getAccountSnapshot(trader);
-            List<TradeSummary> positions = accountSnapshot.getPositionValues();
-            if (positions.isEmpty()) {
-                // Not yet been filled
-                return;
-            }
-
-            TradeSummary positionValue = positions.iterator().next();
-            long pipsProfit = positionValue.getUnrealizedPL();
-
-            // Close once we've lost or gained enough pipettes or if it's noon Friday
-            long stopLoss = openedPosition.getStopLoss().get();
-            long takeProfit = openedPosition.getTakeProfit().get();
-
-            if (pipsProfit < -stopLoss || pipsProfit > takeProfit) {
-                closePosition(trader, positionValue, null);
-
-                // Skipping trader because this was their theoretical action in the old format
-                // This may not be necessary in reality
-                getTraderData(trader).setOpenedPosition(null);
-            }
-        }
-    }
-
-    private TraderData getTraderData(ForexTrader trader) {
-        return tradersByAccountNumber.get(trader.getAccountNumber());
     }
 
     @Override
@@ -158,7 +107,7 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
 
                 averageProfit += endPips;
 
-                TraderData traderData = getTraderData(trader);
+                TraderData traderData = context.getTraderData(trader.getAccountNumber());
                 portfolios.add(traderData.getDrawdownPortfolio());
                 portfolios.add(traderData.getProfitPortfolio());
                 portfolios.add(end);
@@ -221,11 +170,6 @@ class HistoryDataForexBroker implements SimulatorForexBroker {
     @Override
     public void openPosition(ForexTrader trader, OpenPositionRequest request) throws Exception {
         broker.openPosition(trader, request);
-        getSimulatorTrader(trader).setOpenedPosition(request);
-    }
-
-    private TraderData getSimulatorTrader(ForexTrader trader) {
-        return getTraderData(trader);
     }
 
     @Override
