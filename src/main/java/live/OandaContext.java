@@ -47,6 +47,9 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -83,7 +86,9 @@ public class OandaContext implements Context {
         public PricingGetResponse get(PricingGetRequest request) throws broker.RequestException {
 
             com.oanda.v20.account.AccountID accountID = new com.oanda.v20.account.AccountID(request.getAccountID().getId());
-            Set<String> instruments = request.getInstruments().stream().map(Instrument::getSymbol).collect(toSet());
+            Set<String> instruments = request.getInstruments().stream()
+                    .map(Instrument::getBrokerInstrument)
+                    .map(Instrument::getSymbol).collect(toSet());
 
             com.oanda.v20.pricing.PricingGetRequest oandaRequest =
                     new com.oanda.v20.pricing.PricingGetRequest(accountID, instruments);
@@ -91,15 +96,42 @@ public class OandaContext implements Context {
             try {
                 com.oanda.v20.pricing.PricingGetResponse oandaResponse = ctx.pricing.get(oandaRequest);
 
-                return new PricingGetResponse(oandaResponse.getPrices().stream()
-                        .map(it -> new Price(pippetesFromDouble(it.getCloseoutBid().doubleValue()),
-                                pippetesFromDouble(it.getCloseoutAsk().doubleValue())))
-                        .collect(toList()));
+                return convert(request.getInstruments(), oandaResponse);
             } catch (RequestException e) {
                 throw new broker.RequestException(e.getErrorMessage(), e);
             } catch (ExecuteException e) {
                 throw new broker.RequestException(e.getMessage(), e);
             }
+        }
+
+        private PricingGetResponse convert(Set<Instrument> requestInstruments,
+                                           com.oanda.v20.pricing.PricingGetResponse oandaResponse) {
+            List<Price> prices = new ArrayList<>();
+
+            Iterator<Instrument> requestedInstrumentIter = requestInstruments.iterator();
+            for (com.oanda.v20.pricing.Price oandaPrice : oandaResponse.getPrices()) {
+                Instrument requestedInstrument = requestedInstrumentIter.next();
+                prices.add(convert(requestedInstrument, oandaPrice));
+            }
+            return new PricingGetResponse(prices);
+        }
+
+        private Price convert(Instrument requestedInstrument, com.oanda.v20.pricing.Price oandaPrice) {
+            Instrument responseInstrument = Instrument.bySymbol.get(oandaPrice.getInstrument().toString());
+            verifyResponseInstrument(requestedInstrument, responseInstrument);
+
+            boolean inverse = requestedInstrument.isInverse();
+
+            long closeoutBid = pippetesFromDouble(inverse, oandaPrice.getCloseoutBid().doubleValue());
+            long closeoutAsk = pippetesFromDouble(inverse, oandaPrice.getCloseoutAsk().doubleValue());
+
+            if (inverse) {
+                long actualAsk = closeoutBid;
+                closeoutBid = closeoutAsk;
+                closeoutAsk = actualAsk;
+            }
+
+            return new Price(responseInstrument, closeoutBid, closeoutAsk);
         }
     }
 
@@ -130,25 +162,42 @@ public class OandaContext implements Context {
     }
 
     private OrderRequest convert(MarketOrderRequest order) {
+        Instrument instrument = order.getInstrument();
+        int units = order.getUnits();
+
+        boolean shorting = instrument.isInverse();
+        if (shorting) {
+            instrument = instrument.getOpposite();
+            units = -units;
+        }
+
         com.oanda.v20.order.MarketOrderRequest oandaOrder = new com.oanda.v20.order.MarketOrderRequest();
-        oandaOrder.setInstrument(order.getInstrument().getSymbol());
-        oandaOrder.setUnits(order.getUnits());
-        oandaOrder.setStopLossOnFill(convert(order.getStopLossOnFill()));
-        oandaOrder.setTakeProfitOnFill(convert(order.getTakeProfitOnFill()));
+        oandaOrder.setInstrument(instrument.getSymbol());
+        oandaOrder.setUnits(units);
+        oandaOrder.setStopLossOnFill(convert(shorting, order.getStopLossOnFill()));
+        oandaOrder.setTakeProfitOnFill(convert(shorting, order.getTakeProfitOnFill()));
 
         return oandaOrder;
     }
 
-    private com.oanda.v20.transaction.StopLossDetails convert(StopLossDetails stopLossOnFill) {
+    private com.oanda.v20.transaction.StopLossDetails convert(boolean inverse, StopLossDetails stopLossOnFill) {
+        double price = doubleFromPippetes(stopLossOnFill.getPrice());
+        if (inverse) {
+            price = 1d / price;
+        }
         com.oanda.v20.transaction.StopLossDetails oandaVersion = new com.oanda.v20.transaction.StopLossDetails();
-        oandaVersion.setPrice(doubleFromPippetes(stopLossOnFill.getPrice()));
+        oandaVersion.setPrice(price);
 
         return oandaVersion;
     }
 
-    private com.oanda.v20.transaction.TakeProfitDetails convert(TakeProfitDetails takeProfit) {
+    private com.oanda.v20.transaction.TakeProfitDetails convert(boolean inverse, TakeProfitDetails takeProfit) {
+        double price = doubleFromPippetes(takeProfit.getPrice());
+        if (inverse) {
+            price = 1d / price;
+        }
         com.oanda.v20.transaction.TakeProfitDetails oandaVersion = new com.oanda.v20.transaction.TakeProfitDetails();
-        oandaVersion.setPrice(doubleFromPippetes(takeProfit.getPrice()));
+        oandaVersion.setPrice(price);
 
         return oandaVersion;
     }
@@ -286,17 +335,21 @@ public class OandaContext implements Context {
 
     private static InstrumentCandlesResponse convert(Instrument requestedInstrument, com.oanda.v20.instrument.InstrumentCandlesResponse oandaResponse) {
         Instrument responseInstrument = Instrument.bySymbol.get(oandaResponse.getInstrument().toString());
-        if (requestedInstrument != responseInstrument) {
-            Preconditions.checkArgument(requestedInstrument == responseInstrument.getOpposite(),
-                    "Received response instrument %s but requested was %s and not inverse %s",
-                    responseInstrument, requestedInstrument, responseInstrument.getOpposite());
-        }
+        verifyResponseInstrument(requestedInstrument, responseInstrument);
 
         return new InstrumentCandlesResponse(
                 responseInstrument,
                 convert(oandaResponse.getGranularity()),
                 oandaResponse.getCandles().stream().map(it ->
                         convert(requestedInstrument.isInverse(), it)).collect(toList()));
+    }
+
+    private static void verifyResponseInstrument(Instrument requestedInstrument, Instrument responseInstrument) {
+        if (requestedInstrument != responseInstrument) {
+            Preconditions.checkArgument(requestedInstrument == responseInstrument.getOpposite(),
+                    "Received response instrument %s but requested was %s and not inverse %s",
+                    responseInstrument, requestedInstrument, responseInstrument.getOpposite());
+        }
     }
 
     private static Candlestick convert(boolean inverse, com.oanda.v20.instrument.Candlestick data) {

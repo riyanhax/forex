@@ -117,27 +117,22 @@ public class Oanda implements ForexBroker {
     public void openPosition(ForexTrader trader, OpenPositionRequest request) throws Exception {
         Instrument pair = request.getPair();
 
-        boolean shorting = pair.isInverse();
-        if (shorting) {
-            pair = pair.getOpposite();
-        }
-
         Quote quote = getQuote(trader, pair);
-        long basePrice = shorting ? quote.getAsk() : quote.getBid();
+        long basePrice = quote.getAsk(); // Buyers get the ask price
 
         MarketOrderRequest marketOrderRequest = new MarketOrderRequest();
         marketOrderRequest.setInstrument(pair);
-        marketOrderRequest.setUnits(shorting ? -1 : 1);
+        marketOrderRequest.setUnits(1);
 
         request.getStopLoss().ifPresent(stop -> {
             StopLossDetails stopLoss = new StopLossDetails();
-            stopLoss.setPrice(basePrice - stop * (shorting ? -1 : 1));
+            stopLoss.setPrice(basePrice - stop);
             marketOrderRequest.setStopLossOnFill(stopLoss);
         });
 
         request.getTakeProfit().ifPresent(profit -> {
             TakeProfitDetails takeProfit = new TakeProfitDetails();
-            takeProfit.setPrice(basePrice + profit * (shorting ? -1 : 1));
+            takeProfit.setPrice(basePrice + profit);
             marketOrderRequest.setTakeProfitOnFill(takeProfit);
         });
 

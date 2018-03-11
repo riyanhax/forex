@@ -189,7 +189,7 @@ class SimulatorContextImpl implements OrderListener, SimulatorContext {
             long ask = adjustPriceForSpread(price, pair, Stance.LONG);
 
             List<Price> prices = new ArrayList<>();
-            prices.add(new Price(bid, ask));
+            prices.add(new Price(pair, bid, ask));
 
             return new PricingGetResponse(prices);
         }
