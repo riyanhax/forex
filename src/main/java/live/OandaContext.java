@@ -29,6 +29,7 @@ import broker.TradeCloseResponse;
 import broker.TradeContext;
 import broker.TradeSummary;
 import broker.TransactionID;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.oanda.v20.ExecuteException;
@@ -233,7 +234,7 @@ public class OandaContext implements Context {
             String price = request.getPrice().stream().map(CandlePrice::getSymbol).collect(joining(""));
 
             com.oanda.v20.instrument.InstrumentCandlesRequest oandaRequest = new com.oanda.v20.instrument.InstrumentCandlesRequest(
-                    new InstrumentName(request.getInstrument().getSymbol()));
+                    new InstrumentName(request.getInstrument().getBrokerInstrument().getSymbol()));
             oandaRequest.setPrice(price);
             oandaRequest.setGranularity(convert(request.getGranularity()));
             // These dates get translated to UTC time via the formatter, which is what Oanda expects
@@ -255,7 +256,7 @@ public class OandaContext implements Context {
             try {
                 com.oanda.v20.instrument.InstrumentCandlesResponse oandaResponse = instrument.candles(oandaRequest);
 
-                return convert(oandaResponse);
+                return convert(request.getInstrument(), oandaResponse);
             } catch (RequestException e) {
                 throw new broker.RequestException(e.getErrorMessage(), e);
             } catch (ExecuteException e) {
@@ -283,23 +284,50 @@ public class OandaContext implements Context {
         return alignments.get(day);
     }
 
-    private static InstrumentCandlesResponse convert(com.oanda.v20.instrument.InstrumentCandlesResponse oandaResponse) {
+    private static InstrumentCandlesResponse convert(Instrument requestedInstrument, com.oanda.v20.instrument.InstrumentCandlesResponse oandaResponse) {
+        Instrument responseInstrument = Instrument.bySymbol.get(oandaResponse.getInstrument().toString());
+        if (requestedInstrument != responseInstrument) {
+            Preconditions.checkArgument(requestedInstrument == responseInstrument.getOpposite(),
+                    "Received response instrument %s but requested was %s and not inverse %s",
+                    responseInstrument, requestedInstrument, responseInstrument.getOpposite());
+        }
+
         return new InstrumentCandlesResponse(
-                Instrument.bySymbol.get(oandaResponse.getInstrument().toString()),
+                responseInstrument,
                 convert(oandaResponse.getGranularity()),
-                oandaResponse.getCandles().stream().map(OandaContext::convert).collect(toList()));
+                oandaResponse.getCandles().stream().map(it ->
+                        convert(requestedInstrument.isInverse(), it)).collect(toList()));
     }
 
-    private static Candlestick convert(com.oanda.v20.instrument.Candlestick data) {
+    private static Candlestick convert(boolean inverse, com.oanda.v20.instrument.Candlestick data) {
         ZonedDateTime zonedDateTime = parseToZone(data.getTime().toString(), ZONE);
         LocalDateTime timestamp = zonedDateTime.toLocalDateTime();
 
-        return new Candlestick(timestamp, convert(data.getAsk()), convert(data.getBid()), convert(data.getMid()));
+        return new Candlestick(timestamp, convert(inverse, data.getAsk()),
+                convert(inverse, data.getBid()), convert(inverse, data.getMid()));
     }
 
-    private static CandlestickData convert(com.oanda.v20.instrument.CandlestickData data) {
-        return data == null ? null : new CandlestickData(pippetesFromDouble(data.getO().doubleValue()), pippetesFromDouble(data.getH().doubleValue()),
-                pippetesFromDouble(data.getL().doubleValue()), pippetesFromDouble(data.getC().doubleValue()));
+    private static CandlestickData convert(boolean inverse, com.oanda.v20.instrument.CandlestickData data) {
+        if (data == null) {
+            return null;
+        }
+
+        double open = data.getO().doubleValue();
+        double high = data.getH().doubleValue();
+        double low = data.getL().doubleValue();
+        double close = data.getC().doubleValue();
+
+        if (inverse) {
+            double actualHigh = low;
+            low = high;
+            high = actualHigh;
+        }
+
+        return new CandlestickData(
+                pippetesFromDouble(inverse, open),
+                pippetesFromDouble(inverse, high),
+                pippetesFromDouble(inverse, low),
+                pippetesFromDouble(inverse, close));
     }
 
     private static Account convert(com.oanda.v20.account.Account oandaAccount) {

@@ -8,6 +8,7 @@ import broker.AccountGetResponse;
 import broker.AccountID;
 import broker.Candlestick;
 import broker.CandlestickData;
+import broker.CandlestickGranularity;
 import broker.InstrumentCandlesRequest;
 import broker.InstrumentCandlesResponse;
 import broker.InstrumentContext;
@@ -298,18 +299,26 @@ class SimulatorContextImpl implements OrderListener, SimulatorContext {
             Instrument pair = request.getInstrument();
             LocalDateTime from = request.getFrom();
             LocalDateTime to = request.getTo();
+            Range<LocalDateTime> range = Range.closed(from, to);
+            CandlestickGranularity granularity = request.getGranularity();
 
             Preconditions.checkArgument(!to.isAfter(clock.now()), "Can't request candles after the current minute!");
 
+            NavigableMap<LocalDateTime, CandlestickData> data;
             try {
-                NavigableMap<LocalDateTime, CandlestickData> fourHourCandles = instrumentHistoryService.getFourHourCandles(pair, Range.closed(from, to));
-                fourHourCandles.forEach((time, ohlc) ->
-                        candlesticks.add(new Candlestick(time, null, null, ohlc)));
+                if (CandlestickGranularity.H4.equals(granularity)) {
+                    data = instrumentHistoryService.getFourHourCandles(pair, range);
+                } else if (CandlestickGranularity.D.equals(granularity)) {
+                    data = instrumentHistoryService.getOneDayCandles(pair, range);
+                } else {
+                    throw new UnsupportedOperationException("Need to support granularity: " + granularity);
+                }
+                data.forEach((time, ohlc) -> candlesticks.add(new Candlestick(time, null, null, ohlc)));
             } catch (Exception e) {
                 throw new RequestException(e.getMessage(), e);
             }
 
-            return new InstrumentCandlesResponse(request.getInstrument(), request.getGranularity(), candlesticks);
+            return new InstrumentCandlesResponse(pair, granularity, candlesticks);
         }
     }
 

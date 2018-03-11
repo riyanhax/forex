@@ -45,11 +45,11 @@ public enum TradingStrategies implements TradingStrategy {
             NavigableMap<LocalDateTime, CandlestickData> oneWeekCandlesDescending = oneWeekCandles.descendingMap();
             Iterator<Map.Entry<LocalDateTime, CandlestickData>> oneWeekIter = oneWeekCandlesDescending.entrySet().iterator();
 
-            double currentWeekHigh = oneWeekIter.next().getValue().getC();
-            double previousWeekHigh = oneWeekIter.next().getValue().getC();
-            double thirdWeekHigh = oneWeekIter.next().getValue().getC();
-            double fourthWeekHigh = oneWeekIter.next().getValue().getC();
-            double fifthWeekHigh = oneWeekIter.next().getValue().getC();
+            long currentWeekHigh = oneWeekIter.next().getValue().getC();
+            long previousWeekHigh = oneWeekIter.next().getValue().getC();
+            long thirdWeekHigh = oneWeekIter.next().getValue().getC();
+            long fourthWeekHigh = oneWeekIter.next().getValue().getC();
+            long fifthWeekHigh = oneWeekIter.next().getValue().getC();
 
             boolean checkingInverse = currentWeekHigh < previousWeekHigh;
 
@@ -61,11 +61,11 @@ public enum TradingStrategies implements TradingStrategy {
                 Set<Map.Entry<LocalDateTime, CandlestickData>> entries = newestToOldest.entrySet();
                 Iterator<Map.Entry<LocalDateTime, CandlestickData>> iterator = entries.iterator();
 
-                double currentHigh = iterator.next().getValue().getC();
-                double previousHigh = iterator.next().getValue().getC();
-                double thirdHigh = iterator.next().getValue().getC();
-                double fourthHigh = iterator.next().getValue().getC();
-                double fifthHigh = iterator.next().getValue().getC();
+                long currentHigh = iterator.next().getValue().getC();
+                long previousHigh = iterator.next().getValue().getC();
+                long thirdHigh = iterator.next().getValue().getC();
+                long fourthHigh = iterator.next().getValue().getC();
+                long fifthHigh = iterator.next().getValue().getC();
 
                 boolean openPosition = currentHigh > previousHigh && previousHigh > thirdHigh && thirdHigh < fourthHigh && fourthHigh < fifthHigh;
                 if (openPosition) {

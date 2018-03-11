@@ -11,6 +11,10 @@ public interface Quote {
 
     long getAsk();
 
+    static long pippetesFromDouble(boolean inverse, double value) {
+        return inverse ? pippetesFromDouble(1d / value) : pippetesFromDouble(value);
+    }
+
     static long pippetesFromDouble(double value) {
         return Math.round(value * PIPPETE_CONVERSION);
     }

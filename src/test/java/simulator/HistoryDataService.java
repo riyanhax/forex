@@ -21,14 +21,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Nonnull;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
@@ -40,7 +38,6 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-import static broker.CandlestickData.inverse;
 import static broker.Quote.pippetesFromDouble;
 import static market.CandleTimeFrame.FIFTEEN_MINUTE;
 import static market.CandleTimeFrame.FIVE_MINUTE;
@@ -145,14 +142,17 @@ class HistoryDataService implements InstrumentHistoryService {
 
                     Stopwatch timer = Stopwatch.createStarted();
 
-                    String path = String.format("/history/DAT_ASCII_%s_M1_%d.csv", pairYear.pair.name(), pairYear.year);
+                    Instrument pair = pairYear.pair;
+                    boolean inverse = pair.isInverse();
+
+                    String path = String.format("/history/DAT_ASCII_%s_M1_%d.csv", pair.getBrokerInstrument().name(), pairYear.year);
                     try (InputStreamReader is = new InputStreamReader(HistoryDataService.class.getResourceAsStream(path))) {
 
                         NavigableMap<LocalDateTime, CandlestickData> result = CharStreams.readLines(is, new LineProcessor<NavigableMap<LocalDateTime, CandlestickData>>() {
                             NavigableMap<LocalDateTime, CandlestickData> values = new TreeMap<>();
 
                             @Override
-                            public boolean processLine(String line) throws IOException {
+                            public boolean processLine(String line) {
                                 int part = 0;
                                 String[] parts = line.split(";");
                                 LocalDateTime parsedDate = LocalDateTime.parse(parts[part++], timestampParser).withSecond(0);
@@ -165,8 +165,14 @@ class HistoryDataService implements InstrumentHistoryService {
                                 double low = Double.parseDouble(parts[part++]);
                                 double close = Double.parseDouble(parts[part]);
 
-                                values.put(dateTimeForLocal, new CandlestickData(pippetesFromDouble(open), pippetesFromDouble(high),
-                                        pippetesFromDouble(low), pippetesFromDouble(close)));
+                                if (inverse) {
+                                    double actualHigh = low;
+                                    low = high;
+                                    high = actualHigh;
+                                }
+
+                                values.put(dateTimeForLocal, new CandlestickData(pippetesFromDouble(inverse, open), pippetesFromDouble(inverse, high),
+                                        pippetesFromDouble(inverse, low), pippetesFromDouble(inverse, close)));
 
                                 return true;
                             }
@@ -219,15 +225,10 @@ class HistoryDataService implements InstrumentHistoryService {
 
     @Override
     public Optional<InstrumentHistory> getData(Instrument pair, LocalDateTime time) {
-        boolean inverse = pair.isInverse();
         int year = time.getYear();
-        Instrument lookupInstrument = pair.getBrokerInstrument();
-        CurrencyData currencyData = minuteCache.getUnchecked(new CurrencyPairYear(lookupInstrument, year));
+        CurrencyData currencyData = minuteCache.getUnchecked(new CurrencyPairYear(pair, year));
         Map<LocalDateTime, CandlestickData> yearData = currencyData.ohlcData;
         CandlestickData ohlc = yearData.get(time);
-        if (inverse && ohlc != null) {
-            ohlc = inverse(ohlc);
-        }
 
         return ohlc == null ? Optional.empty() : Optional.of(new InstrumentHistory(pair, time, ohlc));
     }
@@ -273,11 +274,8 @@ class HistoryDataService implements InstrumentHistoryService {
         int startYear = start.getYear();
         int endYear = end.getYear();
 
-        boolean inverse = pair.isInverse();
-        Instrument lookupInstrument = pair.getBrokerInstrument();
-
         for (int year = startYear; year <= endYear; year++) {
-            result.putAll(caches.get(timeFrame).getUnchecked(new CurrencyPairYear(lookupInstrument, year)).ohlcData);
+            result.putAll(caches.get(timeFrame).getUnchecked(new CurrencyPairYear(pair, year)).ohlcData);
         }
 
         // This uses an inclusive end, because that's how Oanda does it
@@ -309,12 +307,6 @@ class HistoryDataService implements InstrumentHistoryService {
             result.put(end, aggregate);
         }
 
-        if (inverse && !result.isEmpty()) {
-            for (LocalDateTime time : new ArrayList<>(result.keySet())) {
-                CandlestickData candlestickData = result.get(time);
-                result.put(time, inverse(candlestickData));
-            }
-        }
         return result;
     }
 

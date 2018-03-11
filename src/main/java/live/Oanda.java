@@ -185,7 +185,7 @@ public class Oanda implements ForexBroker {
 
         LocalDateTime exclusiveEnd = closed.upperEndpoint();
 
-        InstrumentCandlesRequest request = new InstrumentCandlesRequest(pair.getBrokerInstrument());
+        InstrumentCandlesRequest request = new InstrumentCandlesRequest(pair);
         request.setPrice(of(BID, MID, ASK));
         request.setGranularity(granularity);
         request.setFrom(closed.lowerEndpoint());
