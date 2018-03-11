@@ -33,12 +33,4 @@ public class TraderData {
     public AccountSnapshot getMostRecentPortfolio() {
         return mostRecentPortfolio;
     }
-
-    public MarketOrderRequest getOpenedPosition() {
-        return openedPosition;
-    }
-
-    public void setOpenedPosition(MarketOrderRequest positionRequest) {
-        this.openedPosition = positionRequest;
-    }
 }

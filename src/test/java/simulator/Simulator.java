@@ -2,8 +2,9 @@ package simulator;
 
 import broker.CandlestickData;
 import broker.ForexBroker;
-import broker.Quote;
-import com.google.common.io.Files;
+import com.google.common.base.Preconditions;
+import com.google.common.io.MoreFiles;
+import com.google.common.io.RecursiveDeleteOption;
 import live.LiveTraders;
 import live.OandaTrader;
 import market.AccountSnapshot;
@@ -18,7 +19,7 @@ import trader.TradingStrategy;
 import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
+import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -27,10 +28,9 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import static broker.Quote.pipsFromPippetes;
+import static com.google.common.io.Files.write;
 import static java.time.temporal.ChronoUnit.MINUTES;
 import static java.util.Comparator.comparing;
-import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
 import static market.MarketTime.formatRange;
 import static market.MarketTime.formatTimestamp;
 
@@ -38,6 +38,7 @@ import static market.MarketTime.formatTimestamp;
 class Simulator extends BaseWatcher<SimulatorClock, ForexBroker> {
 
     private static final Logger LOG = LoggerFactory.getLogger(Simulator.class);
+    public static final DateTimeFormatter SIMPLE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd HHmm");
     private final SimulatorProperties simulatorProperties;
     private final SimulatorContext context;
     private final LiveTraders traders;
@@ -128,6 +129,13 @@ class Simulator extends BaseWatcher<SimulatorClock, ForexBroker> {
                 SortedSet<TradeHistory> closedTrades = context.closedTradesForAccountId(trader.getAccountNumber());
                 allTrades.addAll(closedTrades);
 
+                File traderDirectory = new File("build", trader.getAccountNumber());
+                File tradesDirectory = new File(traderDirectory, "trades");
+
+                if (traderDirectory.exists()) {
+                    MoreFiles.deleteRecursively(traderDirectory.toPath(), RecursiveDeleteOption.ALLOW_INSECURE);
+                }
+
                 StringBuilder sb = new StringBuilder();
                 long portfolioPips = 0L;
                 sb.append(formatTimestamp(simulatorProperties.getStartTime()))
@@ -143,35 +151,26 @@ class Simulator extends BaseWatcher<SimulatorClock, ForexBroker> {
                             .append(portfolioPips);
                 }
 
-                File file = new File("build/" + trader.getAccountNumber() + "-portfolio.csv");
-                if (!file.exists()) {
-                    file.createNewFile();
-                }
+                File file = new File(traderDirectory, "portfolio.csv");
+                writeFile(file, sb);
 
-                Files.write(sb.toString().getBytes(), file);
-
-                sb = new StringBuilder();
                 for (TradeHistory trade : closedTrades) {
-                    List<String> columns = new ArrayList<>();
-                    columns.add(trade.getId());
-                    columns.add(trade.getInstrument().getSymbol());
-                    columns.add(Integer.toString(trade.getCurrentUnits()));
-                    columns.addAll(trade.getCandles().values().stream()
-                            .map(CandlestickData::getO)
-                            .map(Quote::doubleFromPippetes)
-                            .map(it -> Double.toString(it))
-                            .collect(toList()));
+                    sb = new StringBuilder();
+                    sb.append("Timestamp,Price\n");
 
-                    sb.append(columns.stream().collect(joining(",")))
-                            .append("\n");
+                    for (Map.Entry<LocalDateTime, CandlestickData> it : trade.getCandles().entrySet()) {
+                        sb.append(it.getKey().format(SIMPLE_TIME_FORMAT))
+                                .append(",")
+                                .append(it.getValue().getO())
+                                .append("\n");
+                    }
+
+                    file = new File(tradesDirectory, trade.getInstrument() + "-" +
+                            trade.getOpenTime().format(SIMPLE_TIME_FORMAT) + "-" +
+                            (trade.getRealizedProfitLoss() > 0 ? "WIN" : "LOSS") +
+                            ".csv");
+                    writeFile(file, sb);
                 }
-
-                file = new File("build/" + trader.getAccountNumber() + "-trades.csv");
-                if (!file.exists()) {
-                    file.createNewFile();
-                }
-
-                Files.write(sb.toString().getBytes(), file);
             }
 
             averageProfit /= traders.size();
@@ -203,5 +202,21 @@ class Simulator extends BaseWatcher<SimulatorClock, ForexBroker> {
 
     private static String profitLossDisplay(long pipettes) {
         return String.format("%s pips, (%d pipettes)", pipsFromPippetes(pipettes), pipettes);
+    }
+
+    private static void writeFile(File file, StringBuilder contents) {
+        File dir = file.getParentFile();
+        if (!dir.exists()) {
+            Preconditions.checkArgument(dir.mkdirs(), "Unable to create directory %s", dir.getAbsolutePath());
+        }
+
+        try {
+            if (!file.exists()) {
+                Preconditions.checkArgument(file.createNewFile(), "Unable to create file!");
+            }
+            write(contents.toString().getBytes(), file);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

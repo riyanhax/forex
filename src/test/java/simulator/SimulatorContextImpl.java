@@ -66,6 +66,7 @@ class SimulatorContextImpl implements OrderListener, SimulatorContext {
     private final Map<String, AccountID> accountIdsByOrderId = new HashMap<>();
     private final Map<String, SortedSet<TradeHistory>> closedTrades = new HashMap<>();
     private final Map<String, TraderData> traderDataById = new HashMap<>();
+    private final Map<AccountID, MarketOrderRequest> stopLossTakeProfitsById = new HashMap<>();
 
     @Override
     public boolean isAvailable() {
@@ -209,10 +210,9 @@ class SimulatorContextImpl implements OrderListener, SimulatorContext {
 
             BuyMarketOrder order = Orders.buyMarketOrder(units, pair);
             OrderRequest submitted = marketEngine.submit(SimulatorContextImpl.this, order);
-            accountIdsByOrderId.put(submitted.getId(), request.getAccountID());
-
-            TraderData traderData = getTraderData(request.getAccountID().getId());
-            traderData.setOpenedPosition(marketOrder);
+            AccountID accountID = request.getAccountID();
+            accountIdsByOrderId.put(submitted.getId(), accountID);
+            stopLossTakeProfitsById.put(accountID, marketOrder);
 
             return new OrderCreateResponse();
         }
@@ -221,10 +221,12 @@ class SimulatorContextImpl implements OrderListener, SimulatorContext {
     private class SimulatorTradeContext implements TradeContext {
         @Override
         public TradeCloseResponse close(TradeCloseRequest request) throws RequestException {
-            TradeSummary position = mostRecentPortfolio(request.getAccountID()).getTrades().iterator().next();
+            AccountID accountID = request.getAccountID();
+            TradeSummary position = mostRecentPortfolio(accountID).getTrades().iterator().next();
             SellMarketOrder order = Orders.sellMarketOrder(1, position.getInstrument());
             OrderRequest submitted = marketEngine.submit(SimulatorContextImpl.this, order);
-            accountIdsByOrderId.put(submitted.getId(), request.getAccountID());
+            accountIdsByOrderId.put(submitted.getId(), accountID);
+            stopLossTakeProfitsById.remove(accountID);
 
             return new TradeCloseResponse();
         }
@@ -373,17 +375,13 @@ class SimulatorContextImpl implements OrderListener, SimulatorContext {
      * All of this logic should be moved to be handled with orders in the market.
      * @param trader
      */
-    void handleStopLossTakeProfits(Account account) throws RequestException {
-        TraderData traderData = getTraderData(account.getId().getId());
-        MarketOrderRequest openedPosition = traderData.getOpenedPosition();
+    private void handleStopLossTakeProfits(Account account) throws RequestException {
+        AccountID id = account.getId();
+        MarketOrderRequest openedPosition = stopLossTakeProfitsById.get(id);
 
         if (openedPosition != null) {
             AccountSnapshot accountSnapshot = accountSnapshot(account);
             List<TradeSummary> positions = accountSnapshot.getPositionValues();
-            if (positions.isEmpty()) {
-                // Not yet been filled
-                return;
-            }
 
             TradeSummary positionValue = positions.iterator().next();
             long pipsProfit = positionValue.getUnrealizedPL();
@@ -399,10 +397,7 @@ class SimulatorContextImpl implements OrderListener, SimulatorContext {
 
             if (pipsProfit < -stopLoss || pipsProfit > takeProfit) {
                 trade().close(new TradeCloseRequest(account.getId(), new TradeSpecifier(positionValue.getId())));
-
-                // Skipping trader because this was their theoretical action in the old format
-                // This may not be necessary in reality
-                traderData.setOpenedPosition(null);
+                stopLossTakeProfitsById.remove(id);
             }
         }
     }
