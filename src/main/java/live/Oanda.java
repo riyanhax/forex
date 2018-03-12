@@ -46,6 +46,7 @@ import java.util.TreeMap;
 import static broker.CandlePrice.ASK;
 import static broker.CandlePrice.BID;
 import static broker.CandlePrice.MID;
+import static broker.Quote.invert;
 import static java.time.DayOfWeek.FRIDAY;
 import static java.util.Collections.singleton;
 import static java.util.EnumSet.of;
@@ -118,29 +119,48 @@ public class Oanda implements ForexBroker {
         Instrument pair = request.getPair();
 
         Quote quote = getQuote(trader, pair);
-        long basePrice = quote.getAsk(); // Buyers get the ask price
 
-        MarketOrderRequest marketOrderRequest = new MarketOrderRequest();
-        marketOrderRequest.setInstrument(pair);
-        marketOrderRequest.setUnits(1);
-
-        request.getStopLoss().ifPresent(stop -> {
-            StopLossDetails stopLoss = new StopLossDetails();
-            stopLoss.setPrice(basePrice - stop);
-            marketOrderRequest.setStopLossOnFill(stopLoss);
-        });
-
-        request.getTakeProfit().ifPresent(profit -> {
-            TakeProfitDetails takeProfit = new TakeProfitDetails();
-            takeProfit.setPrice(basePrice + profit);
-            marketOrderRequest.setTakeProfitOnFill(takeProfit);
-        });
+        MarketOrderRequest marketOrderRequest = createMarketOrderRequest(quote, pair, 1,
+                request.getStopLoss().orElse(null),
+                request.getTakeProfit().orElse(null));
 
         OrderCreateRequest orderCreateRequest = new OrderCreateRequest(new AccountID(trader.getAccountNumber()));
         orderCreateRequest.setOrder(marketOrderRequest);
 
         OrderCreateResponse orderCreateResponse = getContext(trader).order().create(orderCreateRequest);
         LOG.info(orderCreateResponse.toString());
+    }
+
+    static MarketOrderRequest createMarketOrderRequest(Quote quote, Instrument instrument, int units, @Nullable Long stopLoss, @Nullable Long takeProfit) {
+        // Inverse instruments base stop-losses and take-profits from the ask, since they "buy" when closing the position
+        boolean inverse = instrument.isInverse();
+        long basePrice = inverse ? quote.getAsk() : quote.getBid();
+
+        MarketOrderRequest marketOrderRequest = new MarketOrderRequest();
+        marketOrderRequest.setInstrument(instrument);
+        marketOrderRequest.setUnits(units);
+
+        if (stopLoss != null) {
+            // Can't seem to get the prices right for inverse positions without converting back and forth
+            long price = inverse ? invert(invert(basePrice) + stopLoss)
+                    : basePrice - stopLoss;
+
+            StopLossDetails sl = new StopLossDetails();
+            sl.setPrice(price);
+            marketOrderRequest.setStopLossOnFill(sl);
+        }
+
+        if (takeProfit != null) {
+            // Can't seem to get the prices right for inverse positions without converting back and forth
+            long price = inverse ? invert(invert(basePrice) - takeProfit)
+                    : basePrice + takeProfit;
+
+            TakeProfitDetails tp = new TakeProfitDetails();
+            tp.setPrice(price);
+            marketOrderRequest.setTakeProfitOnFill(tp);
+        }
+
+        return marketOrderRequest;
     }
 
     @Override

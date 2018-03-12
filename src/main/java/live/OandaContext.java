@@ -40,6 +40,7 @@ import com.oanda.v20.primitives.InstrumentName;
 import com.oanda.v20.trade.TradeSpecifier;
 import market.Instrument;
 import market.MarketTime;
+import org.slf4j.LoggerFactory;
 
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
@@ -56,6 +57,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 import static broker.Quote.doubleFromPippetes;
+import static broker.Quote.invert;
 import static broker.Quote.pippetesFromDouble;
 import static java.time.LocalDateTime.parse;
 import static java.time.format.TextStyle.NARROW;
@@ -103,36 +105,6 @@ public class OandaContext implements Context {
                 throw new broker.RequestException(e.getMessage(), e);
             }
         }
-
-        private PricingGetResponse convert(Set<Instrument> requestInstruments,
-                                           com.oanda.v20.pricing.PricingGetResponse oandaResponse) {
-            List<Price> prices = new ArrayList<>();
-
-            Iterator<Instrument> requestedInstrumentIter = requestInstruments.iterator();
-            for (com.oanda.v20.pricing.Price oandaPrice : oandaResponse.getPrices()) {
-                Instrument requestedInstrument = requestedInstrumentIter.next();
-                prices.add(convert(requestedInstrument, oandaPrice));
-            }
-            return new PricingGetResponse(prices);
-        }
-
-        private Price convert(Instrument requestedInstrument, com.oanda.v20.pricing.Price oandaPrice) {
-            Instrument responseInstrument = Instrument.bySymbol.get(oandaPrice.getInstrument().toString());
-            verifyResponseInstrument(requestedInstrument, responseInstrument);
-
-            boolean inverse = requestedInstrument.isInverse();
-
-            long closeoutBid = pippetesFromDouble(inverse, oandaPrice.getCloseoutBid().doubleValue());
-            long closeoutAsk = pippetesFromDouble(inverse, oandaPrice.getCloseoutAsk().doubleValue());
-
-            if (inverse) {
-                long actualAsk = closeoutBid;
-                closeoutBid = closeoutAsk;
-                closeoutAsk = actualAsk;
-            }
-
-            return new Price(responseInstrument, closeoutBid, closeoutAsk);
-        }
     }
 
     private class OandaOrder implements OrderContext {
@@ -171,33 +143,40 @@ public class OandaContext implements Context {
             units = -units;
         }
 
+        com.oanda.v20.transaction.StopLossDetails stopLossDetails = convert(shorting, order.getStopLossOnFill());
+        com.oanda.v20.transaction.TakeProfitDetails takeProfitDetails = convert(shorting, order.getTakeProfitOnFill());
+
         com.oanda.v20.order.MarketOrderRequest oandaOrder = new com.oanda.v20.order.MarketOrderRequest();
         oandaOrder.setInstrument(instrument.getSymbol());
         oandaOrder.setUnits(units);
-        oandaOrder.setStopLossOnFill(convert(shorting, order.getStopLossOnFill()));
-        oandaOrder.setTakeProfitOnFill(convert(shorting, order.getTakeProfitOnFill()));
+        oandaOrder.setStopLossOnFill(stopLossDetails);
+        oandaOrder.setTakeProfitOnFill(takeProfitDetails);
+
+        LoggerFactory.getLogger(OandaContext.class).info("Converted order {} to {}", order, oandaOrder);
 
         return oandaOrder;
     }
 
     private com.oanda.v20.transaction.StopLossDetails convert(boolean inverse, StopLossDetails stopLossOnFill) {
-        double price = doubleFromPippetes(stopLossOnFill.getPrice());
+        long price = stopLossOnFill.getPrice();
         if (inverse) {
-            price = 1d / price;
+            price = invert(price);
         }
+
         com.oanda.v20.transaction.StopLossDetails oandaVersion = new com.oanda.v20.transaction.StopLossDetails();
-        oandaVersion.setPrice(price);
+        oandaVersion.setPrice(doubleFromPippetes(price));
 
         return oandaVersion;
     }
 
     private com.oanda.v20.transaction.TakeProfitDetails convert(boolean inverse, TakeProfitDetails takeProfit) {
-        double price = doubleFromPippetes(takeProfit.getPrice());
+        long price = takeProfit.getPrice();
         if (inverse) {
-            price = 1d / price;
+            price = invert(price);
         }
+
         com.oanda.v20.transaction.TakeProfitDetails oandaVersion = new com.oanda.v20.transaction.TakeProfitDetails();
-        oandaVersion.setPrice(price);
+        oandaVersion.setPrice(doubleFromPippetes(price));
 
         return oandaVersion;
     }
@@ -400,6 +379,40 @@ public class OandaContext implements Context {
                 pippetesFromDouble(tradeSummary.getRealizedPL().doubleValue()),
                 pippetesFromDouble(tradeSummary.getUnrealizedPL().doubleValue()),
                 parseTimestamp(openTime), parseTimestamp(closeTime), tradeSummary.getId().toString());
+    }
+
+    static PricingGetResponse convert(Set<Instrument> requestInstruments,
+                                      com.oanda.v20.pricing.PricingGetResponse oandaResponse) {
+        List<Price> prices = new ArrayList<>();
+
+        Iterator<Instrument> requestedInstrumentIter = requestInstruments.iterator();
+        for (com.oanda.v20.pricing.Price oandaPrice : oandaResponse.getPrices()) {
+            Instrument requestedInstrument = requestedInstrumentIter.next();
+            prices.add(convert(requestedInstrument, oandaPrice));
+        }
+        return new PricingGetResponse(prices);
+    }
+
+    static Price convert(Instrument requestedInstrument, com.oanda.v20.pricing.Price oandaPrice) {
+        Instrument responseInstrument = Instrument.bySymbol.get(oandaPrice.getInstrument().toString());
+        verifyResponseInstrument(requestedInstrument, responseInstrument);
+
+        boolean inverse = requestedInstrument.isInverse();
+
+        long bid = pippetesFromDouble(inverse, oandaPrice.getBids().stream().findFirst()
+                .orElseThrow(() -> new IllegalStateException("No bid prices found!"))
+                .getPrice().doubleValue());
+        long ask = pippetesFromDouble(inverse, oandaPrice.getAsks().stream().findFirst()
+                .orElseThrow(() -> new IllegalStateException("No ask prices found!"))
+                .getPrice().doubleValue());
+
+        if (inverse) {
+            long actualAsk = bid;
+            bid = ask;
+            ask = actualAsk;
+        }
+
+        return new Price(requestedInstrument, bid, ask);
     }
 
     private static AccountID convert(com.oanda.v20.account.AccountID id) {
