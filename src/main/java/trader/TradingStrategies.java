@@ -13,7 +13,6 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Optional;
 import java.util.Random;
-import java.util.Set;
 
 public enum TradingStrategies implements TradingStrategy {
 
@@ -35,47 +34,44 @@ public enum TradingStrategies implements TradingStrategy {
         @Override
         public Optional<OpenPositionRequest> shouldOpenPosition(ForexTrader trader, ForexBroker broker, MarketTime clock) throws Exception {
             LocalDateTime now = clock.now();
-            if (!(now.getMinute() == 30)) {
+            if (!(now.getMinute() % 16 == 0)) {
                 return Optional.empty();
             }
 
             Instrument pair = randomInstrument();
-            NavigableMap<LocalDateTime, CandlestickData> oneWeekCandles = broker.getOneDayCandles(trader, pair, Range.closed(now.minusDays(10), now));
 
-            NavigableMap<LocalDateTime, CandlestickData> oneWeekCandlesDescending = oneWeekCandles.descendingMap();
-            Iterator<Map.Entry<LocalDateTime, CandlestickData>> oneWeekIter = oneWeekCandlesDescending.entrySet().iterator();
+            CandlestickData[] oneWeekCandles = TradingStrategies.twoMostRecent(broker.getOneWeekCandles(trader, pair, Range.closed(now.minusWeeks(3), now)));
+            CandlestickData thisWeek = oneWeekCandles[0];
+            CandlestickData lastWeek = oneWeekCandles[1];
 
-            long currentWeekHigh = oneWeekIter.next().getValue().getC();
-            long previousWeekHigh = oneWeekIter.next().getValue().getC();
-            long thirdWeekHigh = oneWeekIter.next().getValue().getC();
-            long fourthWeekHigh = oneWeekIter.next().getValue().getC();
-            long fifthWeekHigh = oneWeekIter.next().getValue().getC();
+            boolean thisWeekHigher = thisWeek.getH() > lastWeek.getH();
 
-            boolean checkingInverse = currentWeekHigh < previousWeekHigh;
+            CandlestickData[] oneDayCandles = TradingStrategies.twoMostRecent(broker.getOneDayCandles(trader, pair, Range.closed(now.minusDays(5), now)));
+            CandlestickData today = oneDayCandles[0];
+            CandlestickData yesterday = oneDayCandles[1];
 
-            if ((currentWeekHigh > previousWeekHigh && previousWeekHigh > thirdWeekHigh && thirdWeekHigh < fourthWeekHigh && fourthWeekHigh < fifthWeekHigh)
-                    || (checkingInverse && previousWeekHigh < thirdWeekHigh && thirdWeekHigh > fourthWeekHigh && fourthWeekHigh > fifthWeekHigh)) {
+            boolean todayHigher = today.getH() > yesterday.getH();
 
-                NavigableMap<LocalDateTime, CandlestickData> dayCandles = broker.getFourHourCandles(trader, pair, Range.closed(now.minusDays(7), now));
-                NavigableMap<LocalDateTime, CandlestickData> newestToOldest = dayCandles.descendingMap();
-                Set<Map.Entry<LocalDateTime, CandlestickData>> entries = newestToOldest.entrySet();
-                Iterator<Map.Entry<LocalDateTime, CandlestickData>> iterator = entries.iterator();
-
-                long currentHigh = iterator.next().getValue().getC();
-                long previousHigh = iterator.next().getValue().getC();
-                long thirdHigh = iterator.next().getValue().getC();
-                long fourthHigh = iterator.next().getValue().getC();
-                long fifthHigh = iterator.next().getValue().getC();
-
-                boolean openPosition = currentHigh > previousHigh && previousHigh > thirdHigh && thirdHigh < fourthHigh && fourthHigh < fifthHigh;
-                if (openPosition) {
-                    return Optional.of(new OpenPositionRequest(pair, null, 300L, 600L));
-                } else if (currentHigh < previousHigh && previousHigh < thirdHigh && thirdHigh > fourthHigh && fourthHigh > fifthHigh) {
-                    return Optional.of(new OpenPositionRequest(pair.getOpposite(), null, 300L, 600L));
-                }
+            if (!(thisWeekHigher == todayHigher)) {
+                return Optional.empty();
             }
 
-            return Optional.empty();
+            CandlestickData[] fourHourCandles = TradingStrategies.twoMostRecent(broker.getFourHourCandles(trader, pair, Range.closed(now.minusDays(5), now)));
+            long currentHigh = fourHourCandles[0].getH();
+            long previousHigh = fourHourCandles[1].getH();
+
+            boolean thisFourHigher = currentHigh > previousHigh;
+
+            if (!(todayHigher == thisFourHigher)) {
+                return Optional.empty();
+            }
+
+            if (todayHigher) {
+                return Optional.of(new OpenPositionRequest(pair, null, 1000L, 2000L));
+            } else {
+                return Optional.of(new OpenPositionRequest(pair.getOpposite(), null, 1000L, 2000L));
+            }
+
         }
     };
 
@@ -84,5 +80,15 @@ public enum TradingStrategies implements TradingStrategy {
     private static Instrument randomInstrument() {
         Instrument[] instruments = Instrument.values();
         return instruments[random.nextInt(instruments.length)];
+    }
+
+    private static CandlestickData[] twoMostRecent(NavigableMap<LocalDateTime, CandlestickData> ascendingCandles) {
+        NavigableMap<LocalDateTime, CandlestickData> descending = ascendingCandles.descendingMap();
+        Iterator<Map.Entry<LocalDateTime, CandlestickData>> oneWeekIter = descending.entrySet().iterator();
+
+        Map.Entry<LocalDateTime, CandlestickData> mostRecent = oneWeekIter.next();
+        Map.Entry<LocalDateTime, CandlestickData> second = oneWeekIter.next();
+
+        return new CandlestickData[]{mostRecent.getValue(), second.getValue()};
     }
 }

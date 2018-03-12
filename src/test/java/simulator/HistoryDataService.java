@@ -255,6 +255,11 @@ class HistoryDataService implements InstrumentHistoryService {
         return loadCandleData(new CandleRequest(CandleTimeFrame.ONE_MINUTE, instrument, closed)); // No need to cache one minute data
     }
 
+    @Override
+    public NavigableMap<LocalDateTime, CandlestickData> getOneWeekCandles(Instrument pair, Range<LocalDateTime> range) {
+        return getOHLC(ONE_WEEK, pair, range);
+    }
+
     private NavigableMap<LocalDateTime, CandlestickData> getOHLC(CandleTimeFrame timeFrame, Instrument pair, Range<LocalDateTime> between) {
         return candleRequestCache.getUnchecked(new CandleRequest(timeFrame, pair, between));
     }

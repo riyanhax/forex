@@ -79,8 +79,14 @@ class SimulatorContextImpl implements OrderListener, SimulatorContext {
         // Update prices and process any limit/stop orders
         marketEngine.processUpdates();
 
+        boolean orderSubmitted = false;
         for (Account account : mostRecentPortfolio.values()) {
-            handleStopLossTakeProfits(account);
+            orderSubmitted |= handleStopLossTakeProfits(account);
+        }
+
+        // Process any stop loss / take profits
+        if (orderSubmitted) {
+            marketEngine.processUpdates();
         }
     }
 
@@ -128,7 +134,7 @@ class SimulatorContextImpl implements OrderListener, SimulatorContext {
                     0L,
                     existingPosition.getOpenTime(),
                     now,
-                    now.toString());
+                    existingPosition.getOpenTime().toString());
 
             newPipsProfit += closedTrade.getRealizedProfitLoss();
 
@@ -222,8 +228,15 @@ class SimulatorContextImpl implements OrderListener, SimulatorContext {
     private class SimulatorTradeContext implements TradeContext {
         @Override
         public TradeCloseResponse close(TradeCloseRequest request) throws RequestException {
+            String requestedCloseId = request.getTradeSpecifier().getId();
+
             AccountID accountID = request.getAccountID();
             TradeSummary position = mostRecentPortfolio(accountID).getTrades().iterator().next();
+            String positionId = position.getId();
+
+            Preconditions.checkArgument(requestedCloseId.equals(positionId),
+                    "Trade with id [%s] not found.  Found [%s]", requestedCloseId, positionId);
+
             SellMarketOrder order = Orders.sellMarketOrder(1, position.getInstrument());
             OrderRequest submitted = marketEngine.submit(SimulatorContextImpl.this, order);
             accountIdsByOrderId.put(submitted.getId(), accountID);
@@ -287,7 +300,7 @@ class SimulatorContextImpl implements OrderListener, SimulatorContext {
                 unrealizedProfitLoss,
                 position.getOpenTime(),
                 null,
-                clock.now().toString());
+                position.getOpenTime().toString());
     }
 
     private class SimulatorInstrumentContext implements InstrumentContext {
@@ -310,6 +323,8 @@ class SimulatorContextImpl implements OrderListener, SimulatorContext {
                     data = instrumentHistoryService.getFourHourCandles(pair, range);
                 } else if (CandlestickGranularity.D.equals(granularity)) {
                     data = instrumentHistoryService.getOneDayCandles(pair, range);
+                } else if (CandlestickGranularity.W.equals(granularity)) {
+                    data = instrumentHistoryService.getOneWeekCandles(pair, range);
                 } else {
                     throw new UnsupportedOperationException("Need to support granularity: " + granularity);
                 }
@@ -383,8 +398,9 @@ class SimulatorContextImpl implements OrderListener, SimulatorContext {
     /*
      * All of this logic should be moved to be handled with orders in the market.
      * @param trader
+     * @return true if an order was submitted
      */
-    private void handleStopLossTakeProfits(Account account) throws RequestException {
+    private boolean handleStopLossTakeProfits(Account account) throws RequestException {
         AccountID id = account.getId();
         MarketOrderRequest openedPosition = stopLossTakeProfitsById.get(id);
 
@@ -407,8 +423,10 @@ class SimulatorContextImpl implements OrderListener, SimulatorContext {
             if (pipsProfit < -stopLoss || pipsProfit > takeProfit) {
                 trade().close(new TradeCloseRequest(account.getId(), new TradeSpecifier(positionValue.getId())));
                 stopLossTakeProfitsById.remove(id);
+                return true;
             }
         }
+        return false;
     }
 
     @Override

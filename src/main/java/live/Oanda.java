@@ -196,6 +196,11 @@ public class Oanda implements ForexBroker {
         return getCandles(trader, CandlestickGranularity.H4, closed, pair);
     }
 
+    @Override
+    public NavigableMap<LocalDateTime, CandlestickData> getOneWeekCandles(ForexTrader trader, Instrument pair, Range<LocalDateTime> closed) throws RequestException {
+        return getCandles(trader, CandlestickGranularity.W, closed, pair);
+    }
+
     private NavigableMap<LocalDateTime, CandlestickData> getCandles(ForexTrader trader, CandlestickGranularity granularity, Range<LocalDateTime> closed, Instrument pair) throws RequestException {
 
         LocalDateTime exclusiveEnd = closed.upperEndpoint();
