@@ -47,3 +47,6 @@ oanda:
   - # 10/10 SL/TP
     account: '101-001-1775714-003'
     strategy: OPEN_RANDOM_POSITION_HIGH_FREQUENCY
+  - # 100/200 SL/TP
+    account: '101-001-1775714-004'
+    strategy: SMARTER_RANDOM_POSITION
