@@ -22,6 +22,12 @@ bootJar {
     launchScript()
 }
 
+jar {
+    version ''
+    preserveFileTimestamps false
+    reproducibleFileOrder true
+}
+
 dependencies {
     compile "org.slf4j:slf4j-api:$slf4jVersion"
     compile "org.springframework.boot:spring-boot-starter"
@@ -34,4 +40,31 @@ dependencies {
     testCompile("org.spockframework:spock-core:$spockVersion") {
         exclude group: 'org.codehaus.groovy'
     }
+}
+
+task stopService(type: Exec) {
+    commandLine 'sudo', 'service', 'forex', 'stop'
+}
+
+task copyJar(dependsOn: [assemble, stopService]) {
+    def archive = tasks.jar.archivePath
+
+    doLast {
+        exec {
+            assert project.hasProperty('targetDir'), 'Please specify -PtargetDir=<path> for where to release to'
+            def targetDir = file(project.property('targetDir'))
+
+            logger.lifecycle "Releasing ${archive} to ${targetDir}"
+
+            commandLine 'sudo', 'cp', archive, targetDir
+        }
+    }
+}
+
+task startService(type: Exec, dependsOn: copyJar) {
+    commandLine 'sudo', 'service', 'forex', 'start'
+}
+
+task release {
+    dependsOn copyJar, startService
 }

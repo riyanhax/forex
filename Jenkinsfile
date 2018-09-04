@@ -9,8 +9,6 @@ stage('Test') {
 
         def build = "${env.JOB_NAME} - #${env.BUILD_NUMBER}".toString()
 
-        def email = [to: "${env.EMAIL}", from: "${env.EMAIL}"]
-
         currentBuild.result = "SUCCESS"
 
         try {
@@ -22,9 +20,49 @@ stage('Test') {
         } catch (err) {
             currentBuild.result = "FAILURE"
 
-            email.putAll([subject: "$build failed!", body: "${env.JOB_NAME} failed! See ${env.BUILD_URL} for details."])
+            emailext to: "${env.EMAIL}",
+                    recipientProviders: [[$class: 'DevelopersRecipientProvider']],
+                    body: "${env.JOB_NAME} failed! See ${env.BUILD_URL} for details.",
+                    subject: "$build failed!"
 
-            emailext body: email.body, recipientProviders: [[$class: 'DevelopersRecipientProvider']], subject: email.subject, to: "${env.EMAIL}"
+            throw err
+        }
+
+        archiveArtifacts artifacts: 'build/libs/forex.jar', fingerprint: true
+
+        stash name: 'built'
+    }
+}
+
+stage('Release') {
+
+    timeout(time: 14, unit: 'DAYS') {
+        input 'Perform a release?'
+    }
+
+    node {
+
+        unstash 'built'
+
+        def build = "${env.JOB_NAME} - #${env.BUILD_NUMBER}".toString()
+
+        currentBuild.result = "SUCCESS"
+
+        try {
+            sh "./gradlew release -PtargetDir=${env.FOREX_TARGET_DIR}"
+
+            emailext to: "${env.EMAIL}",
+                    recipientProviders: [[$class: 'DevelopersRecipientProvider']],
+                    body: "${env.JOB_NAME} released! See ${env.BUILD_URL} for details.",
+                    subject: "$build released!"
+
+        } catch (err) {
+            currentBuild.result = "FAILURE"
+
+            emailext to: "${env.EMAIL}",
+                    recipientProviders: [[$class: 'DevelopersRecipientProvider']],
+                    body: "${env.JOB_NAME} failed! See ${env.BUILD_URL} for details.",
+                    subject: "$build failed!"
 
             throw err
         }
