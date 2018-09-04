@@ -1,17 +1,20 @@
-spring.main.web-environment: false
+spring:
+  main:
+    web-application-type: none
+
 logging.file: app.log
 
 oanda:
   traders:
-    - # TODO: Use a better trading strategy when possible
-      account: '101-001-1775714-001'
-      strategy: OPEN_RANDOM_POSITION
+  - # TODO: Use a better trading strategy when possible
+    account: '101-001-1775714-001'
+    strategy: OPEN_RANDOM_POSITION
   api:
     endpoint: 'https://api-fxpractice.oanda.com'
     token: 'inserted from properties'
 
 ---
-spring:
+spring: # Simulated backtesting
   profiles: simulation
 
 logging.level.live: warn
@@ -25,24 +28,22 @@ simulation:
   instancesPerTraderType: 2
   tradingStrategies: OPEN_RANDOM_POSITION, SMARTER_RANDOM_POSITION
 
-
-
 ---
-spring:
+spring: # Real trading accounts with live brokers
   profiles: prod
 
 oanda:
   endpoint: 'https://api-fxtrade.oanda.com/'
 
 ---
-spring:
+spring: # Demo trading accounts with live brokers
   profiles: demo
 
 oanda:
   traders:
-    - # 30/60 SL/TP
-      account: '101-001-1775714-002'
-      strategy: OPEN_RANDOM_POSITION
-    - # 10/10 SL/TP
-      account: '101-001-1775714-003'
-      strategy: OPEN_RANDOM_POSITION_HIGH_FREQUENCY
+  - # 30/60 SL/TP
+    account: '101-001-1775714-002'
+    strategy: OPEN_RANDOM_POSITION
+  - # 10/10 SL/TP
+    account: '101-001-1775714-003'
+    strategy: OPEN_RANDOM_POSITION_HIGH_FREQUENCY

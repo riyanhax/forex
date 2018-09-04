@@ -4,15 +4,11 @@ import broker.BrokerConfig;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.web.EmbeddedServletContainerAutoConfiguration;
-import org.springframework.boot.autoconfigure.web.WebMvcAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import trader.TraderConfig;
 
 @SpringBootApplication(
-        scanBasePackageClasses = {LiveConfig.class, BrokerConfig.class, TraderConfig.class},
-        exclude = {EmbeddedServletContainerAutoConfiguration.class,
-                WebMvcAutoConfiguration.class})
+        scanBasePackageClasses = {LiveConfig.class, BrokerConfig.class, TraderConfig.class})
 public class LiveApplication {
 
     public static void main(String[] args) {

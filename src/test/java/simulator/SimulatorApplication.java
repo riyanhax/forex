@@ -12,8 +12,6 @@ import market.Watcher;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.web.EmbeddedServletContainerAutoConfiguration;
-import org.springframework.boot.autoconfigure.web.WebMvcAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import trader.TraderConfig;
 import trader.TradingStrategy;
@@ -24,9 +22,7 @@ import java.util.List;
 
 @SpringBootApplication(
         scanBasePackageClasses = {SimulatorApplication.class, MarketConfig.class,
-                BrokerConfig.class, TraderConfig.class},
-        exclude = {EmbeddedServletContainerAutoConfiguration.class,
-                WebMvcAutoConfiguration.class})
+                BrokerConfig.class, TraderConfig.class})
 public class SimulatorApplication {
 
     public static void main(String[] args) {

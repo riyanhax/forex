@@ -1,11 +1,9 @@
-buildscript {
-    repositories {
-        mavenCentral()
-    }
-    dependencies {
-        classpath("org.springframework.boot:spring-boot-gradle-plugin:1.5.10.RELEASE")
-    }
+plugins {
+    id 'org.springframework.boot' version '2.0.4.RELEASE'
 }
+
+apply plugin: 'groovy'
+apply plugin: 'io.spring.dependency-management'
 
 repositories {
     mavenCentral()
@@ -20,12 +18,13 @@ ext {
     springVersion = '4.3.3.RELEASE'
 }
 
-apply plugin: 'groovy'
-apply plugin: 'org.springframework.boot'
+bootJar {
+    launchScript()
+}
 
 dependencies {
     compile "org.slf4j:slf4j-api:$slf4jVersion"
-    compile "org.springframework.boot:spring-boot-starter-web"
+    compile "org.springframework.boot:spring-boot-starter"
     compile "com.google.guava:guava:$guavaVersion"
     compile "com.oanda.v20:v20:$oandaVersion"
 
