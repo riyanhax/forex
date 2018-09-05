@@ -3,6 +3,8 @@ package trader;
 import broker.ForexBroker;
 import broker.OpenPositionRequest;
 import broker.TradeSummary;
+import com.google.common.base.MoreObjects;
+import com.google.common.base.MoreObjects.ToStringHelper;
 import market.AccountSnapshot;
 import market.MarketTime;
 import org.slf4j.Logger;
@@ -62,5 +64,15 @@ public abstract class BaseTrader implements ForexTrader {
                 broker.closePosition(this, positionValue, null);
             }
         }
+    }
+
+    @Override
+    public final String toString() {
+        return toStringHelper().toString();
+    }
+
+    protected ToStringHelper toStringHelper() {
+        return MoreObjects.toStringHelper(this)
+                .add("tradingStrategy", tradingStrategy);
     }
 }

@@ -30,7 +30,7 @@ public abstract class BaseWatcher<CLOCK extends MarketTime, BROKER extends Forex
         }
     }
 
-    protected void init() throws Exception {
+    private void init() {
         broker.processUpdates();
     }
 

@@ -1,6 +1,8 @@
 package live
 
+import broker.Account
 import broker.AccountGetResponse
+import broker.AccountID
 import broker.Context
 import broker.MarketOrderRequest
 import broker.OpenPositionRequest
@@ -10,6 +12,7 @@ import broker.PricingGetResponse
 import broker.Quote
 import broker.StopLossDetails
 import broker.TakeProfitDetails
+import broker.TransactionID
 import market.MarketTime
 import spock.lang.Specification
 import spock.lang.Unroll
@@ -41,7 +44,7 @@ class OandaSpec extends Specification {
 
     def 'should use the specified units from the request'() {
         def context = Mock(Context)
-        context.getAccount(_) >> new AccountGetResponse()
+        context.getAccount(_) >> new AccountGetResponse(new Account(new AccountID('someAccountId'), new TransactionID('someId'), [], 0L))
         context.getPricing(_) >> new PricingGetResponse([new Price(EURUSD, 10010L, 10020L)])
 
         def clock = Mock(MarketTime)

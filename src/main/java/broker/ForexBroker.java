@@ -16,7 +16,7 @@ public interface ForexBroker {
 
     EnumSet<DayOfWeek> ALWAYS_OPEN_DAYS = EnumSet.of(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY);
 
-    void processUpdates() throws Exception;
+    void processUpdates();
 
     AccountSnapshot getAccountSnapshot(ForexTrader trader) throws Exception;
 

@@ -41,6 +41,7 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Optional;
 import java.util.TreeMap;
 
 import static broker.CandlePrice.ASK;
@@ -175,14 +176,18 @@ public class Oanda implements ForexBroker {
     }
 
     @Override
-    public void processUpdates() throws Exception {
+    public void processUpdates() {
         if (isClosed()) {
             LOG.info("Market is closed.");
             return;
         }
 
         for (ForexTrader trader : tradersByAccountId.values()) {
-            trader.processUpdates(this);
+            try {
+                trader.processUpdates(this);
+            } catch (Exception e) {
+                LOG.error("Unable to process trader: {}", trader, e);
+            }
         }
     }
 
@@ -236,7 +241,11 @@ public class Oanda implements ForexBroker {
     }
 
     private Account getAccount(ForexTrader trader) throws RequestException {
-        return tradersByAccountId.get(trader.getAccountNumber()).getAccount();
+        Optional<Account> account = tradersByAccountId.get(trader.getAccountNumber()).getAccount();
+        if (!account.isPresent()) {
+            throw new RequestException("Unable to find the account for the trader!");
+        }
+        return account.get();
     }
 
     private Context getContext(ForexTrader trader) {

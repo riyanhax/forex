@@ -7,12 +7,15 @@ import broker.AccountID;
 import broker.Context;
 import broker.RequestException;
 import broker.TransactionID;
+import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.base.Stopwatch;
 import market.MarketTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import trader.BaseTrader;
 import trader.TradingStrategy;
+
+import java.util.Optional;
 
 public class OandaTrader extends BaseTrader {
 
@@ -26,7 +29,7 @@ public class OandaTrader extends BaseTrader {
         super(tradingStrategy, clock);
         this.accountId = accountId;
         this.ctx = ctx;
-        this.account = refresh();
+        this.account = refresh().orElse(null);
     }
 
     @Override
@@ -38,12 +41,12 @@ public class OandaTrader extends BaseTrader {
         return ctx;
     }
 
-    Account getAccount() throws RequestException {
-        if (newTransactionsExist()) {
-            account = refresh();
+    Optional<Account> getAccount() throws RequestException {
+        if (null == account || newTransactionsExist()) {
+            refresh().ifPresent(it -> account = it);
         }
 
-        return account;
+        return Optional.ofNullable(account);
     }
 
     private boolean newTransactionsExist() throws RequestException {
@@ -56,13 +59,24 @@ public class OandaTrader extends BaseTrader {
         return !lastTransactionID.equals(account.getLastTransactionID());
     }
 
-    private Account refresh() throws RequestException {
+    private Optional<Account> refresh() {
         Stopwatch timer = Stopwatch.createStarted();
 
-        Account account = ctx.getAccount(new AccountID(this.accountId)).getAccount();
+        try {
+            Account account = ctx.getAccount(new AccountID(this.accountId)).getAccount();
 
-        LOG.info("Loaded account {} in {}", accountId, timer);
+            LOG.info("Loaded account {} in {}", accountId, timer);
 
-        return account;
+            return Optional.of(account);
+        } catch (RequestException e) {
+            LOG.error("Unable to retrieve the account!", e);
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    protected ToStringHelper toStringHelper() {
+        return super.toStringHelper()
+                .add("accountId", accountId);
     }
 }
