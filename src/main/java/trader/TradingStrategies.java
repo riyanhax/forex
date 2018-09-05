@@ -20,14 +20,14 @@ public enum TradingStrategies implements TradingStrategy {
         @Override
         public Optional<OpenPositionRequest> shouldOpenPosition(ForexTrader trader, ForexBroker broker, MarketTime clock) {
             Instrument pair = TradingStrategies.randomInstrument();
-            return Optional.of(new OpenPositionRequest(pair, null, 300L, 600L));
+            return Optional.of(new OpenPositionRequest(pair, 1, null, 300L, 600L));
         }
     },
     OPEN_RANDOM_POSITION_HIGH_FREQUENCY {
         @Override
         public Optional<OpenPositionRequest> shouldOpenPosition(ForexTrader trader, ForexBroker broker, MarketTime clock) {
             Instrument pair = TradingStrategies.randomInstrument();
-            return Optional.of(new OpenPositionRequest(pair, null, 100L, 100L));
+            return Optional.of(new OpenPositionRequest(pair, 1, null, 100L, 100L));
         }
     },
     SMARTER_RANDOM_POSITION {
@@ -67,9 +67,9 @@ public enum TradingStrategies implements TradingStrategy {
             }
 
             if (todayHigher) {
-                return Optional.of(new OpenPositionRequest(pair, null, 1000L, 2000L));
+                return Optional.of(new OpenPositionRequest(pair, 1, null, 1000L, 2000L));
             } else {
-                return Optional.of(new OpenPositionRequest(pair.getOpposite(), null, 1000L, 2000L));
+                return Optional.of(new OpenPositionRequest(pair.getOpposite(), 1, null, 1000L, 2000L));
             }
 
         }

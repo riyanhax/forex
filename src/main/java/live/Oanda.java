@@ -120,7 +120,7 @@ public class Oanda implements ForexBroker {
 
         Quote quote = getQuote(trader, pair);
 
-        MarketOrderRequest marketOrderRequest = createMarketOrderRequest(quote, pair, 1,
+        MarketOrderRequest marketOrderRequest = createMarketOrderRequest(quote, pair, request.getUnits(),
                 request.getStopLoss().orElse(null),
                 request.getTakeProfit().orElse(null));
 

@@ -8,12 +8,14 @@ import java.util.Optional;
 
 public class OpenPositionRequest {
     private final Instrument pair;
+    private final int units;
     private final Long limit;
     private final Long stopLoss;
     private final Long takeProfit;
 
-    public OpenPositionRequest(Instrument pair, @Nullable Long limit, @Nullable Long stopLossPippetes, @Nullable Long takeProfitPippetes) {
+    public OpenPositionRequest(Instrument pair, int units, @Nullable Long limit, @Nullable Long stopLossPippetes, @Nullable Long takeProfitPippetes) {
         this.pair = pair;
+        this.units = units;
         this.limit = limit;
         this.stopLoss = stopLossPippetes;
         this.takeProfit = takeProfitPippetes;
@@ -21,6 +23,10 @@ public class OpenPositionRequest {
 
     public Instrument getPair() {
         return pair;
+    }
+
+    public int getUnits() {
+        return units;
     }
 
     public Optional<Long> getLimit() {
