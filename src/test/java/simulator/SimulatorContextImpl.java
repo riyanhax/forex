@@ -6,6 +6,7 @@ import broker.AccountChangesResponse;
 import broker.AccountContext;
 import broker.AccountGetResponse;
 import broker.AccountID;
+import broker.BaseContext;
 import broker.Candlestick;
 import broker.CandlestickData;
 import broker.CandlestickGranularity;
@@ -57,7 +58,7 @@ import java.util.stream.Collectors;
 
 import static java.lang.Math.abs;
 
-class SimulatorContextImpl implements OrderListener, SimulatorContext {
+class SimulatorContextImpl extends BaseContext implements OrderListener, SimulatorContext {
 
     private final MarketTime clock;
     private final MarketEngine marketEngine;
@@ -357,27 +358,27 @@ class SimulatorContextImpl implements OrderListener, SimulatorContext {
     }
 
     @Override
-    public PricingContext pricing() {
+    protected PricingContext pricing() {
         return new SimulatorPricingContext();
     }
 
     @Override
-    public OrderContext order() {
+    protected OrderContext order() {
         return new SimulatorOrderContext();
     }
 
     @Override
-    public TradeContext trade() {
+    protected TradeContext trade() {
         return new SimulatorTradeContext();
     }
 
     @Override
-    public AccountContext account() {
+    protected AccountContext account() {
         return new SimulatorAccountContext();
     }
 
     @Override
-    public InstrumentContext instrument() {
+    protected InstrumentContext instrument() {
         return new SimulatorInstrumentContext();
     }
 

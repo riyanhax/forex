@@ -50,7 +50,7 @@ public class OandaTrader extends BaseTrader {
         AccountChangesRequest request = new AccountChangesRequest(account.getId());
         request.setSinceTransactionID(account.getLastTransactionID());
 
-        AccountChangesResponse changes = this.ctx.account().changes(request);
+        AccountChangesResponse changes = this.ctx.accountChanges(request);
         TransactionID lastTransactionID = changes.getLastTransactionID();
 
         return !lastTransactionID.equals(account.getLastTransactionID());
@@ -59,7 +59,7 @@ public class OandaTrader extends BaseTrader {
     private Account refresh() throws RequestException {
         Stopwatch timer = Stopwatch.createStarted();
 
-        Account account = ctx.account().get(new AccountID(this.accountId)).getAccount();
+        Account account = ctx.getAccount(new AccountID(this.accountId)).getAccount();
 
         LOG.info("Loaded account {} in {}", accountId, timer);
 

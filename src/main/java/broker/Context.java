@@ -2,13 +2,15 @@ package broker;
 
 public interface Context {
 
-    PricingContext pricing();
+    PricingGetResponse getPricing(PricingGetRequest request) throws broker.RequestException;
 
-    OrderContext order();
+    AccountChangesResponse accountChanges(AccountChangesRequest request) throws RequestException;
 
-    TradeContext trade();
+    AccountGetResponse getAccount(AccountID accountID) throws RequestException;
 
-    AccountContext account();
+    OrderCreateResponse createOrder(OrderCreateRequest orderCreateRequest) throws RequestException;
 
-    InstrumentContext instrument();
+    TradeCloseResponse closeTrade(TradeCloseRequest closeRequest) throws RequestException;
+
+    InstrumentCandlesResponse instrumentCandles(InstrumentCandlesRequest request) throws RequestException;
 }

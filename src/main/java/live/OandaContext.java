@@ -6,6 +6,7 @@ import broker.AccountChangesResponse;
 import broker.AccountContext;
 import broker.AccountGetResponse;
 import broker.AccountID;
+import broker.BaseContext;
 import broker.CandlePrice;
 import broker.Candlestick;
 import broker.CandlestickData;
@@ -68,7 +69,7 @@ import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 import static market.MarketTime.ZONE;
 
-public class OandaContext implements Context {
+public class OandaContext extends BaseContext {
 
     private static DateTimeFormatter ISO_INSTANT_FORMATTER = DateTimeFormatter.ISO_INSTANT;
 
@@ -438,27 +439,27 @@ public class OandaContext implements Context {
     }
 
     @Override
-    public PricingContext pricing() {
+    protected PricingContext pricing() {
         return new OandaPricing(ctx.pricing);
     }
 
     @Override
-    public OrderContext order() {
+    protected OrderContext order() {
         return new OandaOrder(ctx.order);
     }
 
     @Override
-    public TradeContext trade() {
+    protected TradeContext trade() {
         return new OandaTrade(ctx.trade);
     }
 
     @Override
-    public AccountContext account() {
+    protected AccountContext account() {
         return new OandaAccount(ctx.account);
     }
 
     @Override
-    public InstrumentContext instrument() {
+    protected InstrumentContext instrument() {
         return new OandaInstrument(ctx.instrument);
     }
 }

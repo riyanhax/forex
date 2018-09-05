@@ -1,14 +1,11 @@
 package live
 
-import broker.AccountContext
 import broker.AccountGetResponse
 import broker.Context
 import broker.MarketOrderRequest
 import broker.OpenPositionRequest
-import broker.OrderContext
 import broker.OrderCreateResponse
 import broker.Price
-import broker.PricingContext
 import broker.PricingGetResponse
 import broker.Quote
 import broker.StopLossDetails
@@ -44,17 +41,8 @@ class OandaSpec extends Specification {
 
     def 'should use the specified units from the request'() {
         def context = Mock(Context)
-
-        def accountContext = Mock(AccountContext)
-        context.account() >> accountContext
-        accountContext.get(_) >> new AccountGetResponse()
-
-        def orderContext = Mock(OrderContext)
-        context.order() >> orderContext
-
-        def pricingContext = Mock(PricingContext)
-        context.pricing() >> pricingContext
-        pricingContext.get(_) >> new PricingGetResponse([new Price(EURUSD, 10010L, 10020L)])
+        context.getAccount(_) >> new AccountGetResponse()
+        context.getPricing(_) >> new PricingGetResponse([new Price(EURUSD, 10010L, 10020L)])
 
         def clock = Mock(MarketTime)
         def trader = new MockOandaTrader(context, clock)
@@ -65,6 +53,6 @@ class OandaSpec extends Specification {
         oanda.openPosition(trader, new OpenPositionRequest(EURUSD, 3, null, null, null))
 
         then: 'the position is opened with the requested number of units'
-        1 * orderContext.create({ it.order.units == 3 }) >> new OrderCreateResponse()
+        1 * context.createOrder({ it.order.units == 3 }) >> new OrderCreateResponse()
     }
 }

@@ -80,7 +80,7 @@ public class Oanda implements ForexBroker {
         AccountID accountId = new AccountID(trader.getAccountNumber());
 
         PricingGetRequest request = new PricingGetRequest(accountId, singleton(pair));
-        PricingGetResponse resp = getContext(trader).pricing().get(request);
+        PricingGetResponse resp = getContext(trader).getPricing(request);
         List<Price> prices = resp.getPrices();
 
         if (prices.isEmpty()) {
@@ -127,7 +127,7 @@ public class Oanda implements ForexBroker {
         OrderCreateRequest orderCreateRequest = new OrderCreateRequest(new AccountID(trader.getAccountNumber()));
         orderCreateRequest.setOrder(marketOrderRequest);
 
-        OrderCreateResponse orderCreateResponse = getContext(trader).order().create(orderCreateRequest);
+        OrderCreateResponse orderCreateResponse = getContext(trader).createOrder(orderCreateRequest);
         LOG.info(orderCreateResponse.toString());
     }
 
@@ -170,7 +170,7 @@ public class Oanda implements ForexBroker {
         TradeCloseRequest closeRequest = new TradeCloseRequest(getAccount(trader).getId(), tradeSpecifier);
         closeRequest.setUnits(position.getCurrentUnits());
 
-        TradeCloseResponse response = getContext(trader).trade().close(closeRequest);
+        TradeCloseResponse response = getContext(trader).closeTrade(closeRequest);
         LOG.info(response.toString());
     }
 
@@ -219,7 +219,7 @@ public class Oanda implements ForexBroker {
             request.setWeeklyAlignment(FRIDAY);
         }
 
-        InstrumentCandlesResponse response = getContext(trader).instrument().candles(request);
+        InstrumentCandlesResponse response = getContext(trader).instrumentCandles(request);
 
         NavigableMap<LocalDateTime, CandlestickData> data = new TreeMap<>();
 
