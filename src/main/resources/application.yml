@@ -26,7 +26,7 @@ simulation:
   millisDelayBetweenMinutes: 0
   pippeteSpread: 20
   instancesPerTraderType: 2
-  tradingStrategies: OPEN_RANDOM_POSITION, SMARTER_RANDOM_POSITION
+  tradingStrategies: SMARTER_MARTINGALE, OPEN_RANDOM_POSITION, SMARTER_RANDOM_POSITION
 
 ---
 spring: # Real trading accounts with live brokers
@@ -50,3 +50,6 @@ oanda:
   - # 100/200 SL/TP
     account: '101-001-1775714-004'
     strategy: SMARTER_RANDOM_POSITION
+  - # 30/60 SL/TP
+    account: '101-001-1775714-005'
+    strategy: SMARTER_MARTINGALE

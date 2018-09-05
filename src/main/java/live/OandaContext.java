@@ -28,6 +28,8 @@ import broker.TakeProfitDetails;
 import broker.TradeCloseRequest;
 import broker.TradeCloseResponse;
 import broker.TradeContext;
+import broker.TradeListRequest;
+import broker.TradeListResponse;
 import broker.TradeSummary;
 import broker.TransactionID;
 import com.google.common.base.Preconditions;
@@ -39,6 +41,7 @@ import com.oanda.v20.instrument.WeeklyAlignment;
 import com.oanda.v20.order.OrderRequest;
 import com.oanda.v20.primitives.InstrumentName;
 import com.oanda.v20.trade.TradeSpecifier;
+import com.oanda.v20.trade.TradeStateFilter;
 import market.Instrument;
 import market.MarketTime;
 import org.slf4j.LoggerFactory;
@@ -60,6 +63,7 @@ import java.util.function.Function;
 import static broker.Quote.doubleFromPippetes;
 import static broker.Quote.invert;
 import static broker.Quote.pippetesFromDouble;
+import static java.lang.Math.abs;
 import static java.time.LocalDateTime.parse;
 import static java.time.format.TextStyle.NARROW;
 import static java.util.Arrays.stream;
@@ -205,6 +209,50 @@ public class OandaContext extends BaseContext {
                 throw new broker.RequestException(e.getMessage(), e);
             }
         }
+
+        @Override
+        public TradeListResponse list(TradeListRequest request) throws broker.RequestException {
+            com.oanda.v20.trade.TradeListRequest oandaRequest = new com.oanda.v20.trade.TradeListRequest(
+                    new com.oanda.v20.account.AccountID(request.getAccountID().getId()));
+            // TODO: Needs to be passed in
+            oandaRequest.setState(TradeStateFilter.CLOSED);
+            oandaRequest.setCount(request.getCount());
+
+            try {
+                com.oanda.v20.trade.TradeListResponse oandaResponse = trade.list(oandaRequest);
+
+                return new TradeListResponse(
+                        oandaResponse.getTrades().stream().map(OandaContext::convert).collect(toList()),
+                        convert(oandaResponse.getLastTransactionID()));
+            } catch (RequestException e) {
+                throw new broker.RequestException(e.getErrorMessage(), e);
+            } catch (ExecuteException e) {
+                throw new broker.RequestException(e.getMessage(), e);
+            }
+        }
+    }
+
+    private static TradeSummary convert(com.oanda.v20.trade.Trade trade) {
+
+        //TODO: Combine this parsing/logic with converting TradeSummary
+        Instrument instrument = Instrument.bySymbol.get(trade.getInstrument().toString());
+        String openTime = trade.getOpenTime().toString();
+        String closeTime = trade.getCloseTime() == null ? null : trade.getCloseTime().toString();
+        long price = pippetesFromDouble(trade.getPrice().doubleValue());
+        long realizedProfitLoss = pippetesFromDouble(trade.getRealizedPL().doubleValue());
+        long unrealizedProfitLoss = pippetesFromDouble(trade.getUnrealizedPL() == null ? 0L : trade.getUnrealizedPL().doubleValue());
+
+        if (trade.getInitialUnits().doubleValue() < 0) {
+            instrument = instrument.getOpposite();
+            price = invert(price);
+        }
+
+        return new TradeSummary(instrument,
+                abs((int) trade.getInitialUnits().doubleValue()),
+                price,
+                realizedProfitLoss,
+                unrealizedProfitLoss,
+                parseTimestamp(openTime), parseTimestamp(closeTime), trade.getId().toString());
     }
 
     private class OandaAccount implements AccountContext {

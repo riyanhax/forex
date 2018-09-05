@@ -5,6 +5,7 @@ import broker.AccountGetResponse
 import broker.AccountID
 import broker.Context
 import broker.RequestException
+import broker.TradeListResponse
 import broker.TransactionID
 import market.MarketTime
 import spock.lang.Specification
@@ -18,6 +19,8 @@ class OandaTraderSpec extends Specification {
         def accountID = new AccountID(accountId)
 
         Context ctx = Mock(Context)
+        ctx.listTrade(_) >> new TradeListResponse([], null)
+
         MarketTime clock = Mock(MarketTime)
         Account retrievedLater = null
 

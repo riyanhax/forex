@@ -197,7 +197,7 @@ class Simulator extends BaseWatcher<SimulatorClock, ForexBroker> {
     }
 
     private static String profitLossDisplay(TradeHistory trade) {
-        return profitLossDisplay(trade.getRealizedProfitLoss());
+        return profitLossDisplay(trade.getRealizedProfitLoss()) + ", " + trade.getCurrentUnits() + " units";
     }
 
     private static String profitLossDisplay(long pipettes) {

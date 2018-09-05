@@ -13,4 +13,6 @@ public interface Context {
     TradeCloseResponse closeTrade(TradeCloseRequest closeRequest) throws RequestException;
 
     InstrumentCandlesResponse instrumentCandles(InstrumentCandlesRequest request) throws RequestException;
+
+    TradeListResponse listTrade(TradeListRequest request) throws RequestException;
 }

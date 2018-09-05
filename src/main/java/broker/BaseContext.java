@@ -28,6 +28,11 @@ public abstract class BaseContext implements Context {
     }
 
     @Override
+    public TradeListResponse listTrade(TradeListRequest request) throws RequestException {
+        return trade().list(request);
+    }
+
+    @Override
     public InstrumentCandlesResponse instrumentCandles(InstrumentCandlesRequest request) throws RequestException {
         return instrument().candles(request);
     }

@@ -12,6 +12,7 @@ import broker.PricingGetResponse
 import broker.Quote
 import broker.StopLossDetails
 import broker.TakeProfitDetails
+import broker.TradeListResponse
 import broker.TransactionID
 import market.MarketTime
 import spock.lang.Specification
@@ -44,6 +45,7 @@ class OandaSpec extends Specification {
 
     def 'should use the specified units from the request'() {
         def context = Mock(Context)
+        context.listTrade(_) >> new TradeListResponse([], null)
         context.getAccount(_) >> new AccountGetResponse(new Account(new AccountID('someAccountId'), new TransactionID('someId'), [], 0L))
         context.getPricing(_) >> new PricingGetResponse([new Price(EURUSD, 10010L, 10020L)])
 

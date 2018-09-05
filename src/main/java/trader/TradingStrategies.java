@@ -3,6 +3,7 @@ package trader;
 import broker.CandlestickData;
 import broker.ForexBroker;
 import broker.OpenPositionRequest;
+import broker.TradeSummary;
 import com.google.common.collect.Range;
 import market.Instrument;
 import market.MarketTime;
@@ -16,6 +17,34 @@ import java.util.Random;
 
 public enum TradingStrategies implements TradingStrategy {
 
+    SMARTER_MARTINGALE {
+        @Override
+        public Optional<OpenPositionRequest> shouldOpenPosition(ForexTrader trader, ForexBroker broker, MarketTime clock) throws Exception {
+            LocalDateTime now = clock.now();
+            if (!(now.getMinute() % 16 == 0)) {
+                return Optional.empty();
+            }
+
+            Optional<OpenPositionRequest> openPositionRequest = SMARTER_RANDOM_POSITION.shouldOpenPosition(trader, broker, clock);
+            if (openPositionRequest.isPresent()) {
+
+                int units = 1;
+                Optional<TradeSummary> lastClosedTrade = trader.getLastClosedTrade();
+                if (lastClosedTrade.isPresent()) {
+                    TradeSummary trade = lastClosedTrade.get();
+
+                    if (trade.getRealizedProfitLoss() < 0) {
+                        units = trade.getCurrentUnits() * 2;
+                    }
+                }
+
+                OpenPositionRequest toCopy = openPositionRequest.get();
+                return Optional.of(new OpenPositionRequest(toCopy.getPair(), units, toCopy.getLimit().orElse(null),
+                        toCopy.getStopLoss().orElse(null), toCopy.getTakeProfit().orElse(null)));
+            }
+            return openPositionRequest;
+        }
+    },
     OPEN_RANDOM_POSITION {
         @Override
         public Optional<OpenPositionRequest> shouldOpenPosition(ForexTrader trader, ForexBroker broker, MarketTime clock) {

@@ -26,6 +26,8 @@ import broker.Stance;
 import broker.TradeCloseRequest;
 import broker.TradeCloseResponse;
 import broker.TradeContext;
+import broker.TradeListRequest;
+import broker.TradeListResponse;
 import broker.TradeSpecifier;
 import broker.TradeSummary;
 import broker.TransactionID;
@@ -47,6 +49,7 @@ import market.order.SellMarketOrder;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,9 +57,9 @@ import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 
 import static java.lang.Math.abs;
+import static java.util.stream.Collectors.toList;
 
 class SimulatorContextImpl extends BaseContext implements OrderListener, SimulatorContext {
 
@@ -118,14 +121,14 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
                 TradeSummary::getInstrument);
         Map<Instrument, TradeSummary> newPositions = new HashMap<>(positionsByInstrument);
         TradeSummary existingPosition = positionsByInstrument.get(instrument);
-        long newPipsProfit = oldPortfolio.getPl();
+        long newProfitLoss = oldPortfolio.getPl();
 
         LocalDateTime now = clock.now();
         if (filled.isSellOrder()) {
             Objects.requireNonNull(existingPosition, "Go long on the inverse pair, instead of shorting the primary pair.");
 
             long opened = existingPosition.getPrice();
-            long profitLoss = price - opened;
+            long profitLoss = (price - opened) * existingPosition.getCurrentUnits();
 
             TradeSummary closedTrade = new TradeSummary(
                     existingPosition.getInstrument(),
@@ -137,7 +140,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
                     now,
                     existingPosition.getOpenTime().toString());
 
-            newPipsProfit += closedTrade.getRealizedProfitLoss();
+            newProfitLoss += closedTrade.getRealizedProfitLoss();
 
             newPositions.remove(instrument);
 
@@ -151,24 +154,21 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
 
             TradeHistory history = new TradeHistory(closedTrade, candles);
 
-            SortedSet<TradeHistory> closedTradesForAccount = closedTrades.get(accountID.getId());
-            if (closedTradesForAccount == null) {
-                closedTradesForAccount = new TreeSet<>();
-            }
+            SortedSet<TradeHistory> closedTradesForAccount = closedTradesForAccountId(accountID.getId());
             closedTradesForAccount.add(history);
             closedTrades.put(accountID.getId(), closedTradesForAccount);
 
             long expectedPipettes = closedTradesForAccount.stream()
                     .mapToLong(TradeHistory::getRealizedProfitLoss)
                     .sum();
-            Preconditions.checkArgument(expectedPipettes == newPipsProfit);
+            Preconditions.checkArgument(expectedPipettes == newProfitLoss);
 
         } else if (filled.isBuyOrder()) {
             Preconditions.checkArgument(existingPosition == null, "Shouldn't have more than one position open for a pair at a time!");
             Preconditions.checkArgument(!positionsByInstrument.containsKey(instrument.getOpposite()), "Shouldn't have more than one position open for a pair at a time!");
 
             TradeSummary filledPosition = positionValue(new TradeSummary(
-                    instrument, 1, price,
+                    instrument, filled.getUnits(), price,
                     0L, 0L, now, null, now.toString()));
 
             Preconditions.checkArgument(filledPosition.getUnrealizedPL() == -simulatorProperties.getPippeteSpread(),
@@ -179,7 +179,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
 
         List<TradeSummary> tradeSummaries = new ArrayList<>(newPositions.values());
         Account account = new Account(accountID, getLatestTransactionId(accountID),
-                tradeSummaries, newPipsProfit);
+                tradeSummaries, newProfitLoss);
 
         mostRecentPortfolio.put(accountID.getId(), account);
         getTraderData(accountID.getId()).addSnapshot(accountSnapshot(account));
@@ -245,6 +245,19 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
 
             return new TradeCloseResponse();
         }
+
+        @Override
+        public TradeListResponse list(TradeListRequest request) throws RequestException {
+
+            List<TradeSummary> closed = closedTradesForAccountId(request.getAccountID().getId())
+                    .stream()
+                    .sorted(Comparator.reverseOrder())
+                    .limit(request.getCount())
+                    .map(TradeHistory::getTrade)
+                    .collect(toList());
+
+            return new TradeListResponse(closed, closed.isEmpty() ? null : new TransactionID(closed.iterator().next().getId()));
+        }
     }
 
     private class SimulatorAccountContext implements AccountContext {
@@ -283,7 +296,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
     private List<TradeSummary> positionValues(List<TradeSummary> positions) {
         return positions.stream()
                 .map(this::positionValue)
-                .collect(Collectors.toList());
+                .collect(toList());
     }
 
     private TradeSummary positionValue(TradeSummary position) {
@@ -348,7 +361,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
 
     @Override
     public SortedSet<TradeHistory> closedTradesForAccountId(String id) {
-        return closedTrades.get(id);
+        return closedTrades.getOrDefault(id, new TreeSet<>());
     }
 
     private Account mostRecentPortfolio(AccountID accountID) {
