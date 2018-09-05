@@ -35,11 +35,6 @@ stage('Test') {
 }
 
 stage('Release') {
-
-    timeout(time: 14, unit: 'DAYS') {
-        input 'Perform a release?'
-    }
-
     node {
 
         unstash 'built'
