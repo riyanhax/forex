@@ -3,6 +3,7 @@ package trader;
 import broker.CandlestickData;
 import broker.ForexBroker;
 import broker.OpenPositionRequest;
+import broker.RequestException;
 import broker.TradeSummary;
 import com.google.common.collect.Range;
 import market.Instrument;
@@ -17,7 +18,16 @@ import java.util.Random;
 
 public enum TradingStrategies implements TradingStrategy {
 
-    HISTORY_COMPARATOR2 {
+    HIGH_FREQ_MARTINGALE {
+        @Override
+        public Optional<OpenPositionRequest> shouldOpenPosition(ForexTrader trader, ForexBroker broker, MarketTime clock) throws Exception {
+            Optional<OpenPositionRequest> openPositionRequest = OPEN_RANDOM_POSITION_HIGH_FREQUENCY.shouldOpenPosition(trader, broker, clock);
+            if (openPositionRequest.isPresent()) {
+                return martingaleRequest(openPositionRequest.get(), trader);
+            }
+            return openPositionRequest;
+        }
+    }, HISTORY_COMPARATOR2 {
         @Override
         public Optional<OpenPositionRequest> shouldOpenPosition(ForexTrader trader, ForexBroker broker, MarketTime clock) throws Exception {
             LocalDateTime now = clock.now();
@@ -42,21 +52,9 @@ public enum TradingStrategies implements TradingStrategy {
 
             Optional<OpenPositionRequest> openPositionRequest = SMARTER_RANDOM_POSITION.shouldOpenPosition(trader, broker, clock);
             if (openPositionRequest.isPresent()) {
-
-                int units = 1;
-                Optional<TradeSummary> lastClosedTrade = trader.getLastClosedTrade();
-                if (lastClosedTrade.isPresent()) {
-                    TradeSummary trade = lastClosedTrade.get();
-
-                    if (trade.getRealizedProfitLoss() < 0) {
-                        units = trade.getCurrentUnits() * 2;
-                    }
-                }
-
-                OpenPositionRequest toCopy = openPositionRequest.get();
-                return Optional.of(new OpenPositionRequest(toCopy.getPair(), units, toCopy.getLimit().orElse(null),
-                        toCopy.getStopLoss().orElse(null), toCopy.getTakeProfit().orElse(null)));
+                return martingaleRequest(openPositionRequest.get(), trader);
             }
+
             return openPositionRequest;
         }
     },
@@ -125,6 +123,21 @@ public enum TradingStrategies implements TradingStrategy {
     }
 
     private static final Random random = new Random();
+
+    private static Optional<OpenPositionRequest> martingaleRequest(OpenPositionRequest toCopy, ForexTrader trader) throws RequestException {
+        int units = 1;
+        Optional<TradeSummary> lastClosedTrade = trader.getLastClosedTrade();
+        if (lastClosedTrade.isPresent()) {
+            TradeSummary trade = lastClosedTrade.get();
+
+            if (trade.getRealizedProfitLoss() < 0) {
+                units = trade.getCurrentUnits() * 2;
+            }
+        }
+
+        return Optional.of(new OpenPositionRequest(toCopy.getPair(), units, toCopy.getLimit().orElse(null),
+                toCopy.getStopLoss().orElse(null), toCopy.getTakeProfit().orElse(null)));
+    }
 
     private static Instrument randomInstrument() {
         Instrument[] instruments = Instrument.values();

@@ -56,3 +56,6 @@ oanda:
   - # 10/20 SL/TP
     account: '101-001-1775714-007'
     strategy: HISTORY_COMPARATOR2
+  - # 10/10 SL/TP
+    account: '101-001-1775714-008'
+    strategy: HIGH_FREQ_MARTINGALE
