@@ -34,6 +34,7 @@ public abstract class BaseTrader implements ForexTrader {
     @Override
     public void processUpdates(ForexBroker broker) throws Exception {
 
+        LOG.info("Trader: {}", tradingStrategy.getName());
         AccountSnapshot portfolio = broker.getAccountSnapshot(this);
         List<TradeSummary> positions = portfolio.getPositionValues();
 

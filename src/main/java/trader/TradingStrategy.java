@@ -10,4 +10,5 @@ public interface TradingStrategy {
 
     Optional<OpenPositionRequest> shouldOpenPosition(ForexTrader trader, ForexBroker broker, MarketTime clock) throws Exception;
 
+    String getName();
 }

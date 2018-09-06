@@ -119,6 +119,11 @@ public enum TradingStrategies implements TradingStrategy {
         }
     };
 
+    @Override
+    public String getName() {
+        return name();
+    }
+
     private static final Random random = new Random();
 
     private static Instrument randomInstrument() {
