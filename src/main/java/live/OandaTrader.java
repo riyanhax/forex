@@ -66,13 +66,21 @@ public class OandaTrader extends BaseTrader {
     }
 
     private boolean newTransactionsExist() throws RequestException {
+        TransactionID currentTransactionId = account.getLastTransactionID();
+
         AccountChangesRequest request = new AccountChangesRequest(account.getId());
-        request.setSinceTransactionID(account.getLastTransactionID());
+        request.setSinceTransactionID(currentTransactionId);
 
         AccountChangesResponse changes = this.ctx.accountChanges(request);
         TransactionID lastTransactionID = changes.getLastTransactionID();
 
-        return !lastTransactionID.equals(account.getLastTransactionID());
+        boolean changesExist = !lastTransactionID.equals(currentTransactionId);
+
+        if (changesExist) {
+            LOG.info("Changes exist: transaction id {} != {}", lastTransactionID, currentTransactionId);
+        }
+
+        return changesExist;
     }
 
     private void refresh() {

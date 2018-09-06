@@ -8,6 +8,8 @@ import broker.TradeSummary;
 import com.google.common.collect.Range;
 import market.Instrument;
 import market.MarketTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.Iterator;
@@ -122,6 +124,8 @@ public enum TradingStrategies implements TradingStrategy {
         return name();
     }
 
+    private static final Logger LOG = LoggerFactory.getLogger(TradingStrategies.class);
+
     private static final Random random = new Random();
 
     private static Optional<OpenPositionRequest> martingaleRequest(OpenPositionRequest toCopy, ForexTrader trader) throws RequestException {
@@ -130,8 +134,11 @@ public enum TradingStrategies implements TradingStrategy {
         if (lastClosedTrade.isPresent()) {
             TradeSummary trade = lastClosedTrade.get();
 
+
             if (trade.getRealizedProfitLoss() < 0) {
                 units = trade.getCurrentUnits() * 2;
+
+                LOG.info("Using {} units due to unprofitable trade: {}", units, trade);
             }
         }
 
