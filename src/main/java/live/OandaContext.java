@@ -232,7 +232,7 @@ public class OandaContext extends BaseContext {
         }
     }
 
-    private static TradeSummary convert(com.oanda.v20.trade.Trade trade) {
+    static TradeSummary convert(com.oanda.v20.trade.Trade trade) {
 
         //TODO: Combine this parsing/logic with converting TradeSummary
         Instrument instrument = Instrument.bySymbol.get(trade.getInstrument().toString());

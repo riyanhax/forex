@@ -5,6 +5,7 @@ import market.Instrument;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
+import java.util.Objects;
 
 public class TradeSummary implements Comparable<TradeSummary> {
     private final Instrument instrument;
@@ -63,6 +64,26 @@ public class TradeSummary implements Comparable<TradeSummary> {
     @Override
     public int compareTo(TradeSummary o) {
         return Comparator.comparing(TradeSummary::getOpenTime).compare(this, o);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        TradeSummary that = (TradeSummary) o;
+        return currentUnits == that.currentUnits &&
+                price == that.price &&
+                realizedProfitLoss == that.realizedProfitLoss &&
+                unrealizedProfitLoss == that.unrealizedProfitLoss &&
+                instrument == that.instrument &&
+                Objects.equals(openTime, that.openTime) &&
+                Objects.equals(closeTime, that.closeTime) &&
+                Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(instrument, currentUnits, price, realizedProfitLoss, unrealizedProfitLoss, openTime, closeTime, id);
     }
 
     @Override
