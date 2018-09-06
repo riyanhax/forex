@@ -53,3 +53,6 @@ oanda:
   - # 30/60 SL/TP
     account: '101-001-1775714-005'
     strategy: SMARTER_MARTINGALE
+  - # 10/20 SL/TP
+    account: '101-001-1775714-007'
+    strategy: HISTORY_COMPARATOR2

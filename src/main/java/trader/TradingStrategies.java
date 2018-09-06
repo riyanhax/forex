@@ -17,6 +17,21 @@ import java.util.Random;
 
 public enum TradingStrategies implements TradingStrategy {
 
+    HISTORY_COMPARATOR2 {
+        @Override
+        public Optional<OpenPositionRequest> shouldOpenPosition(ForexTrader trader, ForexBroker broker, MarketTime clock) throws Exception {
+            LocalDateTime now = clock.now();
+            int minute = now.getMinute();
+
+            if (!(minute % 16 == 0)) {
+                return Optional.empty();
+            }
+
+            Instrument instrument = minute % 32 == 0 ? Instrument.USDEUR : Instrument.EURUSD;
+            int units = (minute % 3) + 1;
+            return Optional.of(new OpenPositionRequest(instrument, units, null, 300L, 600L));
+        }
+    },
     SMARTER_MARTINGALE {
         @Override
         public Optional<OpenPositionRequest> shouldOpenPosition(ForexTrader trader, ForexBroker broker, MarketTime clock) throws Exception {
