@@ -28,6 +28,8 @@ public interface MarketTime {
 
     LocalDate nowLocalDate();
 
+    long epochMillis();
+
     default LocalDate tomorrow() {
         return nowLocalDate().plusDays(1);
     }

@@ -1,6 +1,7 @@
 package simulator;
 
 import broker.Account;
+import broker.AccountChanges;
 import broker.AccountChangesRequest;
 import broker.AccountChangesResponse;
 import broker.AccountContext;
@@ -48,7 +49,6 @@ import market.order.SellMarketOrder;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -59,6 +59,8 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import static java.lang.Math.abs;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 
 class SimulatorContextImpl extends BaseContext implements OrderListener, SimulatorContext {
@@ -138,7 +140,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
                     0L,
                     existingPosition.getOpenTime(),
                     now,
-                    existingPosition.getOpenTime().toString());
+                    existingPosition.getId());
 
             newProfitLoss += closedTrade.getRealizedProfitLoss();
 
@@ -169,7 +171,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
 
             TradeSummary filledPosition = positionValue(new TradeSummary(
                     instrument, filled.getUnits(), price,
-                    0L, 0L, now, null, now.toString()));
+                    0L, 0L, now, null, clock.epochMillis() + ""));
 
             Preconditions.checkArgument(filledPosition.getUnrealizedPL() == -simulatorProperties.getPippeteSpread(),
                     "Immediately after filling a position it should have an unrealized loss of the spread!");
@@ -263,7 +265,21 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
     private class SimulatorAccountContext implements AccountContext {
         @Override
         public AccountChangesResponse changes(AccountChangesRequest request) throws RequestException {
-            return new AccountChangesResponse(getLatestTransactionId(request.getAccountID()));
+            List<TradeSummary> tradesClosedSinceTransactionId = emptyList();
+
+            SortedSet<TradeHistory> closedTradesForAccount = closedTradesForAccountId(request.getAccountID().getId());
+            if (!closedTradesForAccount.isEmpty()) {
+
+                TradeSummary lastTrade = closedTradesForAccount.last().getTrade();
+                long transactionIdAsEpochMillis = Long.parseLong(request.getSinceTransactionID().getId());
+
+                if (transactionIdAsEpochMillis > Long.parseLong(lastTrade.getId())) {
+                    tradesClosedSinceTransactionId = singletonList(lastTrade);
+                }
+            }
+
+            TransactionID latestTransactionId = getLatestTransactionId(request.getAccountID());
+            return new AccountChangesResponse(latestTransactionId, new AccountChanges(tradesClosedSinceTransactionId));
         }
 
         @Override
@@ -282,7 +298,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
     }
 
     private TransactionID getLatestTransactionId(AccountID accountID) {
-        String transactionId = clock.now().toString();
+        String transactionId = clock.epochMillis() + "";
         return new TransactionID(transactionId);
     }
 
@@ -314,7 +330,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
                 unrealizedProfitLoss,
                 position.getOpenTime(),
                 null,
-                position.getOpenTime().toString());
+                position.getId());
     }
 
     private class SimulatorInstrumentContext implements InstrumentContext {
@@ -367,7 +383,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
     private Account mostRecentPortfolio(AccountID accountID) {
         return mostRecentPortfolio.getOrDefault(accountID.getId(),
                 new Account(accountID, getLatestTransactionId(accountID),
-                        Collections.emptyList(), 0));
+                        emptyList(), 0));
     }
 
     @Override

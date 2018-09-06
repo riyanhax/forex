@@ -18,6 +18,8 @@ import org.slf4j.LoggerFactory;
 import trader.BaseTrader;
 import trader.TradingStrategy;
 
+import java.util.Iterator;
+import java.util.List;
 import java.util.Optional;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -65,6 +67,7 @@ public class OandaTrader extends BaseTrader {
         return lastTenClosedTrades.isEmpty() ? Optional.empty() : Optional.of(lastTenClosedTrades.last());
     }
 
+    // TODO: Convert this to just merge the rest of the changes (e.g. opened positions)
     private boolean newTransactionsExist() throws RequestException {
         TransactionID currentTransactionId = account.getLastTransactionID();
 
@@ -78,6 +81,20 @@ public class OandaTrader extends BaseTrader {
 
         if (changesExist) {
             LOG.info("Changes exist: transaction id {} != {}", lastTransactionID, currentTransactionId);
+
+            List<TradeSummary> tradesClosed = changes.getAccountChanges().getTradesClosed();
+            if (!tradesClosed.isEmpty()) {
+                int toRemove = (lastTenClosedTrades.size() + tradesClosed.size()) - 10;
+                if (toRemove > 0) {
+                    Iterator<TradeSummary> iter = lastTenClosedTrades.iterator();
+                    for (int i = 0; i < toRemove; i++) {
+                        iter.next();
+                        iter.remove();
+                    }
+                }
+                lastTenClosedTrades.addAll(tradesClosed);
+            }
+
         }
 
         return changesExist;
@@ -86,14 +103,17 @@ public class OandaTrader extends BaseTrader {
     private void refresh() {
         Stopwatch timer = Stopwatch.createStarted();
 
+        boolean initializeClosedTrades = account == null;
         try {
             account = ctx.getAccount(new AccountID(this.accountId)).getAccount();
 
-            TradeListResponse tradeListResponse = ctx.listTrade(new TradeListRequest(new AccountID(this.accountId), 10));
-            lastTenClosedTrades.clear();
-            lastTenClosedTrades.addAll(tradeListResponse.getTrades());
+            if (initializeClosedTrades) {
+                TradeListResponse tradeListResponse = ctx.listTrade(new TradeListRequest(new AccountID(this.accountId), 10));
+                lastTenClosedTrades.addAll(tradeListResponse.getTrades());
+            }
 
-            LOG.info("Loaded account {} and closed trades in {}", accountId, timer);
+            LOG.info("Loaded account {} {}in {}", accountId, initializeClosedTrades ?
+                    "and closed trades " : "", timer);
         } catch (RequestException e) {
             LOG.error("Unable to retrieve the account and closed trades!", e);
         }

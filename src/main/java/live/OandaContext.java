@@ -37,9 +37,15 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.oanda.v20.ExecuteException;
 import com.oanda.v20.RequestException;
+import com.oanda.v20.account.AccountChanges;
 import com.oanda.v20.instrument.WeeklyAlignment;
 import com.oanda.v20.order.OrderRequest;
+import com.oanda.v20.pricing.PriceValue;
+import com.oanda.v20.primitives.AccountUnits;
+import com.oanda.v20.primitives.DateTime;
+import com.oanda.v20.primitives.DecimalNumber;
 import com.oanda.v20.primitives.InstrumentName;
+import com.oanda.v20.trade.TradeID;
 import com.oanda.v20.trade.TradeSpecifier;
 import com.oanda.v20.trade.TradeStateFilter;
 import market.Instrument;
@@ -233,26 +239,9 @@ public class OandaContext extends BaseContext {
     }
 
     static TradeSummary convert(com.oanda.v20.trade.Trade trade) {
-
-        //TODO: Combine this parsing/logic with converting TradeSummary
-        Instrument instrument = Instrument.bySymbol.get(trade.getInstrument().toString());
-        String openTime = trade.getOpenTime().toString();
-        String closeTime = trade.getCloseTime() == null ? null : trade.getCloseTime().toString();
-        long price = pippetesFromDouble(trade.getPrice().doubleValue());
-        long realizedProfitLoss = pippetesFromDouble(trade.getRealizedPL().doubleValue());
-        long unrealizedProfitLoss = pippetesFromDouble(trade.getUnrealizedPL() == null ? 0L : trade.getUnrealizedPL().doubleValue());
-
-        if (trade.getInitialUnits().doubleValue() < 0) {
-            instrument = instrument.getOpposite();
-            price = invert(price);
-        }
-
-        return new TradeSummary(instrument,
-                abs((int) trade.getInitialUnits().doubleValue()),
-                price,
-                realizedProfitLoss,
-                unrealizedProfitLoss,
-                parseTimestamp(openTime), parseTimestamp(closeTime), trade.getId().toString());
+        return createTradeSummary(trade.getInstrument(), trade.getOpenTime(), trade.getCloseTime(),
+                trade.getPrice(), trade.getRealizedPL(), trade.getUnrealizedPL(),
+                trade.getInitialUnits(), trade.getId());
     }
 
     private class OandaAccount implements AccountContext {
@@ -273,7 +262,7 @@ public class OandaContext extends BaseContext {
                 com.oanda.v20.account.AccountChangesResponse oandaResponse = account.changes(oandaRequest);
 
                 TransactionID lastTransactionID = convert(oandaResponse.getLastTransactionID());
-                return new AccountChangesResponse(lastTransactionID);
+                return new AccountChangesResponse(lastTransactionID, convert(oandaResponse.getChanges()));
             } catch (RequestException e) {
                 throw new broker.RequestException(e.getErrorMessage(), e);
             } catch (ExecuteException e) {
@@ -294,6 +283,12 @@ public class OandaContext extends BaseContext {
                 throw new broker.RequestException(e.getMessage(), e);
             }
         }
+    }
+
+    private broker.AccountChanges convert(AccountChanges oandaVersion) {
+        return new broker.AccountChanges(oandaVersion.getTradesClosed().stream()
+                .map(OandaContext::convert)
+                .collect(toList()));
     }
 
     private class OandaInstrument implements InstrumentContext {
@@ -418,16 +413,32 @@ public class OandaContext extends BaseContext {
     }
 
     private static TradeSummary convert(com.oanda.v20.trade.TradeSummary tradeSummary) {
-        Instrument instrument = Instrument.bySymbol.get(tradeSummary.getInstrument().toString());
-        String openTime = tradeSummary.getOpenTime().toString();
-        String closeTime = tradeSummary.getCloseTime() == null ? null : tradeSummary.getCloseTime().toString();
+        return createTradeSummary(tradeSummary.getInstrument(), tradeSummary.getOpenTime(), tradeSummary.getCloseTime(),
+                tradeSummary.getPrice(), tradeSummary.getRealizedPL(), tradeSummary.getUnrealizedPL(), tradeSummary.getInitialUnits(),
+                tradeSummary.getId());
+    }
+
+    private static TradeSummary createTradeSummary(InstrumentName instrumentName, DateTime openDateTime, DateTime closeDateTime,
+                                                   PriceValue priceValue, AccountUnits realizedPl, AccountUnits unrealizedPl,
+                                                   DecimalNumber initialUnits, TradeID id) {
+        Instrument instrument = Instrument.bySymbol.get(instrumentName.toString());
+        LocalDateTime openTime = openDateTime == null ? null : parseTimestamp(openDateTime.toString());
+        LocalDateTime closeTime = closeDateTime == null ? null : parseTimestamp(closeDateTime.toString());
+        long price = pippetesFromDouble(priceValue.doubleValue());
+        long realizedProfitLoss = pippetesFromDouble(realizedPl == null ? 0L : realizedPl.doubleValue());
+        long unrealizedProfitLoss = pippetesFromDouble(unrealizedPl == null ? 0L : unrealizedPl.doubleValue());
+
+        if (initialUnits.doubleValue() < 0) {
+            instrument = instrument.getOpposite();
+            price = invert(price);
+        }
 
         return new TradeSummary(instrument,
-                (int) tradeSummary.getCurrentUnits().doubleValue(),
-                pippetesFromDouble(tradeSummary.getPrice().doubleValue()),
-                pippetesFromDouble(tradeSummary.getRealizedPL().doubleValue()),
-                pippetesFromDouble(tradeSummary.getUnrealizedPL().doubleValue()),
-                parseTimestamp(openTime), parseTimestamp(closeTime), tradeSummary.getId().toString());
+                abs((int) initialUnits.doubleValue()),
+                price,
+                realizedProfitLoss,
+                unrealizedProfitLoss,
+                openTime, closeTime, id.toString());
     }
 
     static PricingGetResponse convert(Set<Instrument> requestInstruments,

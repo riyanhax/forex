@@ -18,4 +18,9 @@ class SystemTime implements MarketTime {
     public LocalDate nowLocalDate() {
         return LocalDate.now(getZone());
     }
+
+    @Override
+    public long epochMillis() {
+        return System.currentTimeMillis();
+    }
 }
