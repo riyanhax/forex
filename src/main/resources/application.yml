@@ -29,6 +29,21 @@ simulation:
   tradingStrategies: SMARTER_MARTINGALE, OPEN_RANDOM_POSITION, SMARTER_RANDOM_POSITION
 
 ---
+spring: # Integration test
+  profiles: integration
+
+logging.level.live: warn
+logging.level.trader: warn
+
+simulation:
+  startTime: 2017-01-01 01:00
+  endTime: 2017-12-31 23:59
+  millisDelayBetweenMinutes: 0
+  pippeteSpread: 20
+  instancesPerTraderType: 2
+  tradingStrategies: HISTORY_COMPARATOR2, REGRESSION_COMPARATOR
+
+---
 spring: # Real trading accounts with live brokers
   profiles: prod
 

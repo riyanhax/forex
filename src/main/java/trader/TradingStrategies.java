@@ -44,6 +44,53 @@ public enum TradingStrategies implements TradingStrategy {
             return Optional.of(new OpenPositionRequest(instrument, units, null, 300L, 600L));
         }
     },
+    /**
+     * Checks for the one week, one day, and four hour candles to all be higher than previous highs or
+     * not higher than previous highs. If the candles all match, then it opens positions in martingale
+     * fashion for the purpose of regression testing various position sizes and position stances.
+     */
+    REGRESSION_COMPARATOR {
+        @Override
+        public Optional<OpenPositionRequest> shouldOpenPosition(ForexTrader trader, ForexBroker broker, MarketTime clock) throws Exception {
+            LocalDateTime now = clock.now();
+            if (!(now.getMinute() % 10 == 0)) {
+                return Optional.empty();
+            }
+
+            Instrument pair = Instrument.EURUSD;
+
+            CandlestickData[] oneWeekCandles = TradingStrategies.twoMostRecent(broker.getOneWeekCandles(trader, pair, Range.closed(now.minusWeeks(3), now)));
+            CandlestickData thisWeek = oneWeekCandles[0];
+            CandlestickData lastWeek = oneWeekCandles[1];
+
+            boolean thisWeekHigher = thisWeek.getH() > lastWeek.getH();
+
+            CandlestickData[] oneDayCandles = TradingStrategies.twoMostRecent(broker.getOneDayCandles(trader, pair, Range.closed(now.minusDays(5), now)));
+            CandlestickData today = oneDayCandles[0];
+            CandlestickData yesterday = oneDayCandles[1];
+
+            boolean todayHigher = today.getH() > yesterday.getH();
+
+            if (!(thisWeekHigher == todayHigher)) {
+                return Optional.empty();
+            }
+
+            CandlestickData[] fourHourCandles = TradingStrategies.twoMostRecent(broker.getFourHourCandles(trader, pair, Range.closed(now.minusDays(5), now)));
+            long currentHigh = fourHourCandles[0].getH();
+            long previousHigh = fourHourCandles[1].getH();
+
+            boolean thisFourHigher = currentHigh > previousHigh;
+
+            if (!(todayHigher == thisFourHigher)) {
+                return Optional.empty();
+            }
+
+            Instrument instrument = todayHigher ? pair : pair.getOpposite();
+            int units = martingaleUnits(trader);
+
+            return martingaleRequest(new OpenPositionRequest(instrument, units, null, 1000L, 2000L), trader);
+        }
+    },
     SMARTER_MARTINGALE {
         @Override
         public Optional<OpenPositionRequest> shouldOpenPosition(ForexTrader trader, ForexBroker broker, MarketTime clock) throws Exception {
@@ -129,11 +176,19 @@ public enum TradingStrategies implements TradingStrategy {
     private static final Random random = new Random();
 
     private static Optional<OpenPositionRequest> martingaleRequest(OpenPositionRequest toCopy, ForexTrader trader) throws RequestException {
+        int units = martingaleUnits(trader);
+        return Optional.of(new OpenPositionRequest(toCopy.getPair(), units, toCopy.getLimit().orElse(null),
+                toCopy.getStopLoss().orElse(null), toCopy.getTakeProfit().orElse(null)));
+    }
+
+    /**
+     * Determines the martingale units to purchase in the next trade based on the last trade.
+     */
+    private static int martingaleUnits(ForexTrader trader) throws RequestException {
         int units = 1;
         Optional<TradeSummary> lastClosedTrade = trader.getLastClosedTrade();
         if (lastClosedTrade.isPresent()) {
             TradeSummary trade = lastClosedTrade.get();
-
 
             if (trade.getRealizedProfitLoss() < 0) {
                 units = trade.getCurrentUnits() * 2;
@@ -142,8 +197,7 @@ public enum TradingStrategies implements TradingStrategy {
             }
         }
 
-        return Optional.of(new OpenPositionRequest(toCopy.getPair(), units, toCopy.getLimit().orElse(null),
-                toCopy.getStopLoss().orElse(null), toCopy.getTakeProfit().orElse(null)));
+        return units;
     }
 
     private static Instrument randomInstrument() {
