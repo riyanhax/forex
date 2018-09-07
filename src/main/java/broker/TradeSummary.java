@@ -4,10 +4,9 @@ import com.google.common.base.MoreObjects;
 import market.Instrument;
 
 import java.time.LocalDateTime;
-import java.util.Comparator;
 import java.util.Objects;
 
-public class TradeSummary implements Comparable<TradeSummary> {
+public class TradeSummary {
     private final Instrument instrument;
     private final int currentUnits;
     private final long price;
@@ -59,11 +58,6 @@ public class TradeSummary implements Comparable<TradeSummary> {
 
     public String getId() {
         return id;
-    }
-
-    @Override
-    public int compareTo(TradeSummary o) {
-        return Comparator.comparing(TradeSummary::getOpenTime).compare(this, o);
     }
 
     @Override

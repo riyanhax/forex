@@ -24,6 +24,8 @@ import java.util.Optional;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import static java.util.Comparator.comparing;
+
 public class OandaTrader extends BaseTrader {
 
     private static final Logger LOG = LoggerFactory.getLogger(OandaTrader.class);
@@ -31,7 +33,7 @@ public class OandaTrader extends BaseTrader {
     private final String accountId;
     private final Context ctx;
     private Account account;
-    private SortedSet<TradeSummary> lastTenClosedTrades = new TreeSet<>();
+    private SortedSet<TradeSummary> lastTenClosedTrades = new TreeSet<>(comparing(TradeSummary::getOpenTime));
 
     public OandaTrader(String accountId, Context ctx, TradingStrategy tradingStrategy, MarketTime clock) throws Exception {
         super(tradingStrategy, clock);

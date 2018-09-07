@@ -5,6 +5,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 
 import java.util.Collection;
+import java.util.Objects;
 
 import static broker.Quote.invert;
 
@@ -36,6 +37,22 @@ public class CandlestickData {
 
     public long getC() {
         return c;
+    }
+
+    @Override
+    public boolean equals(Object o1) {
+        if (this == o1) return true;
+        if (o1 == null || getClass() != o1.getClass()) return false;
+        CandlestickData that = (CandlestickData) o1;
+        return o == that.o &&
+                h == that.h &&
+                l == that.l &&
+                c == that.c;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(o, h, l, c);
     }
 
     @Override

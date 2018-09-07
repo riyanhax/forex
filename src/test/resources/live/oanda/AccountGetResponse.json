@@ -1,0 +1,110 @@
+{
+  "account": {
+    "guaranteedStopLossOrderMode": "DISABLED",
+    "id": "101-001-1775714-008",
+    "createdTime": "2018-09-06T11:16:34.782389376Z",
+    "currency": "USD",
+    "createdByUserID": 1775714,
+    "alias": "HIGH_FREQ_MARTINGALE",
+    "marginRate": "0.02",
+    "hedgingEnabled": false,
+    "lastTransactionID": "293",
+    "balance": "50.0193",
+    "openTradeCount": 1,
+    "openPositionCount": 1,
+    "pendingOrderCount": 2,
+    "pl": "0.0189",
+    "resettablePL": "0.0189",
+    "resettablePLTime": "0",
+    "financing": "0.0004",
+    "commission": "0.0000",
+    "guaranteedExecutionFees": "0.0000",
+    "orders": [
+      {
+        "id": "292",
+        "createTime": "2018-09-07T11:27:48.889977095Z",
+        "type": "TAKE_PROFIT",
+        "tradeID": "291",
+        "price": "1.16169",
+        "timeInForce": "GTC",
+        "triggerCondition": "DEFAULT",
+        "state": "PENDING"
+      },
+      {
+        "id": "293",
+        "createTime": "2018-09-07T11:27:48.889977095Z",
+        "type": "STOP_LOSS",
+        "tradeID": "291",
+        "price": "1.15969",
+        "guaranteed": false,
+        "timeInForce": "GTC",
+        "triggerCondition": "DEFAULT",
+        "state": "PENDING"
+      }
+    ],
+    "positions": [
+      {
+        "instrument": "EUR_USD",
+        "long": {
+          "units": "2",
+          "averagePrice": "1.16085",
+          "pl": "-0.0276",
+          "resettablePL": "-0.0276",
+          "financing": "-0.0002",
+          "guaranteedExecutionFees": "0.0000",
+          "tradeIDs": [
+            "291"
+          ],
+          "unrealizedPL": "0.0011"
+        },
+        "short": {
+          "units": "0",
+          "pl": "0.0465",
+          "resettablePL": "0.0465",
+          "financing": "0.0006",
+          "guaranteedExecutionFees": "0.0000",
+          "unrealizedPL": "0.0000"
+        },
+        "pl": "0.0189",
+        "resettablePL": "0.0189",
+        "financing": "0.0004",
+        "commission": "0.0000",
+        "guaranteedExecutionFees": "0.0000",
+        "unrealizedPL": "0.0011",
+        "marginUsed": "0.0465"
+      }
+    ],
+    "trades": [
+      {
+        "id": "291",
+        "instrument": "EUR_USD",
+        "price": "1.16085",
+        "openTime": "2018-09-07T11:27:48.889977095Z",
+        "initialUnits": "2",
+        "initialMarginRequired": "0.0464",
+        "state": "OPEN",
+        "currentUnits": "2",
+        "realizedPL": "0.0000",
+        "financing": "0.0000",
+        "takeProfitOrderID": "292",
+        "stopLossOrderID": "293",
+        "unrealizedPL": "0.0011",
+        "marginUsed": "0.0465"
+      }
+    ],
+    "unrealizedPL": "0.0011",
+    "NAV": "50.0204",
+    "marginUsed": "0.0465",
+    "marginAvailable": "49.9739",
+    "positionValue": "2.3230",
+    "marginCloseoutUnrealizedPL": "0.0013",
+    "marginCloseoutNAV": "50.0206",
+    "marginCloseoutMarginUsed": "0.0465",
+    "marginCloseoutPositionValue": "2.3230",
+    "marginCloseoutPercent": "0.00046",
+    "withdrawalLimit": "49.9739",
+    "marginCallMarginUsed": "0.0465",
+    "marginCallPercent": "0.00093"
+  },
+  "lastTransactionID": "293"
+}

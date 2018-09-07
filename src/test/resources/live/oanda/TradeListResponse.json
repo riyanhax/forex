@@ -1,0 +1,455 @@
+{
+  "trades": [
+    {
+      "id": "309",
+      "instrument": "EUR_USD",
+      "price": "1.15964",
+      "openTime": "2018-09-07T12:43:13.567036542Z",
+      "initialUnits": "-1",
+      "initialMarginRequired": "0.0232",
+      "state": "CLOSED",
+      "currentUnits": "0",
+      "realizedPL": "0.0010",
+      "closingTransactionIDs": [
+        "312"
+      ],
+      "financing": "0.0000",
+      "closeTime": "2018-09-07T12:45:11.338759441Z",
+      "averageClosePrice": "1.15864",
+      "takeProfitOrder": {
+        "id": "310",
+        "createTime": "2018-09-07T12:43:13.567036542Z",
+        "type": "TAKE_PROFIT",
+        "tradeID": "309",
+        "price": "1.15864",
+        "timeInForce": "GTC",
+        "triggerCondition": "DEFAULT",
+        "state": "FILLED",
+        "fillingTransactionID": "312",
+        "filledTime": "2018-09-07T12:45:11.338759441Z",
+        "tradeClosedIDs": [
+          "309"
+        ]
+      },
+      "stopLossOrder": {
+        "id": "311",
+        "createTime": "2018-09-07T12:43:13.567036542Z",
+        "type": "STOP_LOSS",
+        "tradeID": "309",
+        "price": "1.16063",
+        "guaranteed": false,
+        "timeInForce": "GTC",
+        "triggerCondition": "DEFAULT",
+        "state": "CANCELLED",
+        "cancellingTransactionID": "313",
+        "cancelledTime": "2018-09-07T12:45:11.338759441Z"
+      }
+    },
+    {
+      "id": "303",
+      "instrument": "EUR_USD",
+      "price": "1.15879",
+      "openTime": "2018-09-07T12:31:09.524922739Z",
+      "initialUnits": "2",
+      "initialMarginRequired": "0.0463",
+      "state": "CLOSED",
+      "currentUnits": "0",
+      "realizedPL": "0.0015",
+      "closingTransactionIDs": [
+        "306"
+      ],
+      "financing": "0.0000",
+      "closeTime": "2018-09-07T12:42:34.554252280Z",
+      "averageClosePrice": "1.15955",
+      "takeProfitOrder": {
+        "id": "304",
+        "createTime": "2018-09-07T12:31:09.524922739Z",
+        "type": "TAKE_PROFIT",
+        "tradeID": "303",
+        "price": "1.15955",
+        "timeInForce": "GTC",
+        "triggerCondition": "DEFAULT",
+        "state": "FILLED",
+        "fillingTransactionID": "306",
+        "filledTime": "2018-09-07T12:42:34.554252280Z",
+        "tradeClosedIDs": [
+          "303"
+        ]
+      },
+      "stopLossOrder": {
+        "id": "305",
+        "createTime": "2018-09-07T12:31:09.524922739Z",
+        "type": "STOP_LOSS",
+        "tradeID": "303",
+        "price": "1.15755",
+        "guaranteed": false,
+        "timeInForce": "GTC",
+        "triggerCondition": "DEFAULT",
+        "state": "CANCELLED",
+        "cancellingTransactionID": "307",
+        "cancelledTime": "2018-09-07T12:42:34.554252280Z"
+      }
+    },
+    {
+      "id": "297",
+      "instrument": "EUR_USD",
+      "price": "1.16009",
+      "openTime": "2018-09-07T12:30:08.872381160Z",
+      "initialUnits": "1",
+      "initialMarginRequired": "0.0232",
+      "state": "CLOSED",
+      "currentUnits": "0",
+      "realizedPL": "-0.0014",
+      "closingTransactionIDs": [
+        "300"
+      ],
+      "financing": "0.0000",
+      "closeTime": "2018-09-07T12:30:31.910644106Z",
+      "averageClosePrice": "1.15872",
+      "takeProfitOrder": {
+        "id": "298",
+        "createTime": "2018-09-07T12:30:08.872381160Z",
+        "type": "TAKE_PROFIT",
+        "tradeID": "297",
+        "price": "1.16074",
+        "timeInForce": "GTC",
+        "triggerCondition": "DEFAULT",
+        "state": "CANCELLED",
+        "cancellingTransactionID": "301",
+        "cancelledTime": "2018-09-07T12:30:31.910644106Z"
+      },
+      "stopLossOrder": {
+        "id": "299",
+        "createTime": "2018-09-07T12:30:08.872381160Z",
+        "type": "STOP_LOSS",
+        "tradeID": "297",
+        "price": "1.15874",
+        "guaranteed": false,
+        "timeInForce": "GTC",
+        "triggerCondition": "DEFAULT",
+        "state": "FILLED",
+        "fillingTransactionID": "300",
+        "filledTime": "2018-09-07T12:30:31.910644106Z",
+        "tradeClosedIDs": [
+          "297"
+        ]
+      }
+    },
+    {
+      "id": "291",
+      "instrument": "EUR_USD",
+      "price": "1.16085",
+      "openTime": "2018-09-07T11:27:48.889977095Z",
+      "initialUnits": "2",
+      "initialMarginRequired": "0.0464",
+      "state": "CLOSED",
+      "currentUnits": "0",
+      "realizedPL": "0.0017",
+      "closingTransactionIDs": [
+        "294"
+      ],
+      "financing": "0.0000",
+      "closeTime": "2018-09-07T12:29:19.743932770Z",
+      "averageClosePrice": "1.16171",
+      "takeProfitOrder": {
+        "id": "292",
+        "createTime": "2018-09-07T11:27:48.889977095Z",
+        "type": "TAKE_PROFIT",
+        "tradeID": "291",
+        "price": "1.16169",
+        "timeInForce": "GTC",
+        "triggerCondition": "DEFAULT",
+        "state": "FILLED",
+        "fillingTransactionID": "294",
+        "filledTime": "2018-09-07T12:29:19.743932770Z",
+        "tradeClosedIDs": [
+          "291"
+        ]
+      },
+      "stopLossOrder": {
+        "id": "293",
+        "createTime": "2018-09-07T11:27:48.889977095Z",
+        "type": "STOP_LOSS",
+        "tradeID": "291",
+        "price": "1.15969",
+        "guaranteed": false,
+        "timeInForce": "GTC",
+        "triggerCondition": "DEFAULT",
+        "state": "CANCELLED",
+        "cancellingTransactionID": "295",
+        "cancelledTime": "2018-09-07T12:29:19.743932770Z"
+      }
+    },
+    {
+      "id": "285",
+      "instrument": "EUR_USD",
+      "price": "1.16142",
+      "openTime": "2018-09-07T11:08:42.577999259Z",
+      "initialUnits": "1",
+      "initialMarginRequired": "0.0232",
+      "state": "CLOSED",
+      "currentUnits": "0",
+      "realizedPL": "-0.0012",
+      "closingTransactionIDs": [
+        "288"
+      ],
+      "financing": "0.0000",
+      "closeTime": "2018-09-07T11:27:15.746691505Z",
+      "averageClosePrice": "1.16026",
+      "takeProfitOrder": {
+        "id": "286",
+        "createTime": "2018-09-07T11:08:42.577999259Z",
+        "type": "TAKE_PROFIT",
+        "tradeID": "285",
+        "price": "1.16228",
+        "timeInForce": "GTC",
+        "triggerCondition": "DEFAULT",
+        "state": "CANCELLED",
+        "cancellingTransactionID": "289",
+        "cancelledTime": "2018-09-07T11:27:15.746691505Z"
+      },
+      "stopLossOrder": {
+        "id": "287",
+        "createTime": "2018-09-07T11:08:42.577999259Z",
+        "type": "STOP_LOSS",
+        "tradeID": "285",
+        "price": "1.16028",
+        "guaranteed": false,
+        "timeInForce": "GTC",
+        "triggerCondition": "DEFAULT",
+        "state": "FILLED",
+        "fillingTransactionID": "288",
+        "filledTime": "2018-09-07T11:27:15.746691505Z",
+        "tradeClosedIDs": [
+          "285"
+        ]
+      }
+    },
+    {
+      "id": "279",
+      "instrument": "EUR_USD",
+      "price": "1.16293",
+      "openTime": "2018-09-07T10:32:30.591143608Z",
+      "initialUnits": "-16",
+      "initialMarginRequired": "0.3722",
+      "state": "CLOSED",
+      "currentUnits": "0",
+      "realizedPL": "0.0165",
+      "closingTransactionIDs": [
+        "282"
+      ],
+      "financing": "0.0000",
+      "closeTime": "2018-09-07T11:08:19.414617653Z",
+      "averageClosePrice": "1.16190",
+      "takeProfitOrder": {
+        "id": "280",
+        "createTime": "2018-09-07T10:32:30.591143608Z",
+        "type": "TAKE_PROFIT",
+        "tradeID": "279",
+        "price": "1.16192",
+        "timeInForce": "GTC",
+        "triggerCondition": "DEFAULT",
+        "state": "FILLED",
+        "fillingTransactionID": "282",
+        "filledTime": "2018-09-07T11:08:19.414617653Z",
+        "tradeClosedIDs": [
+          "279"
+        ]
+      },
+      "stopLossOrder": {
+        "id": "281",
+        "createTime": "2018-09-07T10:32:30.591143608Z",
+        "type": "STOP_LOSS",
+        "tradeID": "279",
+        "price": "1.16392",
+        "guaranteed": false,
+        "timeInForce": "GTC",
+        "triggerCondition": "DEFAULT",
+        "state": "CANCELLED",
+        "cancellingTransactionID": "283",
+        "cancelledTime": "2018-09-07T11:08:19.414617653Z"
+      }
+    },
+    {
+      "id": "273",
+      "instrument": "EUR_USD",
+      "price": "1.16357",
+      "openTime": "2018-09-07T09:56:17.566296312Z",
+      "initialUnits": "8",
+      "initialMarginRequired": "0.1862",
+      "state": "CLOSED",
+      "currentUnits": "0",
+      "realizedPL": "-0.0090",
+      "closingTransactionIDs": [
+        "276"
+      ],
+      "financing": "0.0000",
+      "closeTime": "2018-09-07T10:31:40.471536562Z",
+      "averageClosePrice": "1.16244",
+      "takeProfitOrder": {
+        "id": "274",
+        "createTime": "2018-09-07T09:56:17.566296312Z",
+        "type": "TAKE_PROFIT",
+        "tradeID": "273",
+        "price": "1.16444",
+        "timeInForce": "GTC",
+        "triggerCondition": "DEFAULT",
+        "state": "CANCELLED",
+        "cancellingTransactionID": "277",
+        "cancelledTime": "2018-09-07T10:31:40.471536562Z"
+      },
+      "stopLossOrder": {
+        "id": "275",
+        "createTime": "2018-09-07T09:56:17.566296312Z",
+        "type": "STOP_LOSS",
+        "tradeID": "273",
+        "price": "1.16244",
+        "guaranteed": false,
+        "timeInForce": "GTC",
+        "triggerCondition": "DEFAULT",
+        "state": "FILLED",
+        "fillingTransactionID": "276",
+        "filledTime": "2018-09-07T10:31:40.471536562Z",
+        "tradeClosedIDs": [
+          "273"
+        ]
+      }
+    },
+    {
+      "id": "267",
+      "instrument": "EUR_USD",
+      "price": "1.16471",
+      "openTime": "2018-09-07T07:57:41.923980261Z",
+      "initialUnits": "4",
+      "initialMarginRequired": "0.0932",
+      "state": "CLOSED",
+      "currentUnits": "0",
+      "realizedPL": "-0.0046",
+      "closingTransactionIDs": [
+        "270"
+      ],
+      "financing": "0.0000",
+      "closeTime": "2018-09-07T09:55:37.810097632Z",
+      "averageClosePrice": "1.16355",
+      "takeProfitOrder": {
+        "id": "268",
+        "createTime": "2018-09-07T07:57:41.923980261Z",
+        "type": "TAKE_PROFIT",
+        "tradeID": "267",
+        "price": "1.16557",
+        "timeInForce": "GTC",
+        "triggerCondition": "DEFAULT",
+        "state": "CANCELLED",
+        "cancellingTransactionID": "271",
+        "cancelledTime": "2018-09-07T09:55:37.810097632Z"
+      },
+      "stopLossOrder": {
+        "id": "269",
+        "createTime": "2018-09-07T07:57:41.923980261Z",
+        "type": "STOP_LOSS",
+        "tradeID": "267",
+        "price": "1.16357",
+        "guaranteed": false,
+        "timeInForce": "GTC",
+        "triggerCondition": "DEFAULT",
+        "state": "FILLED",
+        "fillingTransactionID": "270",
+        "filledTime": "2018-09-07T09:55:37.810097632Z",
+        "tradeClosedIDs": [
+          "267"
+        ]
+      }
+    },
+    {
+      "id": "261",
+      "instrument": "EUR_USD",
+      "price": "1.16362",
+      "openTime": "2018-09-07T07:10:27.208913438Z",
+      "initialUnits": "-2",
+      "initialMarginRequired": "0.0465",
+      "state": "CLOSED",
+      "currentUnits": "0",
+      "realizedPL": "-0.0020",
+      "closingTransactionIDs": [
+        "264"
+      ],
+      "financing": "0.0000",
+      "closeTime": "2018-09-07T07:57:26.363855494Z",
+      "averageClosePrice": "1.16461",
+      "takeProfitOrder": {
+        "id": "262",
+        "createTime": "2018-09-07T07:10:27.208913438Z",
+        "type": "TAKE_PROFIT",
+        "tradeID": "261",
+        "price": "1.16261",
+        "timeInForce": "GTC",
+        "triggerCondition": "DEFAULT",
+        "state": "CANCELLED",
+        "cancellingTransactionID": "265",
+        "cancelledTime": "2018-09-07T07:57:26.363855494Z"
+      },
+      "stopLossOrder": {
+        "id": "263",
+        "createTime": "2018-09-07T07:10:27.208913438Z",
+        "type": "STOP_LOSS",
+        "tradeID": "261",
+        "price": "1.16461",
+        "guaranteed": false,
+        "timeInForce": "GTC",
+        "triggerCondition": "DEFAULT",
+        "state": "FILLED",
+        "fillingTransactionID": "264",
+        "filledTime": "2018-09-07T07:57:26.363855494Z",
+        "tradeClosedIDs": [
+          "261"
+        ]
+      }
+    },
+    {
+      "id": "255",
+      "instrument": "EUR_USD",
+      "price": "1.16478",
+      "openTime": "2018-09-07T07:01:24.199637311Z",
+      "initialUnits": "1",
+      "initialMarginRequired": "0.0233",
+      "state": "CLOSED",
+      "currentUnits": "0",
+      "realizedPL": "-0.0011",
+      "closingTransactionIDs": [
+        "258"
+      ],
+      "financing": "0.0000",
+      "closeTime": "2018-09-07T07:10:00.438812631Z",
+      "averageClosePrice": "1.16364",
+      "takeProfitOrder": {
+        "id": "256",
+        "createTime": "2018-09-07T07:01:24.199637311Z",
+        "type": "TAKE_PROFIT",
+        "tradeID": "255",
+        "price": "1.16565",
+        "timeInForce": "GTC",
+        "triggerCondition": "DEFAULT",
+        "state": "CANCELLED",
+        "cancellingTransactionID": "259",
+        "cancelledTime": "2018-09-07T07:10:00.438812631Z"
+      },
+      "stopLossOrder": {
+        "id": "257",
+        "createTime": "2018-09-07T07:01:24.199637311Z",
+        "type": "STOP_LOSS",
+        "tradeID": "255",
+        "price": "1.16365",
+        "guaranteed": false,
+        "timeInForce": "GTC",
+        "triggerCondition": "DEFAULT",
+        "state": "FILLED",
+        "fillingTransactionID": "258",
+        "filledTime": "2018-09-07T07:10:00.438812631Z",
+        "tradeClosedIDs": [
+          "255"
+        ]
+      }
+    }
+  ],
+  "lastTransactionID": "317"
+}

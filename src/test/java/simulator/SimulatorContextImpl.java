@@ -61,6 +61,7 @@ import java.util.TreeSet;
 import static java.lang.Math.abs;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
+import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
 
 class SimulatorContextImpl extends BaseContext implements OrderListener, SimulatorContext {
@@ -253,7 +254,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
 
             List<TradeSummary> closed = closedTradesForAccountId(request.getAccountID().getId())
                     .stream()
-                    .sorted(Comparator.reverseOrder())
+                    .sorted(Comparator.comparing(TradeHistory::getOpenTime).reversed())
                     .limit(request.getCount())
                     .map(TradeHistory::getTrade)
                     .collect(toList());
@@ -377,7 +378,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
 
     @Override
     public SortedSet<TradeHistory> closedTradesForAccountId(String id) {
-        return closedTrades.getOrDefault(id, new TreeSet<>());
+        return closedTrades.getOrDefault(id, new TreeSet<>(comparing(TradeHistory::getOpenTime)));
     }
 
     private Account mostRecentPortfolio(AccountID accountID) {

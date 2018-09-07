@@ -6,10 +6,9 @@ import market.Instrument;
 
 import java.time.LocalDateTime;
 import java.util.NavigableMap;
+import java.util.Objects;
 
-import static java.util.Comparator.comparing;
-
-public class TradeHistory implements Comparable<TradeHistory> {
+public class TradeHistory {
 
     private final TradeSummary trade;
     private final NavigableMap<LocalDateTime, CandlestickData> candles;
@@ -52,7 +51,16 @@ public class TradeHistory implements Comparable<TradeHistory> {
     }
 
     @Override
-    public int compareTo(TradeHistory o) {
-        return comparing(TradeHistory::getTrade).compare(this, o);
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        TradeHistory that = (TradeHistory) o;
+        return Objects.equals(trade, that.trade) &&
+                Objects.equals(candles, that.candles);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(trade, candles);
     }
 }
