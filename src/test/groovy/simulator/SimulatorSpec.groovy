@@ -19,7 +19,7 @@ class SimulatorSpec extends Specification {
         SimulatorProperties simulation = new SimulatorProperties(startTime: start, endTime: end, millisDelayBetweenMinutes: 0L);
 
         def clock = new SimulatorClock(simulation)
-        Simulator simulator = new Simulator(simulation, clock, broker, Mock(SimulatorContext), new LiveTraders([]))
+        Simulator simulator = new Simulator(simulation, clock, broker, Mock(SimulatorContext), new LiveTraders([]), [])
 
         def times = []
 
@@ -48,7 +48,7 @@ class SimulatorSpec extends Specification {
         def end = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 32)
 
         SimulatorProperties simulation = new SimulatorProperties(startTime: start, endTime: end, millisDelayBetweenMinutes: 0L);
-        Simulator simulator = new Simulator(simulation, new SimulatorClock(simulation), broker, Mock(SimulatorContext), new LiveTraders([]))
+        Simulator simulator = new Simulator(simulation, new SimulatorClock(simulation), broker, Mock(SimulatorContext), new LiveTraders([]), [])
 
         when: 'the simulation is over'
         simulator.run()
@@ -70,7 +70,7 @@ class SimulatorSpec extends Specification {
         def end = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 32)
 
         SimulatorProperties simulation = new SimulatorProperties(startTime: start, endTime: end, millisDelayBetweenMinutes: 0L);
-        Simulator simulator = new Simulator(simulation, new SimulatorClock(simulation), broker, context, new LiveTraders([]))
+        Simulator simulator = new Simulator(simulation, new SimulatorClock(simulation), broker, context, new LiveTraders([]), [])
 
         when: 'the simulation is ran'
         simulator.run()

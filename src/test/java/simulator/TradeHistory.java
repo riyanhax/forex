@@ -9,7 +9,7 @@ import java.util.NavigableMap;
 
 import static java.util.Comparator.comparing;
 
-class TradeHistory implements Comparable<TradeHistory> {
+public class TradeHistory implements Comparable<TradeHistory> {
 
     private final TradeSummary trade;
     private final NavigableMap<LocalDateTime, CandlestickData> candles;
@@ -19,31 +19,31 @@ class TradeHistory implements Comparable<TradeHistory> {
         this.candles = candles;
     }
 
-    TradeSummary getTrade() {
+    public TradeSummary getTrade() {
         return trade;
     }
 
-    NavigableMap<LocalDateTime, CandlestickData> getCandles() {
+    public NavigableMap<LocalDateTime, CandlestickData> getCandles() {
         return candles;
     }
 
-    long getRealizedProfitLoss() {
+    public long getRealizedProfitLoss() {
         return trade.getRealizedProfitLoss();
     }
 
-    LocalDateTime getOpenTime() {
+    public LocalDateTime getOpenTime() {
         return trade.getOpenTime();
     }
 
-    LocalDateTime getCloseTime() {
+    public LocalDateTime getCloseTime() {
         return trade.getCloseTime();
     }
 
-    String getId() {
+    public String getId() {
         return trade.getId();
     }
 
-    Instrument getInstrument() {
+    public Instrument getInstrument() {
         return trade.getInstrument();
     }
 

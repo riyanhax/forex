@@ -21,7 +21,7 @@ import java.util.List;
 
 @Configuration
 @EnableConfigurationProperties(SimulatorProperties.class)
-@ComponentScan(basePackageClasses = {SimulatorApplication.class, MarketConfig.class,
+@ComponentScan(basePackageClasses = {SimulatorConfig.class, MarketConfig.class,
         BrokerConfig.class, TraderConfig.class})
 public class SimulatorConfig {
 
