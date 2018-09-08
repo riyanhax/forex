@@ -10,6 +10,7 @@ import java.time.Month
 class SimulatorSpec extends Specification {
 
     def broker = Mock(ForexBroker)
+    def context = Mock(SimulatorContext)
 
     def 'should run simulation from start to end time'() {
 
@@ -19,7 +20,7 @@ class SimulatorSpec extends Specification {
         SimulatorProperties simulation = new SimulatorProperties(startTime: start, endTime: end, millisDelayBetweenMinutes: 0L);
 
         def clock = new SimulatorClock(simulation)
-        Simulator simulator = new Simulator(simulation, clock, broker, Mock(SimulatorContext), new LiveTraders([]), [])
+        Simulator simulator = new Simulator(simulation, clock, broker, context, new LiveTraders([]), [])
 
         def times = []
 
@@ -48,7 +49,7 @@ class SimulatorSpec extends Specification {
         def end = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 32)
 
         SimulatorProperties simulation = new SimulatorProperties(startTime: start, endTime: end, millisDelayBetweenMinutes: 0L);
-        Simulator simulator = new Simulator(simulation, new SimulatorClock(simulation), broker, Mock(SimulatorContext), new LiveTraders([]), [])
+        Simulator simulator = new Simulator(simulation, new SimulatorClock(simulation), broker, context, new LiveTraders([]), [])
 
         when: 'the simulation is over'
         simulator.run()
@@ -62,7 +63,6 @@ class SimulatorSpec extends Specification {
 
     def 'should notify broker at each interval'() {
 
-        def context = Mock(SimulatorContext)
         context.isAvailable() >> true
 
         given: 'a simulation with a start and end timestamp'
@@ -77,5 +77,50 @@ class SimulatorSpec extends Specification {
 
         then: 'the marketEngine was notified of each minute'
         3 * broker.processUpdates()
+    }
+
+    def 'should callback the context before and after the broker for each minute'() {
+
+        context.isAvailable() >> true
+
+        given: 'a simulation with a start and end timestamp'
+        def start = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 30)
+        def end = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 31)
+        SimulatorProperties simulation = new SimulatorProperties(startTime: start, endTime: end, millisDelayBetweenMinutes: 0L);
+
+        def clock = new SimulatorClock(simulation)
+        Simulator simulator = new Simulator(simulation, clock, broker, context, new LiveTraders([]), [])
+
+        when: 'we process a simulation minute'
+        simulator.nextMinute()
+
+        then: 'the context was notified before the broker'
+        1 * context.beforeTraders()
+
+        then: 'the broker was notified which allows trading to occur'
+        1 * broker.processUpdates()
+
+        then: 'the context was notified after the broker'
+        1 * context.afterTraders()
+    }
+
+    def 'should process results at the end of a simulation'() {
+
+        def resultProcessor = Mock(ResultsProcessor)
+        def traders = new LiveTraders([])
+        context.isAvailable() >> true
+
+        given: 'a simulation with a start and end timestamp'
+        def start = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 30)
+        def end = LocalDateTime.of(2017, Month.FEBRUARY, 2, 3, 32)
+
+        SimulatorProperties simulation = new SimulatorProperties(startTime: start, endTime: end, millisDelayBetweenMinutes: 0L);
+        Simulator simulator = new Simulator(simulation, new SimulatorClock(simulation), broker, context, traders, [resultProcessor])
+
+        when: 'the simulation is over'
+        simulator.run()
+
+        then: 'results are processed'
+        1 * resultProcessor.done(traders, context, simulation)
     }
 }

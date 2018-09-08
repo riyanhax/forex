@@ -10,7 +10,10 @@ import java.time.LocalDateTime
 import java.time.Month
 
 import static Instrument.EURUSD
-import static market.order.Orders.*
+import static market.order.Orders.buyLimitOrder
+import static market.order.Orders.buyMarketOrder
+import static market.order.Orders.sellLimitOrder
+import static market.order.Orders.sellMarketOrder
 
 class MarketEngineSpec extends Specification {
 
@@ -93,4 +96,26 @@ class MarketEngineSpec extends Specification {
         'buy (limit satisfied)'      | buyLimitOrder(10, EURUSD, 110000L)  | OrderStatus.EXECUTED | Optional.of(105000L)
         'sell (limit satisfied)'     | sellLimitOrder(10, EURUSD, 100000L) | OrderStatus.EXECUTED | Optional.of(105000L)
     }
+
+    def 'should not process orders when the market is closed'() {
+
+        MarketEngine marketEngine = MarketEngine.create(market, clock)
+
+        given: 'a limit order was previously submitted'
+        OrderRequest submittedOrder = marketEngine.submit(broker, buyLimitOrder(10, EURUSD, 0L))
+
+        when: 'updates are ran'
+        marketEngine.processUpdates()
+
+        then: 'it was seen whether tha market was available'
+        1 * market.isAvailable() >> false
+
+        and: 'the price is not retrieved'
+        0 * market.getPrice(submittedOrder.instrument)
+
+        and: 'the order remains open'
+        marketEngine.getOrder(submittedOrder).status == OrderStatus.OPEN
+    }
+
+    // TODO: Add support for expiring orders
 }
