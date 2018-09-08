@@ -60,7 +60,7 @@ import static market.MarketTime.ZONE_UTC;
 public class Oanda implements ForexBroker {
 
     private static final Logger LOG = LoggerFactory.getLogger(Oanda.class);
-    private final Map<String, OandaTrader> tradersByAccountId;
+    private final Map<String, ForexTrader> tradersByAccountId;
     private final MarketTime clock;
 
     public Oanda(MarketTime clock, LiveTraders traders) {

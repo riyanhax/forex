@@ -5,7 +5,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.io.MoreFiles;
 import com.google.common.io.RecursiveDeleteOption;
 import live.LiveTraders;
-import live.OandaTrader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -37,13 +36,13 @@ class ResultsFileProcessor implements ResultsProcessor {
 
     @Override
     public void done(LiveTraders liveTraders, SimulatorContext context, SimulatorProperties simulatorProperties) {
-        Map<TradingStrategy, List<OandaTrader>> tradersByStrategy = liveTraders.getTraders().stream()
+        Map<TradingStrategy, List<ForexTrader>> tradersByStrategy = liveTraders.getTraders().stream()
                 .collect(Collectors.groupingBy(ForexTrader::getStrategy));
 
-        for (Map.Entry<TradingStrategy, List<OandaTrader>> e : tradersByStrategy.entrySet()) {
-            Collection<OandaTrader> traders = e.getValue();
+        for (Map.Entry<TradingStrategy, List<ForexTrader>> e : tradersByStrategy.entrySet()) {
+            Collection<ForexTrader> traders = e.getValue();
 
-            for (OandaTrader trader : traders) {
+            for (ForexTrader trader : traders) {
 
                 SortedSet<TradeHistory> closedTrades = context.closedTradesForAccountId(trader.getAccountNumber());
 

@@ -1,22 +1,45 @@
 package broker;
 
+import com.google.common.base.MoreObjects;
+
+import java.util.Objects;
+
 public class AccountChangesRequest {
     private final AccountID accountID;
-    private TransactionID sinceTransactionID;
+    private final TransactionID sinceTransactionID;
 
-    public AccountChangesRequest(AccountID accountID) {
+    public AccountChangesRequest(AccountID accountID, TransactionID sinceTransactionID) {
         this.accountID = accountID;
+        this.sinceTransactionID = sinceTransactionID;
     }
 
     public AccountID getAccountID() {
         return accountID;
     }
 
-    public void setSinceTransactionID(TransactionID sinceTransactionID) {
-        this.sinceTransactionID = sinceTransactionID;
-    }
-
     public TransactionID getSinceTransactionID() {
         return sinceTransactionID;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        AccountChangesRequest that = (AccountChangesRequest) o;
+        return Objects.equals(accountID, that.accountID) &&
+                Objects.equals(sinceTransactionID, that.sinceTransactionID);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(accountID, sinceTransactionID);
+    }
+
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(this)
+                .add("accountID", accountID)
+                .add("sinceTransactionID", sinceTransactionID)
+                .toString();
     }
 }

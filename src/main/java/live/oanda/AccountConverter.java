@@ -5,10 +5,11 @@ import broker.AccountChangesRequest;
 import broker.AccountChangesResponse;
 import broker.AccountGetResponse;
 import broker.AccountID;
+import broker.TradeSummary;
 import broker.TransactionID;
 import com.oanda.v20.account.AccountChanges;
 
-import java.util.Collections;
+import java.util.List;
 
 import static broker.Quote.pippetesFromDouble;
 import static java.util.stream.Collectors.toList;
@@ -39,10 +40,15 @@ class AccountConverter {
     }
 
     private static broker.AccountChanges convert(AccountChanges oandaVersion) {
-        return new broker.AccountChanges(oandaVersion.getTradesClosed().stream()
+        List<TradeSummary> tradesClosed = oandaVersion.getTradesClosed().stream()
                 .map(TradeConverter::convert)
-                .collect(toList()),
-                Collections.emptyList());
+                .collect(toList());
+
+        List<TradeSummary> tradesOpened = oandaVersion.getTradesOpened().stream()
+                .map(TradeConverter::convert)
+                .collect(toList());
+
+        return new broker.AccountChanges(tradesClosed, tradesOpened);
     }
 
     private static Account convert(com.oanda.v20.account.Account oandaAccount) {

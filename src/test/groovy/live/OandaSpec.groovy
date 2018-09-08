@@ -15,9 +15,12 @@ import broker.StopLossDetails
 import broker.TakeProfitDetails
 import broker.TradeListResponse
 import broker.TransactionID
+import market.AccountSnapshot
 import market.MarketTime
+import simulator.TestClock
 import spock.lang.Specification
 import spock.lang.Unroll
+import trader.ForexTrader
 
 import java.time.LocalDateTime
 import java.time.Month
@@ -26,6 +29,26 @@ import static market.Instrument.EURUSD
 import static market.Instrument.USDEUR
 
 class OandaSpec extends Specification {
+
+    def 'should return account snapshot data associated to the current time'() {
+        def accountID = new AccountID('accountId')
+        def expectedAccountData = new Account(accountID, new TransactionID('1234'), [], 13L)
+
+        def trader = Mock(ForexTrader)
+        trader.accountNumber >> expectedAccountData.id.id
+        trader.account >> Optional.of(expectedAccountData)
+
+        def clock = new TestClock(LocalDateTime.now())
+
+        def traders = new LiveTraders([trader])
+        def broker = new Oanda(clock, traders)
+
+        when: 'an account snapshot is requested for a trader'
+        def actual = broker.getAccountSnapshot(traders.traders[0])
+
+        then: 'account data is returned with the current timestamp'
+        actual == new AccountSnapshot(expectedAccountData, clock.now())
+    }
 
     @Unroll
     // Can't figure out why I have to set these weird expected stop loss and take profits

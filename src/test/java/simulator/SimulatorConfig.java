@@ -12,6 +12,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import trader.ForexTrader;
 import trader.TraderConfig;
 import trader.TradingStrategy;
 
@@ -47,7 +48,7 @@ public class SimulatorConfig {
     LiveTraders traders(SimulatorProperties simulatorProperties, MarketTime clock,
                         SimulatorContext context) {
 
-        List<OandaTrader> traders = new ArrayList<>();
+        List<ForexTrader> traders = new ArrayList<>();
         simulatorProperties.getTradingStrategies().forEach(it -> {
             try {
                 traders.addAll(createInstances(it, simulatorProperties, context, clock));
@@ -59,11 +60,11 @@ public class SimulatorConfig {
         return new LiveTraders(traders);
     }
 
-    private Collection<OandaTrader> createInstances(TradingStrategy tradingStrategy,
+    private Collection<ForexTrader> createInstances(TradingStrategy tradingStrategy,
                                                     SimulatorProperties simulatorProperties,
                                                     SimulatorContext context,
                                                     MarketTime clock) throws Exception {
-        List<OandaTrader> traders = new ArrayList<>();
+        List<ForexTrader> traders = new ArrayList<>();
         for (int i = 0; i < simulatorProperties.getInstancesPerTraderType(); i++) {
             traders.add(new OandaTrader(tradingStrategy.toString() + "-" + i, context, tradingStrategy, clock));
         }

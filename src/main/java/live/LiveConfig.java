@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import trader.ForexTrader;
 import trader.TradingStrategy;
 
 import java.util.ArrayList;
@@ -24,7 +25,7 @@ public class LiveConfig {
 
         Context ctx = OandaContext.create(properties.getApi().getEndpoint(), properties.getApi().getToken());
 
-        List<OandaTrader> traders = new ArrayList<>();
+        List<ForexTrader> traders = new ArrayList<>();
         for (TraderConfiguration it : properties.getTraders()) {
             String account = it.getAccount();
             TradingStrategy strategy = it.getStrategy();

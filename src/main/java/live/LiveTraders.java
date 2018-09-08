@@ -1,5 +1,7 @@
 package live;
 
+import trader.ForexTrader;
+
 import java.util.List;
 
 /**
@@ -7,13 +9,13 @@ import java.util.List;
  */
 public class LiveTraders {
 
-    private final List<OandaTrader> traders;
+    private final List<ForexTrader> traders;
 
-    public LiveTraders(List<OandaTrader> traders) {
+    public LiveTraders(List<ForexTrader> traders) {
         this.traders = traders;
     }
 
-    public List<OandaTrader> getTraders() {
+    public List<ForexTrader> getTraders() {
         return traders;
     }
 }

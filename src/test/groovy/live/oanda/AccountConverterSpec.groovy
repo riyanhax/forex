@@ -15,8 +15,8 @@ import live.oanda.AccountConverter
 import spock.lang.Specification
 
 import java.time.LocalDateTime
-import java.time.Month
 
+import static java.time.Month.SEPTEMBER
 import static market.Instrument.EURUSD
 import static market.Instrument.USDEUR
 
@@ -31,7 +31,7 @@ class AccountConverterSpec extends Specification {
     def 'should convert account get response correctly'() {
 
         def expected = new AccountGetResponse(new Account(new AccountID("101-001-1775714-008"), new TransactionID("293"), [
-                new TradeSummary(EURUSD, 2, 116085L, 0L, 110L, LocalDateTime.of(2018, Month.SEPTEMBER, 7, 6, 27, 48, 889977095), null, '291')
+                new TradeSummary(EURUSD, 2, 116085L, 0L, 110L, LocalDateTime.of(2018, SEPTEMBER, 7, 6, 27, 48, 889977095), null, '291')
         ], 1890L))
 
         def json = getClass().getResourceAsStream('AccountGetResponse.json').text
@@ -46,8 +46,11 @@ class AccountConverterSpec extends Specification {
     def 'should convert account changes response correctly'() {
 
         def expected = new AccountChangesResponse(new TransactionID("999"), new AccountChanges([
-                new TradeSummary(USDEUR, 1, 86402L, -20L, 0L, LocalDateTime.of(2018, Month.SEPTEMBER, 7, 10, 49, 6,
-                        159247625), LocalDateTime.of(2018, Month.SEPTEMBER, 7, 10, 50, 30, 782081491), '993')
+                new TradeSummary(USDEUR, 1, 86402L, -20L, 0L, LocalDateTime.of(2018, SEPTEMBER, 7, 10, 49, 6,
+                        159247625), LocalDateTime.of(2018, SEPTEMBER, 7, 10, 50, 30, 782081491), '993')
+        ], [
+                new TradeSummary(USDEUR, 1, 86395L, 0L, 0L, LocalDateTime.of(2018, SEPTEMBER, 7, 10, 50, 43,
+                        289257), null, '997')
         ]))
 
         def json = getClass().getResourceAsStream('AccountChangesResponse.json').text

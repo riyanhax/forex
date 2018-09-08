@@ -1,7 +1,6 @@
 package simulator;
 
 import live.LiveTraders;
-import live.OandaTrader;
 import market.AccountSnapshot;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,12 +28,12 @@ public class ResultsStdOutProcessor implements ResultsProcessor {
     @Override
     public void done(LiveTraders liveTraders, SimulatorContext context, SimulatorProperties simulatorProperties) {
 
-        Map<TradingStrategy, List<OandaTrader>> tradersByStrategy = liveTraders.getTraders().stream()
+        Map<TradingStrategy, List<ForexTrader>> tradersByStrategy = liveTraders.getTraders().stream()
                 .collect(Collectors.groupingBy(ForexTrader::getStrategy));
 
-        for (Map.Entry<TradingStrategy, List<OandaTrader>> e : tradersByStrategy.entrySet()) {
+        for (Map.Entry<TradingStrategy, List<ForexTrader>> e : tradersByStrategy.entrySet()) {
             TradingStrategy factory = e.getKey();
-            Collection<OandaTrader> traders = e.getValue();
+            Collection<ForexTrader> traders = e.getValue();
 
             LOG.info("\n\n{}:", factory.toString());
 
@@ -43,7 +42,7 @@ public class ResultsStdOutProcessor implements ResultsProcessor {
             SortedSet<AccountSnapshot> portfolios = new TreeSet<>(comparing(AccountSnapshot::pipettes));
             SortedSet<TradeHistory> allTrades = new TreeSet<>(comparing(TradeHistory::getOpenTime));
 
-            for (OandaTrader trader : traders) {
+            for (ForexTrader trader : traders) {
                 AccountSnapshot end = context.getTraderData(trader.getAccountNumber()).getMostRecentPortfolio();
                 long endPips = end.getPipettesProfit();
                 LOG.info("End: {} at {}", profitLossDisplay(endPips), formatTimestamp(end.getTimestamp()));

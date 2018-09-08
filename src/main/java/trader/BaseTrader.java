@@ -1,11 +1,11 @@
 package trader;
 
+import broker.Account;
 import broker.ForexBroker;
 import broker.OpenPositionRequest;
 import broker.TradeSummary;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
-import market.AccountSnapshot;
 import market.MarketTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,8 +35,12 @@ public abstract class BaseTrader implements ForexTrader {
     public void processUpdates(ForexBroker broker) throws Exception {
 
         LOG.info("Trader: {}", tradingStrategy.getName());
-        AccountSnapshot portfolio = broker.getAccountSnapshot(this);
-        List<TradeSummary> positions = portfolio.getPositionValues();
+        Optional<Account> account = getAccount();
+        if (!account.isPresent()) {
+            LOG.error("No account available! Skipping this interval...");
+            return;
+        }
+        List<TradeSummary> positions = account.get().getTrades();
 
         LocalDateTime now = clock.now();
         boolean stopTrading = now.getHour() > 11 && broker.isClosed(clock.tomorrow());
