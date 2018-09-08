@@ -67,7 +67,7 @@ class InstrumentConverter {
         verifyResponseInstrument(requestedInstrument, responseInstrument);
 
         return new InstrumentCandlesResponse(
-                responseInstrument,
+                requestedInstrument,
                 convert(oandaResponse.getGranularity()),
                 oandaResponse.getCandles().stream().map(it ->
                         convert(requestedInstrument.isInverse(), it)).collect(toList()));

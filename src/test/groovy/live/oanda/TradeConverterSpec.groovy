@@ -1,5 +1,7 @@
 package live.oanda
 
+import broker.MarketOrderTransaction
+import broker.TradeCloseResponse
 import broker.TradeListResponse
 import broker.TradeSummary
 import broker.TransactionID
@@ -8,6 +10,7 @@ import com.google.gson.GsonBuilder
 import com.oanda.v20.order.OrderAdapter
 import com.oanda.v20.transaction.TransactionAdapter
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import java.time.LocalDateTime
 import java.time.Month
@@ -22,6 +25,26 @@ class TradeConverterSpec extends Specification {
             .registerTypeAdapter(com.oanda.v20.order.Order.class, new OrderAdapter())
             .registerTypeAdapter(com.oanda.v20.transaction.Transaction.class, new TransactionAdapter())
             .create();
+
+    @Unroll
+    def 'should convert trade close response correctly: #instrument'() {
+
+        def json = getClass().getResourceAsStream(responseFile).text
+        def response = gson.fromJson(json, com.oanda.v20.trade.TradeCloseResponse.class)
+
+        TradeCloseResponse actual = TradeConverter.convert(response)
+
+        expect:
+        actual == expected
+
+        where:
+        instrument | responseFile                    | expected
+        EURUSD     | 'TradeCloseResponse-Long.json'  | new TradeCloseResponse(new MarketOrderTransaction('1006',
+                LocalDateTime.of(2018, Month.SEPTEMBER, 7, 10, 56, 46, 371386767), EURUSD, 7))
+
+        USDEUR     | 'TradeCloseResponse-Short.json' | new TradeCloseResponse(new MarketOrderTransaction('1006',
+                LocalDateTime.of(2018, Month.SEPTEMBER, 7, 10, 56, 46, 371386767), USDEUR, 7))
+    }
 
     def 'should convert trade list response correctly'() {
 

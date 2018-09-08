@@ -15,6 +15,7 @@ import broker.InstrumentCandlesRequest;
 import broker.InstrumentCandlesResponse;
 import broker.InstrumentContext;
 import broker.MarketOrderRequest;
+import broker.MarketOrderTransaction;
 import broker.OrderContext;
 import broker.OrderCreateRequest;
 import broker.OrderCreateResponse;
@@ -58,7 +59,6 @@ import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import static java.lang.Math.abs;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Comparator.comparing;
@@ -209,15 +209,9 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
         @Override
         public OrderCreateResponse create(OrderCreateRequest request) throws RequestException {
 
-            // Open a long position on USD/EUR to simulate a short position for EUR/USD
             MarketOrderRequest marketOrder = request.getOrder();
             Instrument pair = marketOrder.getInstrument();
             int units = marketOrder.getUnits();
-
-            if (units < 0) {
-                pair = pair.getOpposite();
-                units = abs(units);
-            }
 
             BuyMarketOrder order = Orders.buyMarketOrder(units, pair);
             OrderRequest submitted = marketEngine.submit(SimulatorContextImpl.this, order);
@@ -225,7 +219,10 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
             accountIdsByOrderId.put(submitted.getId(), accountID);
             stopLossTakeProfitsById.put(accountID, marketOrder);
 
-            return new OrderCreateResponse();
+            MarketOrderTransaction orderCreateTransaction = new MarketOrderTransaction(submitted.getId(),
+                    submitted.getSubmissionDate(), submitted.getInstrument(), submitted.getUnits());
+
+            return new OrderCreateResponse(marketOrder.getInstrument(), orderCreateTransaction);
         }
     }
 
@@ -246,7 +243,10 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
             accountIdsByOrderId.put(submitted.getId(), accountID);
             stopLossTakeProfitsById.remove(accountID);
 
-            return new TradeCloseResponse();
+            MarketOrderTransaction orderCreateTransaction = new MarketOrderTransaction(submitted.getId(), submitted.getSubmissionDate(),
+                    submitted.getInstrument(), submitted.getUnits());
+
+            return new TradeCloseResponse(orderCreateTransaction);
         }
 
         @Override

@@ -1,19 +1,26 @@
 package live.oanda;
 
 import broker.MarketOrderRequest;
+import broker.MarketOrderTransaction;
 import broker.OrderCreateRequest;
 import broker.OrderCreateResponse;
 import broker.StopLossDetails;
 import broker.TakeProfitDetails;
 import com.oanda.v20.account.AccountID;
 import com.oanda.v20.order.OrderRequest;
+import com.oanda.v20.transaction.Transaction;
 import market.Instrument;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static broker.Quote.doubleFromPippetes;
 import static broker.Quote.invert;
+import static com.google.common.base.Preconditions.checkArgument;
+import static live.oanda.CommonConverter.verifyResponseInstrument;
 
 class OrderConverter {
+
+    public static final Logger LOG = LoggerFactory.getLogger(OrderConverter.class);
 
     static com.oanda.v20.order.OrderCreateRequest convert(OrderCreateRequest request) {
         com.oanda.v20.order.OrderCreateRequest oandaRequest = new com.oanda.v20.order.OrderCreateRequest(
@@ -23,8 +30,35 @@ class OrderConverter {
         return oandaRequest;
     }
 
-    static OrderCreateResponse convert(com.oanda.v20.order.OrderCreateResponse oandaResponse) {
-        return new OrderCreateResponse();
+    static OrderCreateResponse convert(Instrument requestedInstrument, com.oanda.v20.order.OrderCreateResponse oandaResponse) {
+        MarketOrderTransaction orderCreateTransaction = null;
+
+        Transaction t = oandaResponse.getOrderCreateTransaction();
+        if (t instanceof com.oanda.v20.transaction.MarketOrderTransaction) {
+            com.oanda.v20.transaction.MarketOrderTransaction marketOrderTransaction = (com.oanda.v20.transaction.MarketOrderTransaction) t;
+
+            orderCreateTransaction = convert(requestedInstrument, marketOrderTransaction);
+        } else {
+            LOG.error("Didn't receive a market order create transaction!");
+        }
+
+        return new OrderCreateResponse(requestedInstrument, orderCreateTransaction);
+    }
+
+    static MarketOrderTransaction convert(Instrument requestedInstrument, com.oanda.v20.transaction.MarketOrderTransaction marketOrderTransaction) {
+        Instrument responseInstrument = CommonConverter.convert(marketOrderTransaction.getInstrument());
+        verifyResponseInstrument(requestedInstrument, responseInstrument);
+
+        int units = (int) marketOrderTransaction.getUnits().doubleValue();
+        if (requestedInstrument != responseInstrument) {
+            units *= -1;
+        }
+
+        checkArgument(units > 0, "Shouldn't have negative units at this point, why wasn't a short order converted to an inverse long?");
+
+        return new MarketOrderTransaction(marketOrderTransaction.getId().toString(),
+                CommonConverter.parseTimestamp(marketOrderTransaction.getTime().toString()),
+                requestedInstrument, units);
     }
 
     private static OrderRequest convert(MarketOrderRequest order) {
@@ -74,5 +108,4 @@ class OrderConverter {
 
         return oandaVersion;
     }
-
 }

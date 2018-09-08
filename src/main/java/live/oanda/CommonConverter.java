@@ -2,6 +2,7 @@ package live.oanda;
 
 import broker.TransactionID;
 import com.google.common.base.Preconditions;
+import com.oanda.v20.primitives.InstrumentName;
 import market.Instrument;
 import market.MarketTime;
 
@@ -37,4 +38,7 @@ class CommonConverter {
         return new TransactionID(oandaVersion.toString());
     }
 
+    static Instrument convert(InstrumentName instrument) {
+        return Instrument.bySymbol.get(instrument.toString());
+    }
 }

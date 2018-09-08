@@ -23,6 +23,7 @@ import broker.TradeCloseRequest;
 import broker.TradeCloseResponse;
 import broker.TradeSpecifier;
 import broker.TradeSummary;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Range;
 import market.AccountSnapshot;
@@ -117,6 +118,9 @@ public class Oanda implements ForexBroker {
 
     @Override
     public void openPosition(ForexTrader trader, OpenPositionRequest request) throws Exception {
+        Preconditions.checkArgument(request.getUnits() > 0,
+                "Can only request positive units! Open a long position on the inverse for short stances!");
+
         Instrument pair = request.getPair();
 
         Quote quote = getQuote(trader, pair);

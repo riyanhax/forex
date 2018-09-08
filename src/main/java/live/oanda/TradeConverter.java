@@ -1,5 +1,6 @@
 package live.oanda;
 
+import broker.MarketOrderTransaction;
 import broker.TradeCloseResponse;
 import broker.TradeListRequest;
 import broker.TradeListResponse;
@@ -31,7 +32,16 @@ class TradeConverter {
     }
 
     static TradeCloseResponse convert(com.oanda.v20.trade.TradeCloseResponse oandaResponse) {
-        return new TradeCloseResponse();
+        com.oanda.v20.transaction.MarketOrderTransaction orderCreateTransaction = oandaResponse.getOrderCreateTransaction();
+
+        Instrument instrument = CommonConverter.convert(oandaResponse.getOrderCreateTransaction().getInstrument());
+        if ((int) orderCreateTransaction.getUnits().doubleValue() < 0) {
+            instrument = instrument.getOpposite();
+        }
+
+        MarketOrderTransaction orderCreated = OrderConverter.convert(instrument, orderCreateTransaction);
+
+        return new TradeCloseResponse(orderCreated);
     }
 
     static com.oanda.v20.trade.TradeListRequest convert(TradeListRequest request) {

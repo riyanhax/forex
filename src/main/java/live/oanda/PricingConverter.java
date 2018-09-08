@@ -39,7 +39,7 @@ class PricingConverter {
     }
 
     private static Price convert(Instrument requestedInstrument, com.oanda.v20.pricing.Price oandaPrice) {
-        Instrument responseInstrument = Instrument.bySymbol.get(oandaPrice.getInstrument().toString());
+        Instrument responseInstrument = CommonConverter.convert(oandaPrice.getInstrument());
         verifyResponseInstrument(requestedInstrument, responseInstrument);
 
         boolean inverse = requestedInstrument.isInverse();

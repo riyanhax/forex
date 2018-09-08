@@ -1,6 +1,8 @@
 package live.oanda
 
 import broker.Account
+import broker.AccountChanges
+import broker.AccountChangesResponse
 import broker.AccountGetResponse
 import broker.AccountID
 import broker.TradeSummary
@@ -16,6 +18,7 @@ import java.time.LocalDateTime
 import java.time.Month
 
 import static market.Instrument.EURUSD
+import static market.Instrument.USDEUR
 
 class AccountConverterSpec extends Specification {
 
@@ -35,6 +38,22 @@ class AccountConverterSpec extends Specification {
         def response = gson.fromJson(json, com.oanda.v20.account.AccountGetResponse.class)
 
         AccountGetResponse actual = AccountConverter.convert(response)
+
+        expect:
+        actual == expected
+    }
+
+    def 'should convert account changes response correctly'() {
+
+        def expected = new AccountChangesResponse(new TransactionID("999"), new AccountChanges([
+                new TradeSummary(USDEUR, 1, 86402L, -20L, 0L, LocalDateTime.of(2018, Month.SEPTEMBER, 7, 10, 49, 6,
+                        159247625), LocalDateTime.of(2018, Month.SEPTEMBER, 7, 10, 50, 30, 782081491), '993')
+        ]))
+
+        def json = getClass().getResourceAsStream('AccountChangesResponse.json').text
+        def response = gson.fromJson(json, com.oanda.v20.account.AccountChangesResponse.class)
+
+        AccountChangesResponse actual = AccountConverter.convert(response)
 
         expect:
         actual == expected

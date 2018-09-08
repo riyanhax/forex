@@ -5,6 +5,7 @@ import broker.AccountGetResponse
 import broker.AccountID
 import broker.Context
 import broker.MarketOrderRequest
+import broker.MarketOrderTransaction
 import broker.OpenPositionRequest
 import broker.OrderCreateResponse
 import broker.Price
@@ -17,6 +18,9 @@ import broker.TransactionID
 import market.MarketTime
 import spock.lang.Specification
 import spock.lang.Unroll
+
+import java.time.LocalDateTime
+import java.time.Month
 
 import static market.Instrument.EURUSD
 import static market.Instrument.USDEUR
@@ -58,6 +62,7 @@ class OandaSpec extends Specification {
         oanda.openPosition(trader, new OpenPositionRequest(EURUSD, 3, null, null, null))
 
         then: 'the position is opened with the requested number of units'
-        1 * context.createOrder({ it.order.units == 3 }) >> new OrderCreateResponse()
+        1 * context.createOrder({ it.order.units == 3 }) >> new OrderCreateResponse(EURUSD, new MarketOrderTransaction('6367',
+                LocalDateTime.of(2016, Month.JUNE, 22, 13, 41, 29, 264030555), EURUSD, 3))
     }
 }
