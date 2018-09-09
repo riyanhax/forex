@@ -27,9 +27,18 @@ public interface ForexBroker {
 
     void closePosition(ForexTrader trader, TradeSummary position, @Nullable Long limit) throws Exception;
 
+    /**
+     * Retrieve one day candles based on an inclusive start and exclusive end.
+     */
     NavigableMap<LocalDateTime, CandlestickData> getOneDayCandles(ForexTrader trader, Instrument pair, Range<LocalDateTime> closed) throws RequestException;
 
+    /**
+     * Retrieve four hour candles based on an inclusive start and exclusive end.
+     */
     NavigableMap<LocalDateTime, CandlestickData> getFourHourCandles(ForexTrader trader, Instrument pair, Range<LocalDateTime> closed) throws RequestException;
 
+    /**
+     * Retrieve one week candles based on an inclusive start and exclusive end.
+     */
     NavigableMap<LocalDateTime,CandlestickData> getOneWeekCandles(ForexTrader trader, Instrument pair, Range<LocalDateTime> closed) throws RequestException;
 }

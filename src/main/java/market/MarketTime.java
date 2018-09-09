@@ -1,11 +1,14 @@
 package market;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+
+import static java.time.DayOfWeek.FRIDAY;
 
 public interface MarketTime {
 
@@ -16,6 +19,7 @@ public interface MarketTime {
             .withZoneSameInstant(MarketTime.ZONE).getHour();
 
     DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm");
+    DayOfWeek WEEKLY_ALIGNMENT = FRIDAY;
 
     LocalDateTime now();
 

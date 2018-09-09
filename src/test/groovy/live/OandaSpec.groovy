@@ -3,7 +3,10 @@ package live
 import broker.Account
 import broker.AccountGetResponse
 import broker.AccountID
+import broker.Candlestick
+import broker.CandlestickData
 import broker.Context
+import broker.InstrumentCandlesResponse
 import broker.MarketOrderRequest
 import broker.MarketOrderTransaction
 import broker.OpenPositionRequest
@@ -13,8 +16,11 @@ import broker.PricingGetResponse
 import broker.Quote
 import broker.StopLossDetails
 import broker.TakeProfitDetails
+import broker.TradeCloseResponse
 import broker.TradeListResponse
+import broker.TradeSummary
 import broker.TransactionID
+import com.google.common.collect.Range
 import market.AccountSnapshot
 import market.MarketTime
 import simulator.TestClock
@@ -22,11 +28,21 @@ import spock.lang.Specification
 import spock.lang.Unroll
 import trader.ForexTrader
 
+import java.time.DayOfWeek
 import java.time.LocalDateTime
 import java.time.Month
+import java.time.ZoneId
 
+import static broker.CandlePrice.ASK
+import static broker.CandlePrice.BID
+import static broker.CandlePrice.MID
+import static broker.CandlestickGranularity.D
+import static broker.CandlestickGranularity.H4
+import static broker.CandlestickGranularity.W
 import static java.time.Month.APRIL
+import static java.time.Month.AUGUST
 import static java.time.Month.NOVEMBER
+import static java.time.Month.SEPTEMBER
 import static market.Instrument.EURUSD
 import static market.Instrument.USDEUR
 
@@ -147,4 +163,226 @@ class OandaSpec extends Specification {
         }) >> new OrderCreateResponse(EURUSD, new MarketOrderTransaction('6367',
                 LocalDateTime.of(2016, Month.JUNE, 22, 13, 41, 29, 264030555), EURUSD, 3))
     }
+
+    def 'should create the correct close position request'() {
+
+        def position = new TradeSummary(USDEUR, 3, 86233L, 6L, 0L,
+                LocalDateTime.of(2018, SEPTEMBER, 7, 7, 43, 13, 567036542),
+                LocalDateTime.of(2018, SEPTEMBER, 7, 07, 45, 11, 338759441), '309')
+        def currentAccount = new Account(new AccountID('1'), new TransactionID('3'), [position], 1L)
+
+        def context = Mock(Context)
+        context.getAccount(_) >> new AccountGetResponse(currentAccount)
+        context.listTrade(_) >> new TradeListResponse([], null)
+
+        def clock = Mock(MarketTime)
+        def trader = new TestTrader(context, clock)
+
+        Oanda oanda = new Oanda(clock, new LiveTraders([trader]))
+
+        when: 'a trader submits a close position request'
+        oanda.closePosition(trader, position, null)
+
+        then: 'the context request is created correctly'
+        1 * context.closeTrade({
+            it.units == position.currentUnits &&
+                    it.tradeSpecifier.id == position.id && it.accountID == currentAccount.id
+        }) >> new TradeCloseResponse()
+    }
+
+    @Unroll
+    def 'should create correct one week candles requests: #instrument'() {
+
+        def start = LocalDateTime.of(2018, AUGUST, 24, 16, 0, 0)
+        def end = LocalDateTime.of(2018, SEPTEMBER, 7, 16, 0, 0)
+
+        def context = Mock(Context)
+        def accountID = new AccountID('accountId')
+        def account = new Account(accountID, new TransactionID('1234'), [], 13L)
+
+        def trader = Mock(ForexTrader)
+        trader.accountNumber >> accountID.id
+        trader.account >> Optional.of(account)
+        trader.context >> context
+
+        when: 'one day candles are requested'
+        def actual = new Oanda(Mock(MarketTime), new LiveTraders([trader]))
+                .getOneWeekCandles(trader, instrument, Range.closed(
+                start, end))
+
+        then: 'the request has the correct arguments'
+        1 * context.instrumentCandles({
+            it.granularity == W &&
+                    it.instrument == instrument &&
+                    it.price == [BID, MID, ASK] as Set &&
+                    it.from == start &&
+                    it.to == end &&
+                    it.includeFirst == true &&
+                    // TODO DPJ: Does this returned data match Oanda?
+                    it.weeklyAlignment == DayOfWeek.FRIDAY
+        }) >> new InstrumentCandlesResponse(instrument, W, [
+                new Candlestick(LocalDateTime.of(2018, AUGUST, 24, 16, 0, 0),
+                        new CandlestickData(10L, 20L, 5L, 7L),
+                        new CandlestickData(20L, 30L, 15L, 17L),
+                        new CandlestickData(15L, 25L, 10L, 12L)
+                ),
+                new Candlestick(LocalDateTime.of(2018, AUGUST, 31, 16, 0, 0),
+                        new CandlestickData(11L, 21L, 6L, 8L),
+                        new CandlestickData(21L, 31L, 16L, 18L),
+                        new CandlestickData(16L, 26L, 11L, 13L)
+                ),
+                new Candlestick(LocalDateTime.of(2018, SEPTEMBER, 7, 16, 0, 0),
+                        new CandlestickData(12L, 22L, 7L, 9L),
+                        new CandlestickData(22L, 32L, 17L, 19L),
+                        new CandlestickData(17L, 27L, 12L, 14L)
+                )
+        ])
+
+        and: 'the response had an exclusive end'
+        actual.keySet() == [
+                LocalDateTime.of(2018, AUGUST, 24, 16, 0, 0),
+                LocalDateTime.of(2018, AUGUST, 31, 16, 0, 0)
+        ] as Set
+
+        and: 'mid prices were used'
+        actual.values() as Set == [
+                new CandlestickData(15L, 25L, 10L, 12L),
+                new CandlestickData(16L, 26L, 11L, 13L)
+        ] as Set
+
+        where:
+        instrument << [
+                EURUSD, USDEUR
+        ]
+    }
+
+    @Unroll
+    def 'should create correct one day candles requests: #instrument'() {
+
+        def start = LocalDateTime.of(2018, SEPTEMBER, 5, 16, 0, 0)
+        def end = LocalDateTime.of(2018, SEPTEMBER, 7, 16, 0, 0)
+
+        def context = Mock(Context)
+        def accountID = new AccountID('accountId')
+        def account = new Account(accountID, new TransactionID('1234'), [], 13L)
+
+        def trader = Mock(ForexTrader)
+        trader.accountNumber >> accountID.id
+        trader.account >> Optional.of(account)
+        trader.context >> context
+
+        when: 'one day candles are requested'
+        def actual = new Oanda(Mock(MarketTime), new LiveTraders([trader]))
+                .getOneDayCandles(trader, instrument, Range.closed(
+                start, end))
+
+        then: 'the request has the correct arguments'
+        1 * context.instrumentCandles({
+            it.granularity == D &&
+                    it.instrument == instrument &&
+                    it.price == [BID, MID, ASK] as Set &&
+                    it.from == start &&
+                    it.to == end &&
+                    it.includeFirst == true &&
+                    it.alignmentTimezone == ZoneId.of("America/Chicago") &&
+                    it.dailyAlignment == 16 // 5 PM EST
+        }) >> new InstrumentCandlesResponse(instrument, D, [
+                new Candlestick(LocalDateTime.of(2018, SEPTEMBER, 5, 16, 0, 0),
+                        new CandlestickData(10L, 20L, 5L, 7L),
+                        new CandlestickData(20L, 30L, 15L, 17L),
+                        new CandlestickData(15L, 25L, 10L, 12L)
+                ),
+                new Candlestick(LocalDateTime.of(2018, SEPTEMBER, 6, 16, 0, 0),
+                        new CandlestickData(11L, 21L, 6L, 8L),
+                        new CandlestickData(21L, 31L, 16L, 18L),
+                        new CandlestickData(16L, 26L, 11L, 13L)
+                ),
+                new Candlestick(LocalDateTime.of(2018, SEPTEMBER, 7, 16, 0, 0),
+                        new CandlestickData(12L, 22L, 7L, 9L),
+                        new CandlestickData(22L, 32L, 17L, 19L),
+                        new CandlestickData(17L, 27L, 12L, 14L)
+                )
+        ])
+
+        and: 'the response had an exclusive end'
+        actual.keySet() == [
+                LocalDateTime.of(2018, SEPTEMBER, 5, 16, 0, 0),
+                LocalDateTime.of(2018, SEPTEMBER, 6, 16, 0, 0)
+        ] as Set
+
+        and: 'mid prices were used'
+        actual.values() as Set == [
+                new CandlestickData(15L, 25L, 10L, 12L),
+                new CandlestickData(16L, 26L, 11L, 13L)
+        ] as Set
+
+        where:
+        instrument << [
+                EURUSD, USDEUR
+        ]
+    }
+
+    def 'should create correct four hour candles requests: #instrument'() {
+
+        def start = LocalDateTime.of(2018, SEPTEMBER, 5, 0, 0, 0)
+        def end = LocalDateTime.of(2018, SEPTEMBER, 5, 8, 0, 0)
+
+        def context = Mock(Context)
+        def accountID = new AccountID('accountId')
+        def account = new Account(accountID, new TransactionID('1234'), [], 13L)
+
+        def trader = Mock(ForexTrader)
+        trader.accountNumber >> accountID.id
+        trader.account >> Optional.of(account)
+        trader.context >> context
+
+        when: 'one day candles are requested'
+        def actual = new Oanda(Mock(MarketTime), new LiveTraders([trader]))
+                .getFourHourCandles(trader, instrument, Range.closed(
+                start, end))
+
+        then: 'the request has the correct arguments'
+        1 * context.instrumentCandles({
+            it.granularity == H4 &&
+                    it.instrument == instrument &&
+                    it.price == [BID, MID, ASK] as Set &&
+                    it.from == start &&
+                    it.to == end &&
+                    it.includeFirst == true
+        }) >> new InstrumentCandlesResponse(instrument, H4, [
+                new Candlestick(LocalDateTime.of(2018, SEPTEMBER, 5, 0, 0, 0),
+                        new CandlestickData(10L, 20L, 5L, 7L),
+                        new CandlestickData(20L, 30L, 15L, 17L),
+                        new CandlestickData(15L, 25L, 10L, 12L)
+                ),
+                new Candlestick(LocalDateTime.of(2018, SEPTEMBER, 5, 4, 0, 0),
+                        new CandlestickData(11L, 21L, 6L, 8L),
+                        new CandlestickData(21L, 31L, 16L, 18L),
+                        new CandlestickData(16L, 26L, 11L, 13L)
+                ),
+                new Candlestick(LocalDateTime.of(2018, SEPTEMBER, 5, 8, 0, 0),
+                        new CandlestickData(12L, 22L, 7L, 9L),
+                        new CandlestickData(22L, 32L, 17L, 19L),
+                        new CandlestickData(17L, 27L, 12L, 14L)
+                )
+        ])
+
+        and: 'the response had an exclusive end'
+        actual.keySet() == [
+                LocalDateTime.of(2018, SEPTEMBER, 5, 0, 0, 0),
+                LocalDateTime.of(2018, SEPTEMBER, 5, 4, 0, 0)
+        ] as Set
+
+        and: 'mid prices were used'
+        actual.values() as Set == [
+                new CandlestickData(15L, 25L, 10L, 12L),
+                new CandlestickData(16L, 26L, 11L, 13L)
+        ] as Set
+
+        where:
+        instrument << [
+                EURUSD, USDEUR
+        ]
+    }
+
 }

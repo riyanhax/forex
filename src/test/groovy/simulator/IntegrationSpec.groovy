@@ -54,7 +54,7 @@ class IntegrationSpec extends Specification {
         historyComparatorPortfolio2.pipettesProfit == historyComparatorPortfolio1.pipettesProfit
 
         and: 'regression comparator profit/loss was calculated correctly'
-        regressionComparatorPortfolio3.pipettesProfit == 27870L
+        regressionComparatorPortfolio3.pipettesProfit == 5422L
 
         and: 'both regression comparator traders had the same profit/loss'
         regressionComparatorPortfolio4.pipettesProfit == regressionComparatorPortfolio3.pipettesProfit

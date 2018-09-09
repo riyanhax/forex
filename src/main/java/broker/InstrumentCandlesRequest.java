@@ -70,6 +70,11 @@ public class InstrumentCandlesRequest {
         return alignmentTimezone;
     }
 
+    /**
+     * The timezone to use for the dailyAlignment parameter. Candlesticks with
+     * daily alignment will be aligned to the dailyAlignment hour within the
+     * alignmentTimezone.
+     */
     public void setAlignmentTimezone(ZoneId alignmentTimezone) {
         this.alignmentTimezone = alignmentTimezone;
     }
@@ -78,6 +83,10 @@ public class InstrumentCandlesRequest {
         return dailyAlignment;
     }
 
+    /**
+     * The hour of the day (in the specified timezone) to use for granularities
+     * that have daily alignments.
+     */
     public void setDailyAlignment(int dailyAlignment) {
         this.dailyAlignment = dailyAlignment;
     }
@@ -86,6 +95,9 @@ public class InstrumentCandlesRequest {
         return weeklyAlignment;
     }
 
+    /**
+     * The day of the week used for granularities that have weekly alignment.
+     */
     public void setWeeklyAlignment(DayOfWeek weeklyAlignment) {
         this.weeklyAlignment = weeklyAlignment;
     }

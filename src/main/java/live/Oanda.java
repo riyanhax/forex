@@ -47,10 +47,10 @@ import static broker.CandlePrice.ASK;
 import static broker.CandlePrice.BID;
 import static broker.CandlePrice.MID;
 import static broker.Quote.invert;
-import static java.time.DayOfWeek.FRIDAY;
 import static java.util.Collections.singleton;
 import static java.util.EnumSet.of;
 import static market.MarketTime.END_OF_TRADING_DAY_HOUR;
+import static market.MarketTime.WEEKLY_ALIGNMENT;
 
 @Service
 public class Oanda implements ForexBroker {
@@ -213,7 +213,7 @@ public class Oanda implements ForexBroker {
             request.setAlignmentTimezone(MarketTime.ZONE);
             request.setDailyAlignment(END_OF_TRADING_DAY_HOUR);
         } else if (granularity == CandlestickGranularity.W) {
-            request.setWeeklyAlignment(FRIDAY);
+            request.setWeeklyAlignment(WEEKLY_ALIGNMENT);
         }
 
         InstrumentCandlesResponse response = getContext(trader).instrumentCandles(request);

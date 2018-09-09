@@ -30,7 +30,7 @@ public enum CandleTimeFrame {
         }
 
         @Override
-        LocalDateTime calculateStart(LocalDateTime firstTime, int endOfTradingHour) {
+        LocalDateTime calculateStart(LocalDateTime firstTime, int endOfTradingHour, DayOfWeek weeklyAlignment) {
             return firstTime.withSecond(0).withNano(0);
         }
     }, FIVE_MINUTE(2) {
@@ -45,7 +45,7 @@ public enum CandleTimeFrame {
         }
 
         @Override
-        LocalDateTime calculateStart(LocalDateTime firstTime, int endOfTradingHour) {
+        LocalDateTime calculateStart(LocalDateTime firstTime, int endOfTradingHour, DayOfWeek weeklyAlignment) {
             return ONE_MINUTE.calculateStart(firstTime.minusMinutes(firstTime.getMinute() % 5));
         }
     }, FIFTEEN_MINUTE(3) {
@@ -60,7 +60,7 @@ public enum CandleTimeFrame {
         }
 
         @Override
-        LocalDateTime calculateStart(LocalDateTime firstTime, int endOfTradingHour) {
+        LocalDateTime calculateStart(LocalDateTime firstTime, int endOfTradingHour, DayOfWeek weeklyAlignment) {
             return ONE_MINUTE.calculateStart(firstTime.minusMinutes(firstTime.getMinute() % 15));
         }
     }, THIRTY_MINUTE(4) {
@@ -75,7 +75,7 @@ public enum CandleTimeFrame {
         }
 
         @Override
-        LocalDateTime calculateStart(LocalDateTime firstTime, int endOfTradingHour) {
+        LocalDateTime calculateStart(LocalDateTime firstTime, int endOfTradingHour, DayOfWeek weeklyAlignment) {
             return ONE_MINUTE.calculateStart(firstTime.minusMinutes(firstTime.getMinute() % 30));
         }
     }, ONE_HOUR(5) {
@@ -90,7 +90,7 @@ public enum CandleTimeFrame {
         }
 
         @Override
-        LocalDateTime calculateStart(LocalDateTime firstTime, int endOfTradingHour) {
+        LocalDateTime calculateStart(LocalDateTime firstTime, int endOfTradingHour, DayOfWeek weeklyAlignment) {
             return ONE_MINUTE.calculateStart(firstTime.withMinute(0));
         }
     }, FOUR_HOURS(6) {
@@ -105,7 +105,7 @@ public enum CandleTimeFrame {
         }
 
         @Override
-        LocalDateTime calculateStart(LocalDateTime firstTime, int endOfTradingHour) {
+        LocalDateTime calculateStart(LocalDateTime firstTime, int endOfTradingHour, DayOfWeek weeklyAlignment) {
             int hourAdjustment = (endOfTradingHour % 4);
             int hour = firstTime.getHour() - hourAdjustment;
 
@@ -123,7 +123,7 @@ public enum CandleTimeFrame {
         }
 
         @Override
-        LocalDateTime calculateStart(LocalDateTime firstTime, int endOfTradingHour) {
+        LocalDateTime calculateStart(LocalDateTime firstTime, int endOfTradingHour, DayOfWeek weeklyAlignment) {
             LocalDate candleDay = firstTime.toLocalDate();
             if (firstTime.getHour() < endOfTradingHour) {
                 candleDay = candleDay.minusDays(1);
@@ -142,8 +142,8 @@ public enum CandleTimeFrame {
         }
 
         @Override
-        LocalDateTime calculateStart(LocalDateTime firstTime, int endOfTradingHour) {
-            return ONE_DAY.calculateStart(firstTime.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)));
+        LocalDateTime calculateStart(LocalDateTime firstTime, int endOfTradingHour, DayOfWeek weeklyAlignment) {
+            return ONE_DAY.calculateStart(firstTime).with(TemporalAdjusters.previousOrSame(weeklyAlignment));
         }
     }, ONE_MONTH(9) {
         @Override
@@ -157,7 +157,7 @@ public enum CandleTimeFrame {
         }
 
         @Override
-        LocalDateTime calculateStart(LocalDateTime firstTime, int endOfTradingHour) {
+        LocalDateTime calculateStart(LocalDateTime firstTime, int endOfTradingHour, DayOfWeek weeklyAlignment) {
             return ONE_DAY.calculateStart(firstTime.with(TemporalAdjusters.firstDayOfMonth()));
         }
     };
@@ -198,10 +198,10 @@ public enum CandleTimeFrame {
 
     public abstract Optional<CandleTimeFrame> smaller();
 
-    abstract LocalDateTime calculateStart(LocalDateTime firstTime, int endOfTradingDayHour);
+    abstract LocalDateTime calculateStart(LocalDateTime firstTime, int endOfTradingDayHour, DayOfWeek weeklyAlignment);
 
     public final LocalDateTime calculateStart(LocalDateTime time) {
-        return calculateStart(time, MarketTime.END_OF_TRADING_DAY_HOUR);
+        return calculateStart(time, MarketTime.END_OF_TRADING_DAY_HOUR, MarketTime.WEEKLY_ALIGNMENT);
     }
 
     public static SortedSet<CandleTimeFrame> descendingSmallerThan(CandleTimeFrame timeFrame) {
