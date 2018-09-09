@@ -1,7 +1,6 @@
 package simulator;
 
 import broker.Account;
-import broker.AccountChanges;
 import broker.AccountChangesRequest;
 import broker.AccountChangesResponse;
 import broker.AccountContext;
@@ -60,7 +59,6 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
 
@@ -70,11 +68,14 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
     private final MarketEngine marketEngine;
     private final SimulatorProperties simulatorProperties;
     private final InstrumentHistoryService instrumentHistoryService;
+    private final SequenceService sequenceService;
+
     private final Map<String, Account> mostRecentPortfolio = new HashMap<>();
     private final Map<String, AccountID> accountIdsByOrderId = new HashMap<>();
     private final Map<String, SortedSet<TradeHistory>> closedTrades = new HashMap<>();
     private final Map<String, TraderData> traderDataById = new HashMap<>();
     private final Map<AccountID, MarketOrderRequest> stopLossTakeProfitsById = new HashMap<>();
+    private final Map<AccountID, AccountChangesResponse> accountChangesById = new HashMap<>();
 
     @Override
     public boolean isAvailable() {
@@ -127,6 +128,8 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
         long newProfitLoss = oldPortfolio.getPl();
 
         LocalDateTime now = clock.now();
+        Integer transactionId = sequenceService.nextAccountTransactionID(accountID);
+
         if (filled.isSellOrder()) {
             Objects.requireNonNull(existingPosition, "Go long on the inverse pair, instead of shorting the primary pair.");
 
@@ -155,6 +158,9 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
                 throw new IllegalStateException(e);
             }
 
+            AccountChangesResponse accountChangesResponse = stagedAccountChanges(accountID);
+            accountChangesById.put(accountID, accountChangesResponse.tradeClosed(transactionId, closedTrade));
+
             TradeHistory history = new TradeHistory(closedTrade, candles);
 
             SortedSet<TradeHistory> closedTradesForAccount = closedTradesForAccountId(accountID.getId());
@@ -172,7 +178,10 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
 
             TradeSummary filledPosition = positionValue(new TradeSummary(
                     instrument, filled.getUnits(), price,
-                    0L, 0L, now, null, clock.epochMillis() + ""));
+                    0L, 0L, now, null, filled.getId()));
+
+            AccountChangesResponse accountChangesResponse = stagedAccountChanges(accountID);
+            accountChangesById.put(accountID, accountChangesResponse.tradeOpened(transactionId, filledPosition));
 
             Preconditions.checkArgument(filledPosition.getUnrealizedPL() == -simulatorProperties.getPippeteSpread(),
                     "Immediately after filling a position it should have an unrealized loss of the spread!");
@@ -186,6 +195,12 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
 
         mostRecentPortfolio.put(accountID.getId(), account);
         getTraderData(accountID.getId()).addSnapshot(accountSnapshot(account));
+    }
+
+    private AccountChangesResponse stagedAccountChanges(AccountID accountID) {
+        accountChangesById.computeIfAbsent(accountID, it -> AccountChangesResponse.empty(getLatestTransactionId(accountID)));
+
+        return accountChangesById.get(accountID);
     }
 
     private class SimulatorPricingContext implements PricingContext {
@@ -252,35 +267,34 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
         @Override
         public TradeListResponse list(TradeListRequest request) throws RequestException {
 
-            List<TradeSummary> closed = closedTradesForAccountId(request.getAccountID().getId())
+            AccountID accountID = request.getAccountID();
+
+            List<TradeSummary> closed = closedTradesForAccountId(accountID.getId())
                     .stream()
                     .sorted(Comparator.comparing(TradeHistory::getOpenTime).reversed())
                     .limit(request.getCount())
                     .map(TradeHistory::getTrade)
                     .collect(toList());
 
-            return new TradeListResponse(closed, closed.isEmpty() ? null : new TransactionID(closed.iterator().next().getId()));
+            return new TradeListResponse(closed, closed.isEmpty() ? null : getLatestTransactionId(accountID));
         }
     }
 
     private class SimulatorAccountContext implements AccountContext {
         @Override
         public AccountChangesResponse changes(AccountChangesRequest request) throws RequestException {
-            List<TradeSummary> tradesClosedSinceTransactionId = emptyList();
 
-            SortedSet<TradeHistory> closedTradesForAccount = closedTradesForAccountId(request.getAccountID().getId());
-            if (!closedTradesForAccount.isEmpty()) {
+            AccountID accountID = request.getAccountID();
+            TransactionID latestTransactionId = getLatestTransactionId(accountID);
 
-                TradeSummary lastTrade = closedTradesForAccount.last().getTrade();
-                long transactionIdAsEpochMillis = Long.parseLong(request.getSinceTransactionID().getId());
-
-                if (transactionIdAsEpochMillis > Long.parseLong(lastTrade.getId())) {
-                    tradesClosedSinceTransactionId = singletonList(lastTrade);
-                }
+            if (latestTransactionId.equals(request.getSinceTransactionID())) {
+                return AccountChangesResponse.empty(latestTransactionId);
             }
 
-            TransactionID latestTransactionId = getLatestTransactionId(request.getAccountID());
-            return new AccountChangesResponse(latestTransactionId, new AccountChanges(tradesClosedSinceTransactionId));
+            AccountChangesResponse stagedChanges = stagedAccountChanges(accountID);
+            accountChangesById.remove(accountID);
+
+            return stagedChanges;
         }
 
         @Override
@@ -299,8 +313,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
     }
 
     private TransactionID getLatestTransactionId(AccountID accountID) {
-        String transactionId = clock.epochMillis() + "";
-        return new TransactionID(transactionId);
+        return sequenceService.getLatestTransactionId(accountID);
     }
 
     private AccountSnapshot accountSnapshot(Account account) {
@@ -369,9 +382,11 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
     }
 
     SimulatorContextImpl(MarketTime clock, InstrumentHistoryService instrumentHistoryService,
+                         SequenceService sequenceService,
                          MarketEngine marketEngine, SimulatorProperties simulatorProperties) {
         this.clock = clock;
         this.instrumentHistoryService = instrumentHistoryService;
+        this.sequenceService = sequenceService;
         this.marketEngine = marketEngine;
         this.simulatorProperties = simulatorProperties;
     }

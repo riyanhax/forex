@@ -42,4 +42,20 @@ public class AccountChangesResponse {
                 .add("accountChanges", accountChanges)
                 .toString();
     }
+
+    public AccountChangesResponse tradeOpened(Integer transactionId, TradeSummary filledPosition) {
+        AccountChanges changes = accountChanges.tradeOpened(filledPosition);
+
+        return new AccountChangesResponse(new TransactionID(transactionId.toString()), changes);
+    }
+
+    public AccountChangesResponse tradeClosed(Integer transactionId, TradeSummary filledPosition) {
+        AccountChanges changes = accountChanges.tradeClosed(filledPosition);
+
+        return new AccountChangesResponse(new TransactionID(transactionId.toString()), changes);
+    }
+
+    public static AccountChangesResponse empty(TransactionID latestTransactionId) {
+        return new AccountChangesResponse(latestTransactionId, AccountChanges.empty());
+    }
 }
