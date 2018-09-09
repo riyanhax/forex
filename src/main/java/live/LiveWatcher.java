@@ -7,9 +7,9 @@ import java.time.LocalDateTime;
 import java.util.concurrent.TimeUnit;
 
 @Service
-class LiveWatcher extends BaseWatcher<SystemTime, Oanda> {
+class LiveWatcher extends BaseWatcher<SystemTime, Broker> {
 
-    public LiveWatcher(SystemTime marketTime, Oanda broker) {
+    public LiveWatcher(SystemTime marketTime, Broker broker) {
         super(marketTime, broker);
     }
 

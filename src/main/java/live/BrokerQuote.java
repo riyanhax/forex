@@ -4,10 +4,10 @@ import broker.Price;
 import broker.Quote;
 import com.google.common.base.MoreObjects;
 
-public class OandaQuote implements Quote {
+public class BrokerQuote implements Quote {
     private final Price price;
 
-    public OandaQuote(Price price) {
+    BrokerQuote(Price price) {
         this.price = price;
     }
 

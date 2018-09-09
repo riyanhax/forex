@@ -46,7 +46,7 @@ import static java.time.Month.SEPTEMBER
 import static market.Instrument.EURUSD
 import static market.Instrument.USDEUR
 
-class OandaSpec extends Specification {
+class BrokerSpec extends Specification {
 
     @Unroll
     def 'should evaluate isClosed correctly: #description'() {
@@ -54,7 +54,7 @@ class OandaSpec extends Specification {
         def clock = Mock(MarketTime)
         clock.now() >> now
 
-        def broker = new Oanda(clock, new LiveTraders([]))
+        def broker = new Broker(clock, new LiveTraders([]))
         def actual = broker.isClosed()
 
         expect:
@@ -86,7 +86,7 @@ class OandaSpec extends Specification {
         trader.accountNumber >> '1234'
 
         boolean closed = !open
-        def broker = new Oanda(Mock(MarketTime), new LiveTraders([trader])) {
+        def broker = new Broker(Mock(MarketTime), new LiveTraders([trader])) {
             @Override
             boolean isClosed() {
                 return closed
@@ -114,7 +114,7 @@ class OandaSpec extends Specification {
         def clock = new TestClock(LocalDateTime.now())
 
         def traders = new LiveTraders([trader])
-        def broker = new Oanda(clock, traders)
+        def broker = new Broker(clock, traders)
 
         when: 'an account snapshot is requested for a trader'
         def actual = broker.getAccountSnapshot(traders.traders[0])
@@ -130,7 +130,7 @@ class OandaSpec extends Specification {
         quote.ask >> ask
         quote.bid >> bid
 
-        def actual = Oanda.createMarketOrderRequest(quote, instrument, 2, 300L, 600L)
+        def actual = Broker.createMarketOrderRequest(quote, instrument, 2, 300L, 600L)
 
         expect:
         actual == new MarketOrderRequest(instrument: instrument, units: 2,
@@ -152,7 +152,7 @@ class OandaSpec extends Specification {
         def clock = Mock(MarketTime)
         def trader = new TestTrader(context, clock)
 
-        Oanda oanda = new Oanda(clock, new LiveTraders([trader]))
+        Broker oanda = new Broker(clock, new LiveTraders([trader]))
 
         when: 'a trader opens a position with a specific number of units'
         oanda.openPosition(trader, new OpenPositionRequest(EURUSD, 3, null, null, null))
@@ -178,7 +178,7 @@ class OandaSpec extends Specification {
         def clock = Mock(MarketTime)
         def trader = new TestTrader(context, clock)
 
-        Oanda oanda = new Oanda(clock, new LiveTraders([trader]))
+        Broker oanda = new Broker(clock, new LiveTraders([trader]))
 
         when: 'a trader submits a close position request'
         oanda.closePosition(trader, position, null)
@@ -206,7 +206,7 @@ class OandaSpec extends Specification {
         trader.context >> context
 
         when: 'one day candles are requested'
-        def actual = new Oanda(Mock(MarketTime), new LiveTraders([trader]))
+        def actual = new Broker(Mock(MarketTime), new LiveTraders([trader]))
                 .getOneWeekCandles(trader, instrument, Range.closed(
                 start, end))
 
@@ -272,7 +272,7 @@ class OandaSpec extends Specification {
         trader.context >> context
 
         when: 'one day candles are requested'
-        def actual = new Oanda(Mock(MarketTime), new LiveTraders([trader]))
+        def actual = new Broker(Mock(MarketTime), new LiveTraders([trader]))
                 .getOneDayCandles(trader, instrument, Range.closed(
                 start, end))
 
@@ -337,7 +337,7 @@ class OandaSpec extends Specification {
         trader.context >> context
 
         when: 'one day candles are requested'
-        def actual = new Oanda(Mock(MarketTime), new LiveTraders([trader]))
+        def actual = new Broker(Mock(MarketTime), new LiveTraders([trader]))
                 .getFourHourCandles(trader, instrument, Range.closed(
                 start, end))
 

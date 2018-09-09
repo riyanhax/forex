@@ -53,13 +53,13 @@ import static market.MarketTime.END_OF_TRADING_DAY_HOUR;
 import static market.MarketTime.WEEKLY_ALIGNMENT;
 
 @Service
-public class Oanda implements ForexBroker {
+public class Broker implements ForexBroker {
 
-    private static final Logger LOG = LoggerFactory.getLogger(Oanda.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Broker.class);
     private final Map<String, ForexTrader> tradersByAccountId;
     private final MarketTime clock;
 
-    public Oanda(MarketTime clock, LiveTraders traders) {
+    public Broker(MarketTime clock, LiveTraders traders) {
         this.clock = clock;
         this.tradersByAccountId = Maps.uniqueIndex(traders.getTraders(), ForexTrader::getAccountNumber);
     }
@@ -88,7 +88,7 @@ public class Oanda implements ForexBroker {
         Price price = prices.iterator().next();
         LOG.info("Current price for {}: {}", pair, price.toString());
 
-        return new OandaQuote(price);
+        return new BrokerQuote(price);
     }
 
     @Override

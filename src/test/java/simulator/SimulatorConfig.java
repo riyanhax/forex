@@ -1,8 +1,8 @@
 package simulator;
 
 import broker.BrokerConfig;
+import live.Broker;
 import live.LiveTraders;
-import live.Oanda;
 import live.Trader;
 import market.InstrumentHistoryService;
 import market.MarketConfig;
@@ -40,8 +40,8 @@ public class SimulatorConfig {
     }
 
     @Bean
-    Oanda broker(MarketTime clock, LiveTraders traders) {
-        return new Oanda(clock, traders);
+    Broker broker(MarketTime clock, LiveTraders traders) {
+        return new Broker(clock, traders);
     }
 
     @Bean
