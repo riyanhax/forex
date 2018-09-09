@@ -7,7 +7,6 @@ import trader.ForexTrader;
 
 import javax.annotation.Nullable;
 import java.time.DayOfWeek;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.EnumSet;
 import java.util.NavigableMap;
@@ -23,8 +22,6 @@ public interface ForexBroker {
     Quote getQuote(ForexTrader trader, Instrument pair) throws Exception;
 
     boolean isClosed();
-
-    boolean isClosed(LocalDate time);
 
     void openPosition(ForexTrader trader, OpenPositionRequest request) throws Exception;
 

@@ -51,11 +51,6 @@ class SimulatorClock implements MarketTime {
     }
 
     @Override
-    public long epochMillis() {
-        return instant.toEpochMilli();
-    }
-
-    @Override
     public LocalDate tomorrow() {
         return tomorrow;
     }

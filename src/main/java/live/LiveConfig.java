@@ -32,7 +32,7 @@ public class LiveConfig {
 
             LOG.info("Using trading strategy: {}", strategy);
 
-            traders.add(new OandaTrader(account, ctx, strategy, clock));
+            traders.add(new Trader(account, ctx, strategy, clock));
         }
 
         return new LiveTraders(traders);

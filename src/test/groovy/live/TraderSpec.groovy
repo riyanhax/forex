@@ -7,6 +7,7 @@ import broker.AccountChangesResponse
 import broker.AccountGetResponse
 import broker.AccountID
 import broker.Context
+import broker.ForexBroker
 import broker.RequestException
 import broker.TradeListRequest
 import broker.TradeListResponse
@@ -15,7 +16,6 @@ import broker.TransactionID
 import market.MarketTime
 import spock.lang.Specification
 import spock.lang.Unroll
-import trader.TradingStrategy
 
 import java.time.LocalDateTime
 
@@ -24,7 +24,7 @@ import static market.Instrument.EURUSD
 import static market.Instrument.USDEUR
 import static trader.TradingStrategies.OPEN_RANDOM_POSITION
 
-class OandaTraderSpec extends Specification {
+class TraderSpec extends Specification {
 
     static final AccountID accountID = new AccountID('1234')
 
@@ -34,21 +34,22 @@ class OandaTraderSpec extends Specification {
         ctx.listTrade(_) >> new TradeListResponse([], null)
 
         MarketTime clock = Mock(MarketTime)
-        Account retrievedLater = null
+        clock.now() >> LocalDateTime.of(2018, SEPTEMBER, 11, 12, 0)
 
-        when: 'the account is unavailable for refresh during construction'
-        OandaTrader trader = new OandaTrader(accountID.id, ctx, OPEN_RANDOM_POSITION, clock)
+        when: 'the account is unavailable for data initialization during construction'
+        Trader trader = new Trader(accountID.id, ctx, OPEN_RANDOM_POSITION, clock)
+        assert !trader.account.isPresent()
 
-        and: 'retrieving account happens again later'
-        retrievedLater = trader?.account?.get()
+        and: 'updates are processed later'
+        trader?.processUpdates(Mock(ForexBroker))
 
         then: 'the trader instance was still constructed'
         trader
 
-        and: 'it was able to be retrieved later'
-        retrievedLater
+        and: 'account data was able to be retrieved later'
+        trader.account.isPresent()
 
-        and: 'the first refresh failed'
+        and: 'the first initialize failed'
         1 * ctx.getAccount(accountID) >> { throw new RequestException('Something bad happened') }
 
         and: 'the second succeeded'
@@ -67,17 +68,20 @@ class OandaTraderSpec extends Specification {
         context.getAccount(accountID) >> new AccountGetResponse(currentAccount)
         context.listTrade(_ as TradeListRequest) >> new TradeListResponse([], new TransactionID('3'))
 
-        def trader = new OandaTrader('1234', context, Mock(TradingStrategy), Mock(MarketTime))
+        def clock = Mock(MarketTime)
+        clock.now() >> LocalDateTime.of(2018, SEPTEMBER, 11, 12, 0)
 
-        when: 'the account is requested'
-        def actual = trader.getAccount().get()
+        def trader = new Trader('1234', context, OPEN_RANDOM_POSITION, clock)
+
+        when: 'the updates are processed'
+        trader.processUpdates(Mock(ForexBroker))
 
         then: 'the context is checked for changes'
         1 * context.accountChanges(new AccountChangesRequest(currentAccount.getId(),
                 currentAccount.getLastTransactionID())) >> changes
 
         then: 'any changes were merged'
-        actual == expected
+        trader.account.get() == expected
 
         where:
         description    | changes                                                                        | expected

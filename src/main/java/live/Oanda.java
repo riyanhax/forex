@@ -36,9 +36,7 @@ import trader.ForexTrader;
 
 import javax.annotation.Nullable;
 import java.time.DayOfWeek;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -53,8 +51,6 @@ import static java.time.DayOfWeek.FRIDAY;
 import static java.util.Collections.singleton;
 import static java.util.EnumSet.of;
 import static market.MarketTime.END_OF_TRADING_DAY_HOUR;
-import static market.MarketTime.ZONE;
-import static market.MarketTime.ZONE_UTC;
 
 @Service
 public class Oanda implements ForexBroker {
@@ -98,22 +94,14 @@ public class Oanda implements ForexBroker {
     @Override
     public boolean isClosed() {
         LocalDateTime now = clock.now();
+        DayOfWeek dayOfWeek = now.getDayOfWeek();
+
         if (ALWAYS_OPEN_DAYS.contains(now.getDayOfWeek())) {
             return false;
         }
 
-        ZonedDateTime utcNow = ZonedDateTime.of(now, MarketTime.ZONE).withZoneSameInstant(ZONE_UTC);
-        DayOfWeek dayOfWeek = utcNow.getDayOfWeek();
-
-        boolean dst = ZONE.getRules().isDaylightSavings(utcNow.toInstant());
-
-        return dayOfWeek == DayOfWeek.SATURDAY || (dayOfWeek == DayOfWeek.SUNDAY && utcNow.getHour() < (dst ? 20 : 21)) ||
-                (dayOfWeek == DayOfWeek.FRIDAY && utcNow.getHour() > (dst ? 21 : 22));
-    }
-
-    @Override
-    public boolean isClosed(LocalDate time) {
-        return time.getDayOfWeek() == DayOfWeek.SATURDAY || time.getDayOfWeek() == DayOfWeek.SUNDAY;
+        return dayOfWeek == DayOfWeek.SATURDAY || (dayOfWeek == DayOfWeek.SUNDAY && now.getHour() < 16) ||
+                (dayOfWeek == DayOfWeek.FRIDAY && now.getHour() > 15);
     }
 
     @Override

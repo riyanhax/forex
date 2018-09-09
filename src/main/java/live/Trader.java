@@ -6,19 +6,22 @@ import broker.AccountChangesRequest;
 import broker.AccountChangesResponse;
 import broker.AccountID;
 import broker.Context;
+import broker.ForexBroker;
+import broker.OpenPositionRequest;
 import broker.RequestException;
 import broker.TradeListRequest;
 import broker.TradeListResponse;
 import broker.TradeSummary;
 import broker.TransactionID;
-import com.google.common.base.MoreObjects.ToStringHelper;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Stopwatch;
 import market.MarketTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import trader.BaseTrader;
+import trader.ForexTrader;
 import trader.TradingStrategy;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -27,56 +30,84 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import static java.time.DayOfWeek.FRIDAY;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toSet;
 
-public class OandaTrader extends BaseTrader {
+public class Trader implements ForexTrader {
 
-    private static final Logger LOG = LoggerFactory.getLogger(OandaTrader.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Trader.class);
 
     private final String accountId;
     private final Context ctx;
+    private final TradingStrategy tradingStrategy;
+    private final MarketTime clock;
+
     private Account account;
     private SortedSet<TradeSummary> lastTenClosedTrades = new TreeSet<>(comparing(TradeSummary::getOpenTime));
 
-    public OandaTrader(String accountId, Context ctx, TradingStrategy tradingStrategy, MarketTime clock) {
-        super(tradingStrategy, clock);
+    public Trader(String accountId, Context ctx, TradingStrategy tradingStrategy, MarketTime clock) {
         this.accountId = accountId;
         this.ctx = ctx;
+        this.tradingStrategy = tradingStrategy;
+        this.clock = clock;
 
-        refresh();
+        initializeEverything();
     }
 
     @Override
-    public String getAccountNumber() {
-        return accountId;
+    public TradingStrategy getStrategy() {
+        return tradingStrategy;
     }
 
     @Override
-    public Context getContext() {
-        return ctx;
+    public void processUpdates(ForexBroker broker) throws Exception {
+
+        LOG.info("Trader: {}", tradingStrategy.getName());
+        refreshDataSinceLastInterval();
+
+        if (account == null) {
+            LOG.error("No account available! Skipping this interval...");
+            return;
+        }
+
+        List<TradeSummary> positions = account.getTrades();
+
+        LocalDateTime now = clock.now();
+        boolean stopTrading = now.getHour() > 11 && now.getDayOfWeek() == FRIDAY;
+
+        if (positions.isEmpty()) {
+            if (!stopTrading) {
+                Optional<OpenPositionRequest> toOpen = tradingStrategy.shouldOpenPosition(this, broker, clock);
+                toOpen.ifPresent(request -> {
+                    LOG.info("Opening position: {}", request);
+                    try {
+                        broker.openPosition(this, request);
+                    } catch (Exception e) {
+                        LOG.error("Unable to open position!", e);
+                    }
+                });
+            }
+        } else {
+            TradeSummary positionValue = positions.iterator().next();
+
+            LOG.info("Existing position: {}", positionValue);
+
+            // Close if it's noon Friday
+            if (stopTrading) {
+                LOG.info("Closing position since it's {}", MarketTime.formatTimestamp(now));
+
+                broker.closePosition(this, positionValue, null);
+            }
+        }
     }
 
-    @Override
-    public Optional<Account> getAccount() {
+    private void refreshDataSinceLastInterval() {
         if (null == account) {
-            refresh();
+            initializeEverything();
         } else {
             refreshAccount();
         }
-
-        return Optional.ofNullable(account);
-    }
-
-    @Override
-    public Optional<TradeSummary> getLastClosedTrade() {
-        if (null == account) {
-            refresh();
-        } else {
-             refreshAccount();
-        }
-
-        return lastTenClosedTrades.isEmpty() ? Optional.empty() : Optional.of(lastTenClosedTrades.last());
     }
 
     private void refreshAccount() {
@@ -134,7 +165,7 @@ public class OandaTrader extends BaseTrader {
         }
     }
 
-    private void refresh() {
+    private void initializeEverything() {
         Stopwatch timer = Stopwatch.createStarted();
 
         boolean initializeClosedTrades = account == null;
@@ -154,8 +185,30 @@ public class OandaTrader extends BaseTrader {
     }
 
     @Override
-    protected ToStringHelper toStringHelper() {
-        return super.toStringHelper()
-                .add("accountId", accountId);
+    public String getAccountNumber() {
+        return accountId;
+    }
+
+    @Override
+    public Context getContext() {
+        return ctx;
+    }
+
+    @Override
+    public Optional<Account> getAccount() {
+        return Optional.ofNullable(account);
+    }
+
+    @Override
+    public Optional<TradeSummary> getLastClosedTrade() {
+        return lastTenClosedTrades.isEmpty() ? Optional.empty() : Optional.of(lastTenClosedTrades.last());
+    }
+
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(this)
+                .add("accountId", accountId)
+                .add("tradingStrategy", tradingStrategy)
+                .toString();
     }
 }

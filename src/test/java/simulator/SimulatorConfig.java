@@ -3,7 +3,7 @@ package simulator;
 import broker.BrokerConfig;
 import live.LiveTraders;
 import live.Oanda;
-import live.OandaTrader;
+import live.Trader;
 import market.InstrumentHistoryService;
 import market.MarketConfig;
 import market.MarketEngine;
@@ -66,7 +66,7 @@ public class SimulatorConfig {
                                                     MarketTime clock) throws Exception {
         List<ForexTrader> traders = new ArrayList<>();
         for (int i = 0; i < simulatorProperties.getInstancesPerTraderType(); i++) {
-            traders.add(new OandaTrader(tradingStrategy.toString() + "-" + i, context, tradingStrategy, clock));
+            traders.add(new Trader(tradingStrategy.toString() + "-" + i, context, tradingStrategy, clock));
         }
         return traders;
     }

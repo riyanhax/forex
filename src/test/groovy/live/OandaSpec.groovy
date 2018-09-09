@@ -25,10 +25,67 @@ import trader.ForexTrader
 import java.time.LocalDateTime
 import java.time.Month
 
+import static java.time.Month.APRIL
+import static java.time.Month.NOVEMBER
 import static market.Instrument.EURUSD
 import static market.Instrument.USDEUR
 
 class OandaSpec extends Specification {
+
+    @Unroll
+    def 'should evaluate isClosed correctly: #description'() {
+
+        def clock = Mock(MarketTime)
+        clock.now() >> now
+
+        def broker = new Oanda(clock, new LiveTraders([]))
+        def actual = broker.isClosed()
+
+        expect:
+        actual == expected
+
+        where:
+        description                             | now                                              | expected
+        'spring friday one second before close' | LocalDateTime.of(2018, APRIL, 6, 15, 59, 59)     | false
+        'spring friday at close'                | LocalDateTime.of(2018, APRIL, 6, 16, 0, 0)       | true
+        'spring saturday'                       | LocalDateTime.of(2018, APRIL, 7, 12, 0, 0)       | true
+        'spring sunday 1 hour before open'      | LocalDateTime.of(2018, APRIL, 8, 15, 0, 0)       | true
+        'spring sunday 1 second before open'    | LocalDateTime.of(2018, APRIL, 8, 15, 59, 59)     | true
+        'spring sunday at open'                 | LocalDateTime.of(2018, APRIL, 8, 16, 0, 0)       | false
+        'spring sunday 1 hour after open'       | LocalDateTime.of(2018, APRIL, 8, 17, 0, 0)       | false
+
+        'fall friday one second before close'   | LocalDateTime.of(2018, NOVEMBER, 16, 15, 59, 59) | false
+        'fall friday at close'                  | LocalDateTime.of(2018, NOVEMBER, 16, 16, 0, 0)   | true
+        'fall saturday'                         | LocalDateTime.of(2018, NOVEMBER, 17, 12, 0, 0)   | true
+        'fall sunday 1 hour before open'        | LocalDateTime.of(2018, NOVEMBER, 18, 15, 0, 0)   | true
+        'fall sunday 1 second before open'      | LocalDateTime.of(2018, NOVEMBER, 18, 15, 59, 59) | true
+        'fall sunday at open'                   | LocalDateTime.of(2018, NOVEMBER, 18, 16, 0, 0)   | false
+        'fall sunday 1 hour after open'         | LocalDateTime.of(2018, NOVEMBER, 18, 17, 0, 0)   | false
+    }
+
+    @Unroll
+    def 'should not process traders when the broker is closed, open: #open'() {
+
+        ForexTrader trader = Mock(ForexTrader)
+        trader.accountNumber >> '1234'
+
+        boolean closed = !open
+        def broker = new Oanda(Mock(MarketTime), new LiveTraders([trader])) {
+            @Override
+            boolean isClosed() {
+                return closed
+            }
+        }
+
+        when: 'if the broker is closed'
+        broker.processUpdates()
+
+        then: 'traders are not processed'
+        (open ? 1 : 0) * trader.processUpdates(broker)
+
+        where:
+        open << [true, false]
+    }
 
     def 'should return account snapshot data associated to the current time'() {
         def accountID = new AccountID('accountId')
@@ -77,7 +134,7 @@ class OandaSpec extends Specification {
         context.getPricing(_) >> new PricingGetResponse([new Price(EURUSD, 10010L, 10020L)])
 
         def clock = Mock(MarketTime)
-        def trader = new MockOandaTrader(context, clock)
+        def trader = new TestTrader(context, clock)
 
         Oanda oanda = new Oanda(clock, new LiveTraders([trader]))
 
@@ -85,7 +142,9 @@ class OandaSpec extends Specification {
         oanda.openPosition(trader, new OpenPositionRequest(EURUSD, 3, null, null, null))
 
         then: 'the position is opened with the requested number of units'
-        1 * context.createOrder({ it.order.units == 3 }) >> new OrderCreateResponse(EURUSD, new MarketOrderTransaction('6367',
+        1 * context.createOrder({
+            it.order.units == 3
+        }) >> new OrderCreateResponse(EURUSD, new MarketOrderTransaction('6367',
                 LocalDateTime.of(2016, Month.JUNE, 22, 13, 41, 29, 264030555), EURUSD, 3))
     }
 }
