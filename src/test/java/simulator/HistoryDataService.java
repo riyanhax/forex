@@ -53,6 +53,7 @@ import static market.CandleTimeFrame.THIRTY_MINUTE;
 class HistoryDataService implements InstrumentHistoryService {
 
     private static final Logger LOG = LoggerFactory.getLogger(HistoryDataService.class);
+    private static final String HISTORY_FILE_PATTERN = "/history/DAT_ASCII_%s_M1_%d.csv";
 
     private static class CandleRequest {
         final CandleTimeFrame timeFrame;
@@ -134,6 +135,7 @@ class HistoryDataService implements InstrumentHistoryService {
         }
     }
 
+    private final String historyFilePattern;
     private final DateTimeFormatter timestampParser = DateTimeFormatter.ofPattern("yyyyMMdd HHmmss");
     private final LoadingCache<CurrencyPairYear, CurrencyData> minuteCache = CacheBuilder.newBuilder()
             .build(new CacheLoader<CurrencyPairYear, CurrencyData>() {
@@ -145,7 +147,7 @@ class HistoryDataService implements InstrumentHistoryService {
                     Instrument pair = pairYear.pair;
                     boolean inverse = pair.isInverse();
 
-                    String path = String.format("/history/DAT_ASCII_%s_M1_%d.csv", pair.getBrokerInstrument().name(), pairYear.year);
+                    String path = String.format(historyFilePattern, pair.getBrokerInstrument().name(), pairYear.year);
                     try (InputStreamReader is = new InputStreamReader(HistoryDataService.class.getResourceAsStream(path))) {
 
                         NavigableMap<LocalDateTime, CandlestickData> result = CharStreams.readLines(is, new LineProcessor<NavigableMap<LocalDateTime, CandlestickData>>() {
@@ -190,6 +192,9 @@ class HistoryDataService implements InstrumentHistoryService {
                         LOG.info("Loaded {} in {}", pairYear, timer);
 
                         return new CurrencyData(ONE_MINUTE, result, availableDates);
+                    } catch (Exception e) {
+                        LOG.error("Unable to load data!", e);
+                        return new CurrencyData(ONE_MINUTE, new TreeMap<>(), new TreeSet<>());
                     }
                 }
             });
@@ -220,7 +225,12 @@ class HistoryDataService implements InstrumentHistoryService {
 
     @Autowired
     HistoryDataService(MarketTime clock) {
+        this(clock, HISTORY_FILE_PATTERN);
+    }
+
+    HistoryDataService(MarketTime clock, String historyFilePattern) {
         this.clock = clock;
+        this.historyFilePattern = historyFilePattern;
     }
 
     @Override
@@ -251,6 +261,11 @@ class HistoryDataService implements InstrumentHistoryService {
     }
 
     @Override
+    public NavigableMap<LocalDateTime, CandlestickData> getFiveMinuteCandles(Instrument instrument, Range<LocalDateTime> closed) {
+        return getOHLC(FIVE_MINUTE, instrument, closed);
+    }
+
+    @Override
     public NavigableMap<LocalDateTime, CandlestickData> getOneMinuteCandles(Instrument instrument, Range<LocalDateTime> closed) {
         return loadCandleData(new CandleRequest(CandleTimeFrame.ONE_MINUTE, instrument, closed)); // No need to cache one minute data
     }
@@ -260,7 +275,7 @@ class HistoryDataService implements InstrumentHistoryService {
         return getOHLC(ONE_WEEK, pair, range);
     }
 
-    private NavigableMap<LocalDateTime, CandlestickData> getOHLC(CandleTimeFrame timeFrame, Instrument pair, Range<LocalDateTime> between) {
+    NavigableMap<LocalDateTime, CandlestickData> getOHLC(CandleTimeFrame timeFrame, Instrument pair, Range<LocalDateTime> between) {
         return candleRequestCache.getUnchecked(new CandleRequest(timeFrame, pair, between));
     }
 

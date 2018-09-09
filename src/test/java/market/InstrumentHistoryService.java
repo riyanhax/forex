@@ -15,6 +15,8 @@ public interface InstrumentHistoryService {
 
     NavigableMap<LocalDateTime, CandlestickData> getFourHourCandles(Instrument pair, Range<LocalDateTime> closed) throws Exception;
 
+    NavigableMap<LocalDateTime, CandlestickData> getFiveMinuteCandles(Instrument instrument, Range<LocalDateTime> closed);
+
     NavigableMap<LocalDateTime,CandlestickData> getOneMinuteCandles(Instrument instrument, Range<LocalDateTime> closed);
 
     NavigableMap<LocalDateTime,CandlestickData> getOneWeekCandles(Instrument pair, Range<LocalDateTime> range);

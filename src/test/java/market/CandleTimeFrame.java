@@ -148,7 +148,15 @@ public enum CandleTimeFrame {
     }, ONE_MONTH(9) {
         @Override
         public LocalDateTime nextCandle(LocalDateTime current) {
-            return current.plusMonths(1);
+            // TODO: Write a specific test for this instead of relying on rollup tests
+            for (int i = 1; i < 3; i++) {
+                LocalDateTime startOfNextTradingMonth = calculateStart(current.plusMonths(i));
+
+                if (!startOfNextTradingMonth.equals(current)) {
+                    return startOfNextTradingMonth;
+                }
+            }
+            throw new IllegalStateException("Was unable to calculate next trading month start in 2 iterations!");
         }
 
         @Override
@@ -158,7 +166,14 @@ public enum CandleTimeFrame {
 
         @Override
         LocalDateTime calculateStart(LocalDateTime firstTime, int endOfTradingHour, DayOfWeek weeklyAlignment) {
-            return ONE_DAY.calculateStart(firstTime.with(TemporalAdjusters.firstDayOfMonth()));
+            // Have to make sure the date time is not at the very END of the calendar month but also
+            // the START of the new trading month.  For instance, January 31, 1700 Eastern starts the first trading day
+            // of the February trading month
+            LocalDateTime fullyIntoTradingDay = firstTime.getHour() < endOfTradingHour ? firstTime : firstTime.plusDays(1);
+            LocalDateTime startOfMonth = fullyIntoTradingDay.with(TemporalAdjusters.firstDayOfMonth())
+                    .withHour(0); // Just some time into the first trading day, not important which specific hour
+
+            return ONE_DAY.calculateStart(startOfMonth);
         }
     };
 

@@ -5,10 +5,13 @@ import spock.lang.Unroll
 
 import static java.time.DayOfWeek.FRIDAY
 import static java.time.LocalDateTime.of
+import static java.time.Month.DECEMBER
+import static java.time.Month.FEBRUARY
 import static java.time.Month.JANUARY
 import static java.time.Month.SEPTEMBER
 import static market.CandleTimeFrame.FOUR_HOURS
 import static market.CandleTimeFrame.ONE_DAY
+import static market.CandleTimeFrame.ONE_MONTH
 import static market.CandleTimeFrame.ONE_WEEK
 
 class CandleTimeFrameSpec extends Specification {
@@ -24,7 +27,10 @@ class CandleTimeFrameSpec extends Specification {
 
         where:
         candle     | endOfTradingDayHour | time                            | expected
-        // TODO: Month tests!
+        ONE_MONTH  | 16                  | of(2016, FEBRUARY, 28, 15, 59)  | of(2016, JANUARY, 31, 16, 0) // Last minute of trading month
+        ONE_MONTH  | 16                  | of(2016, FEBRUARY, 1, 0, 0)     | of(2016, JANUARY, 31, 16, 0)
+        ONE_MONTH  | 16                  | of(2016, JANUARY, 31, 16, 0)    | of(2016, JANUARY, 31, 16, 0)// First minute of trading month
+        ONE_MONTH  | 16                  | of(2016, JANUARY, 31, 15, 59)   | of(2015, DECEMBER, 31, 16, 0) // Last minute of trading month
 
         ONE_WEEK   | 16                  | of(2016, SEPTEMBER, 11, 10, 30) | of(2016, SEPTEMBER, 9, 16, 0)
         ONE_WEEK   | 16                  | of(2016, SEPTEMBER, 9, 15, 59)  | of(2016, SEPTEMBER, 2, 16, 0) // Last minute of trading day
