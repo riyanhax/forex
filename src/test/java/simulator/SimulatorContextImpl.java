@@ -58,6 +58,7 @@ import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import static broker.Quote.pippetesFromDouble;
 import static java.util.Collections.emptyList;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
@@ -123,18 +124,19 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
 
         ImmutableMap<Instrument, TradeSummary> positionsByInstrument = Maps.uniqueIndex(oldPortfolio.getTrades(),
                 TradeSummary::getInstrument);
-        Map<Instrument, TradeSummary> newPositions = new HashMap<>(positionsByInstrument);
         TradeSummary existingPosition = positionsByInstrument.get(instrument);
-        long newProfitLoss = oldPortfolio.getPl();
 
         LocalDateTime now = clock.now();
         Integer transactionId = sequenceService.nextAccountTransactionID(accountID);
 
+        Account account;
+
         if (filled.isSellOrder()) {
             Objects.requireNonNull(existingPosition, "Go long on the inverse pair, instead of shorting the primary pair.");
+            Preconditions.checkArgument(existingPosition.getCurrentUnits() == filled.getUnits(), "Partial position closes aren't supported!");
 
             long opened = existingPosition.getPrice();
-            long profitLoss = (price - opened) * existingPosition.getCurrentUnits();
+            long profitLoss = (price - opened) * filled.getUnits();
 
             TradeSummary closedTrade = new TradeSummary(
                     existingPosition.getInstrument(),
@@ -145,10 +147,6 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
                     existingPosition.getOpenTime(),
                     now,
                     existingPosition.getId());
-
-            newProfitLoss += closedTrade.getRealizedProfitLoss();
-
-            newPositions.remove(instrument);
 
             NavigableMap<LocalDateTime, CandlestickData> candles;
             try {
@@ -167,12 +165,14 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
             closedTradesForAccount.add(history);
             closedTrades.put(accountID.getId(), closedTradesForAccount);
 
+            account = oldPortfolio.positionClosed(closedTrade, getLatestTransactionId(accountID));
+
             long expectedPipettes = closedTradesForAccount.stream()
                     .mapToLong(TradeHistory::getRealizedProfitLoss)
                     .sum();
-            Preconditions.checkArgument(expectedPipettes == newProfitLoss);
-
-        } else if (filled.isBuyOrder()) {
+            Preconditions.checkArgument(expectedPipettes == account.getPl());
+        } else {
+            Preconditions.checkArgument(filled.isBuyOrder(), "What other type of order was it?");
             Preconditions.checkArgument(existingPosition == null, "Shouldn't have more than one position open for a pair at a time!");
             Preconditions.checkArgument(!positionsByInstrument.containsKey(instrument.getOpposite()), "Shouldn't have more than one position open for a pair at a time!");
 
@@ -186,12 +186,8 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
             Preconditions.checkArgument(filledPosition.getUnrealizedPL() == -simulatorProperties.getPippeteSpread(),
                     "Immediately after filling a position it should have an unrealized loss of the spread!");
 
-            newPositions.put(instrument, filledPosition);
+            account = oldPortfolio.positionOpened(filledPosition, getLatestTransactionId(accountID));
         }
-
-        List<TradeSummary> tradeSummaries = new ArrayList<>(newPositions.values());
-        Account account = new Account(accountID, getLatestTransactionId(accountID),
-                tradeSummaries, newProfitLoss);
 
         mostRecentPortfolio.put(accountID.getId(), account);
         getTraderData(accountID.getId()).addSnapshot(accountSnapshot(account));
@@ -253,7 +249,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
             Preconditions.checkArgument(requestedCloseId.equals(positionId),
                     "Trade with id [%s] not found.  Found [%s]", requestedCloseId, positionId);
 
-            SellMarketOrder order = Orders.sellMarketOrder(1, position.getInstrument());
+            SellMarketOrder order = Orders.sellMarketOrder(position.getCurrentUnits(), position.getInstrument());
             OrderRequest submitted = marketEngine.submit(SimulatorContextImpl.this, order);
             accountIdsByOrderId.put(submitted.getId(), accountID);
             stopLossTakeProfitsById.remove(accountID);
@@ -306,7 +302,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
 
             List<TradeSummary> trades = accountSnapshot.getPositionValues();
 
-            return new AccountGetResponse(new Account(accountID, latestTransactionId,
+            return new AccountGetResponse(new Account(accountID, account.getBalance(), latestTransactionId,
                     new ArrayList<>(trades),
                     accountSnapshot.getPipettesProfit()));
         }
@@ -317,7 +313,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
     }
 
     private AccountSnapshot accountSnapshot(Account account) {
-        Account newAccount = new Account(account.getId(), account.getLastTransactionID(),
+        Account newAccount = new Account(account.getId(), account.getBalance(), account.getLastTransactionID(),
                 positionValues(account.getTrades()), account.getPl());
 
         return new AccountSnapshot(newAccount, clock.now());
@@ -397,9 +393,13 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
     }
 
     private Account mostRecentPortfolio(AccountID accountID) {
-        return mostRecentPortfolio.getOrDefault(accountID.getId(),
-                new Account(accountID, getLatestTransactionId(accountID),
-                        emptyList(), 0));
+        String id = accountID.getId();
+
+        mostRecentPortfolio.computeIfAbsent(id, it -> new Account(accountID,
+                pippetesFromDouble(simulatorProperties.getAccountBalanceDollars()),
+                getLatestTransactionId(accountID), emptyList(), 0));
+
+        return mostRecentPortfolio.get(id);
     }
 
     @Override

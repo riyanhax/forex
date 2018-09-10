@@ -15,6 +15,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import static broker.Quote.formatDollars;
 import static broker.Quote.pipsFromPippetes;
 import static java.util.Comparator.comparing;
 import static market.MarketTime.formatRange;
@@ -37,17 +38,17 @@ public class ResultsStdOutProcessor implements ResultsProcessor {
 
             LOG.info("\n\n{}:", factory.toString());
 
-            long averageProfit = 0;
+            long averageResult = 0;
 
             SortedSet<AccountSnapshot> portfolios = new TreeSet<>(comparing(AccountSnapshot::pipettes));
             SortedSet<TradeHistory> allTrades = new TreeSet<>(comparing(TradeHistory::getOpenTime));
 
             for (ForexTrader trader : traders) {
                 AccountSnapshot end = context.getTraderData(trader.getAccountNumber()).getMostRecentPortfolio();
-                long endPips = end.getPipettesProfit();
-                LOG.info("End: {} at {}", profitLossDisplay(endPips), formatTimestamp(end.getTimestamp()));
 
-                averageProfit += endPips;
+                LOG.info("End: {} at {}", profitLossDisplay(end), formatTimestamp(end.getTimestamp()));
+
+                averageResult += end.netAssetValue();
 
                 TraderData traderData = context.getTraderData(trader.getAccountNumber());
                 portfolios.add(traderData.getDrawdownPortfolio());
@@ -58,7 +59,7 @@ public class ResultsStdOutProcessor implements ResultsProcessor {
                 allTrades.addAll(closedTrades);
             }
 
-            averageProfit /= traders.size();
+            averageResult /= traders.size();
 
             SortedSet<TradeHistory> tradesSortedByProfit = new TreeSet<>(comparing(TradeHistory::getRealizedProfitLoss));
             tradesSortedByProfit.addAll(allTrades);
@@ -73,12 +74,12 @@ public class ResultsStdOutProcessor implements ResultsProcessor {
             LOG.info("Profitable trades: {}/{}", allTrades.stream().filter(it -> it.getRealizedProfitLoss() > 0).count(), allTrades.size());
             LOG.info("Highest drawdown: {} at {}", profitLossDisplay(drawdownPortfolio), formatTimestamp(drawdownPortfolio.getTimestamp()));
             LOG.info("Highest profit: {} at {}", profitLossDisplay(profitPortfolio), formatTimestamp(profitPortfolio.getTimestamp()));
-            LOG.info("Average profit: {} from {}", profitLossDisplay(averageProfit), formatRange(simulatorProperties.getStartTime(), simulatorProperties.getEndTime()));
+            LOG.info("Average profit: {} from {}", profitLossDisplay(averageResult), formatRange(simulatorProperties.getStartTime(), simulatorProperties.getEndTime()));
         }
     }
 
     private static String profitLossDisplay(AccountSnapshot portfolio) {
-        return profitLossDisplay(portfolio.pipettes());
+        return profitLossDisplay(portfolio.netAssetValue());
     }
 
     private static String profitLossDisplay(TradeHistory trade) {
@@ -86,7 +87,9 @@ public class ResultsStdOutProcessor implements ResultsProcessor {
     }
 
     private static String profitLossDisplay(long pipettes) {
-        return String.format("%s pips, (%d pipettes)", pipsFromPippetes(pipettes), pipettes);
+        String dollars = formatDollars(pipettes);
+
+        return String.format("%s, %s pips, (%d pipettes)", dollars, pipsFromPippetes(pipettes), pipettes);
     }
 }
 

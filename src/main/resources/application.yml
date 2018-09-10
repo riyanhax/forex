@@ -24,6 +24,7 @@ simulation:
   startTime: 2017-01-01 01:00
   endTime: 2017-12-31 23:59
   millisDelayBetweenMinutes: 0
+  accountBalanceDollars: 50
   pippeteSpread: 20
   instancesPerTraderType: 2
   tradingStrategies: SMARTER_MARTINGALE, OPEN_RANDOM_POSITION, SMARTER_RANDOM_POSITION
@@ -39,6 +40,7 @@ simulation:
   startTime: 2017-01-01 01:00
   endTime: 2017-12-31 23:59
   millisDelayBetweenMinutes: 0
+  accountBalanceDollars: 50
   pippeteSpread: 20
   instancesPerTraderType: 2
   tradingStrategies: HISTORY_COMPARATOR2, REGRESSION_COMPARATOR

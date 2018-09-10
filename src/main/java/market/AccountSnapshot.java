@@ -31,6 +31,10 @@ public class AccountSnapshot implements Comparable<AccountSnapshot> {
         return timestamp;
     }
 
+    public long netAssetValue() {
+        return account.getBalance() + pipettes();
+    }
+
     public long pipettes() {
         return getPipettesProfit() + account.getTrades().stream()
                 .mapToLong(TradeSummary::getUnrealizedPL)

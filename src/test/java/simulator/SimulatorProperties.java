@@ -14,6 +14,7 @@ public class SimulatorProperties {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private long millisDelayBetweenMinutes;
+    private int accountBalanceDollars;
     private long pippeteSpread;
     private int instancesPerTraderType;
     private List<TradingStrategies> tradingStrategies;
@@ -40,6 +41,14 @@ public class SimulatorProperties {
 
     public void setMillisDelayBetweenMinutes(long millisDelayBetweenMinutes) {
         this.millisDelayBetweenMinutes = millisDelayBetweenMinutes;
+    }
+
+    public int getAccountBalanceDollars() {
+        return accountBalanceDollars;
+    }
+
+    public void setAccountBalanceDollars(int accountBalanceDollars) {
+        this.accountBalanceDollars = accountBalanceDollars;
     }
 
     public long getPippeteSpread() {

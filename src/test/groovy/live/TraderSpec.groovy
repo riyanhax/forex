@@ -53,16 +53,19 @@ class TraderSpec extends Specification {
         1 * ctx.getAccount(accountID) >> { throw new RequestException('Something bad happened') }
 
         and: 'the second succeeded'
-        1 * ctx.getAccount(accountID) >> new AccountGetResponse(new Account(accountID, new TransactionID('someId'), [], 0L))
+        1 * ctx.getAccount(accountID) >> new AccountGetResponse(new Account(accountID, 5000000L, new TransactionID('someId'), [], 0L))
     }
 
     @Unroll
     def 'should merge any existing changes prior to returning the account: #description'() {
 
-        def openTrades = 'open trade' == description ? [] : [
+        def testOpeningTrade = 'open trade' == description
+
+        def balance = testOpeningTrade ?  5000000L : 4913822L
+        def openTrades = testOpeningTrade ? [] : [
                 new TradeSummary(USDEUR, 1, 86233L, 0L, 55L, LocalDateTime.of(2018, SEPTEMBER, 7, 7, 43, 13, 567036542), null, '309')
         ]
-        def currentAccount = new Account(accountID, new TransactionID('3'), openTrades, 1L)
+        def currentAccount = new Account(accountID, balance, new TransactionID('3'), openTrades, 1L)
 
         def context = Mock(Context)
         context.getAccount(accountID) >> new AccountGetResponse(currentAccount)
@@ -85,25 +88,25 @@ class TraderSpec extends Specification {
 
         where:
         description    | changes                                                                        | expected
-        'no changes'   | new AccountChangesResponse(new TransactionID('3'), new AccountChanges([], [])) | new Account(accountID, new TransactionID('3'), [
+        'no changes'   | new AccountChangesResponse(new TransactionID('3'), new AccountChanges([], [])) | new Account(accountID, 4913822L, new TransactionID('3'), [
                 new TradeSummary(USDEUR, 1, 86233L, 0L, 55L, LocalDateTime.of(2018, SEPTEMBER, 7, 7, 43, 13, 567036542), null, '309')
         ], 1L)
 
         'closed trade' | new AccountChangesResponse(new TransactionID('4'), new AccountChanges([
-                new TradeSummary(USDEUR, 1, 86233L, 6L, 0L,
+                new TradeSummary(USDEUR, 1, 86241L, 63L, 0L,
                         LocalDateTime.of(2018, SEPTEMBER, 7, 7, 43, 13, 567036542),
-                        LocalDateTime.of(2018, SEPTEMBER, 7, 07, 45, 11, 338759441), '309')
-        ], []))                                                                                         | new Account(accountID, new TransactionID('4'), [], 7L)
+                        LocalDateTime.of(2018, SEPTEMBER, 7, 7, 45, 11, 338759441), '309')
+        ], []))                                                                                         | new Account(accountID, 5000063, new TransactionID('4'), [], 64L)
 
         'open trade'   | new AccountChangesResponse(new TransactionID('4'), new AccountChanges([], [
                 new TradeSummary(EURUSD, 2, 115879L, 150L, 0L,
                         LocalDateTime.of(2018, SEPTEMBER, 7, 7, 31, 9, 524922739),
-                        LocalDateTime.of(2018, SEPTEMBER, 7, 07, 42, 34, 554252280), '303')
+                        LocalDateTime.of(2018, SEPTEMBER, 7, 7, 42, 34, 554252280), '303')
 
-        ]))                                                                                             | new Account(accountID, new TransactionID('4'), [
+        ]))                                                                                             | new Account(accountID, 4768242L, new TransactionID('4'), [
                 new TradeSummary(EURUSD, 2, 115879L, 150L, 0L,
                         LocalDateTime.of(2018, SEPTEMBER, 7, 7, 31, 9, 524922739),
-                        LocalDateTime.of(2018, SEPTEMBER, 7, 07, 42, 34, 554252280), '303')
+                        LocalDateTime.of(2018, SEPTEMBER, 7, 7, 42, 34, 554252280), '303')
         ], 1L)
     }
 

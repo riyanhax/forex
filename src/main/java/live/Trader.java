@@ -22,17 +22,14 @@ import trader.ForexTrader;
 import trader.TradingStrategy;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
 import static java.time.DayOfWeek.FRIDAY;
 import static java.util.Comparator.comparing;
-import static java.util.stream.Collectors.toSet;
 
 public class Trader implements ForexTrader {
 
@@ -130,9 +127,6 @@ public class Trader implements ForexTrader {
         if (changesExist) {
             LOG.info("Changes exist: transaction id {} != {}", mostRecentTransactionID, lastKnowTransactionID);
 
-            List<TradeSummary> trades = this.account.getTrades();
-            long profitLoss = this.account.getPl();
-
             AccountChanges changes = response.getAccountChanges();
             List<TradeSummary> tradesClosed = changes.getTradesClosed();
             List<TradeSummary> tradesOpened = changes.getTradesOpened();
@@ -148,20 +142,14 @@ public class Trader implements ForexTrader {
                 }
                 lastTenClosedTrades.addAll(tradesClosed);
 
-                Set<String> closedTradeIds = tradesClosed.stream().map(TradeSummary::getId).collect(toSet());
-
-                trades = new ArrayList<>(trades);
-                trades.removeIf(it -> closedTradeIds.contains(it.getId()));
-
-                profitLoss += tradesClosed.stream().mapToLong(TradeSummary::getRealizedProfitLoss).sum();
+                for (TradeSummary closedTrade : tradesClosed) {
+                    this.account = this.account.positionClosed(closedTrade, mostRecentTransactionID);
+                }
             }
 
-            if (!tradesOpened.isEmpty()) {
-                trades = new ArrayList<>(trades);
-                trades.addAll(tradesOpened);
+            for (TradeSummary openedTrade : tradesOpened) {
+                this.account = this.account.positionOpened(openedTrade, mostRecentTransactionID);
             }
-
-            this.account = new Account(this.account.getId(), mostRecentTransactionID, trades, profitLoss);
         }
     }
 

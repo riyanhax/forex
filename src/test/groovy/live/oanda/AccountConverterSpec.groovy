@@ -30,7 +30,7 @@ class AccountConverterSpec extends Specification {
 
     def 'should convert account get response correctly'() {
 
-        def expected = new AccountGetResponse(new Account(new AccountID("101-001-1775714-008"), new TransactionID("293"), [
+        def expected = new AccountGetResponse(new Account(new AccountID("101-001-1775714-008"), 5001930L, new TransactionID("293"), [
                 new TradeSummary(EURUSD, 2, 116085L, 0L, 110L, LocalDateTime.of(2018, SEPTEMBER, 7, 6, 27, 48, 889977095), null, '291')
         ], 1890L))
 
