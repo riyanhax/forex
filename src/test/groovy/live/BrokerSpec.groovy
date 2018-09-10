@@ -105,7 +105,11 @@ class BrokerSpec extends Specification {
 
     def 'should return account snapshot data associated to the current time'() {
         def accountID = new AccountID('accountId')
-        def expectedAccountData = new Account(accountID, 5000000L, new TransactionID('1234'), [], 13L)
+        def expectedAccountData = new Account.Builder(accountID)
+                .withBalanceDollars(50)
+                .withLastTransactionID(new TransactionID('1234'))
+                .withProfitLoss(13L)
+                .build()
 
         def trader = Mock(ForexTrader)
         trader.accountNumber >> expectedAccountData.id.id
@@ -146,7 +150,11 @@ class BrokerSpec extends Specification {
     def 'should use the specified units from the request'() {
         def context = Mock(Context)
         context.listTrade(_) >> new TradeListResponse([], null)
-        context.getAccount(_) >> new AccountGetResponse(new Account(new AccountID('someAccountId'), 5000000L, new TransactionID('someId'), [], 0L))
+        context.getAccount(_) >> new AccountGetResponse(new Account.Builder(new AccountID('someAccountId'))
+                .withBalanceDollars(50)
+                .withLastTransactionID(new TransactionID('someId'))
+                .withProfitLoss(13L)
+                .build())
         context.getPricing(_) >> new PricingGetResponse([new Price(EURUSD, 10010L, 10020L)])
 
         def clock = Mock(MarketTime)
@@ -169,7 +177,13 @@ class BrokerSpec extends Specification {
         def position = new TradeSummary(USDEUR, 3, 86233L, 6L, 0L,
                 LocalDateTime.of(2018, SEPTEMBER, 7, 7, 43, 13, 567036542),
                 LocalDateTime.of(2018, SEPTEMBER, 7, 07, 45, 11, 338759441), '309')
-        def currentAccount = new Account(new AccountID('1'), 5000000L, new TransactionID('3'), [position], 1L)
+
+        def currentAccount = new Account.Builder(new AccountID('1'))
+                .withBalanceDollars(50)
+                .withLastTransactionID(new TransactionID('3'))
+                .withTrades([position])
+                .withProfitLoss(1L)
+                .build()
 
         def context = Mock(Context)
         context.getAccount(_) >> new AccountGetResponse(currentAccount)
@@ -198,7 +212,11 @@ class BrokerSpec extends Specification {
 
         def context = Mock(Context)
         def accountID = new AccountID('accountId')
-        def account = new Account(accountID, 5000000L, new TransactionID('1234'), [], 13L)
+        def account = new Account.Builder(accountID)
+                .withBalanceDollars(50)
+                .withLastTransactionID(new TransactionID('1234'))
+                .withProfitLoss(13L)
+                .build()
 
         def trader = Mock(ForexTrader)
         trader.accountNumber >> accountID.id
@@ -263,7 +281,11 @@ class BrokerSpec extends Specification {
 
         def context = Mock(Context)
         def accountID = new AccountID('accountId')
-        def account = new Account(accountID, 5000000L, new TransactionID('1234'), [], 13L)
+        def account = new Account.Builder(accountID)
+                .withBalanceDollars(50)
+                .withLastTransactionID(new TransactionID('1234'))
+                .withProfitLoss(13L)
+                .build()
 
         def trader = Mock(ForexTrader)
         trader.accountNumber >> accountID.id
@@ -328,7 +350,11 @@ class BrokerSpec extends Specification {
 
         def context = Mock(Context)
         def accountID = new AccountID('accountId')
-        def account = new Account(accountID, 5000000L, new TransactionID('1234'), [], 13L)
+        def account = new Account.Builder(accountID)
+                .withBalanceDollars(50)
+                .withLastTransactionID(new TransactionID('1234'))
+                .withProfitLoss(13L)
+                .build()
 
         def trader = Mock(ForexTrader)
         trader.accountNumber >> accountID.id

@@ -52,9 +52,12 @@ class AccountConverter {
     }
 
     private static Account convert(com.oanda.v20.account.Account oandaAccount) {
-        return new Account(convert(oandaAccount.getId()), pippetesFromDouble(oandaAccount.getBalance().doubleValue()), CommonConverter.convert(oandaAccount.getLastTransactionID()),
-                oandaAccount.getTrades().stream().map(TradeConverter::convert).collect(toList()),
-                pippetesFromDouble(oandaAccount.getPl().doubleValue()));
+        return new Account.Builder(convert(oandaAccount.getId()))
+                .withBalance(pippetesFromDouble(oandaAccount.getBalance().doubleValue()))
+                .withLastTransactionID(CommonConverter.convert(oandaAccount.getLastTransactionID()))
+                .withTrades(oandaAccount.getTrades().stream().map(TradeConverter::convert).collect(toList()))
+                .withProfitLoss(pippetesFromDouble(oandaAccount.getPl().doubleValue()))
+                .build();
     }
 
     private static AccountID convert(com.oanda.v20.account.AccountID id) {

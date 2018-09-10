@@ -30,9 +30,12 @@ class AccountConverterSpec extends Specification {
 
     def 'should convert account get response correctly'() {
 
-        def expected = new AccountGetResponse(new Account(new AccountID("101-001-1775714-008"), 5001930L, new TransactionID("293"), [
-                new TradeSummary(EURUSD, 2, 116085L, 0L, 110L, LocalDateTime.of(2018, SEPTEMBER, 7, 6, 27, 48, 889977095), null, '291')
-        ], 1890L))
+        def expected = new AccountGetResponse(new Account.Builder(new AccountID("101-001-1775714-008"))
+                .withBalance(5001930L)
+                .withLastTransactionID(new TransactionID('293'))
+                .withTrades([new TradeSummary(EURUSD, 2, 116085L, 0L, 110L, LocalDateTime.of(2018, SEPTEMBER, 7, 6, 27, 48, 889977095), null, '291')])
+                .withProfitLoss(1890L)
+                .build())
 
         def json = getClass().getResourceAsStream('AccountGetResponse.json').text
         def response = gson.fromJson(json, com.oanda.v20.account.AccountGetResponse.class)

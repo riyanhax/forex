@@ -59,7 +59,6 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import static broker.Quote.pippetesFromDouble;
-import static java.util.Collections.emptyList;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
 
@@ -302,9 +301,13 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
 
             List<TradeSummary> trades = accountSnapshot.getPositionValues();
 
-            return new AccountGetResponse(new Account(accountID, account.getBalance(), latestTransactionId,
-                    new ArrayList<>(trades),
-                    accountSnapshot.getPipettesProfit()));
+            // TODO: Why don't we have a version cached already we can use?
+            return new AccountGetResponse(new Account.Builder(accountID)
+                    .withBalance(account.getBalance())
+                    .withLastTransactionID(latestTransactionId)
+                    .withTrades(trades)
+                    .withProfitLoss(accountSnapshot.getPipettesProfit())
+                    .build());
         }
     }
 
@@ -395,9 +398,10 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
     private Account mostRecentPortfolio(AccountID accountID) {
         String id = accountID.getId();
 
-        mostRecentPortfolio.computeIfAbsent(id, it -> new Account(accountID,
-                pippetesFromDouble(simulatorProperties.getAccountBalanceDollars()),
-                getLatestTransactionId(accountID), emptyList(), 0));
+        mostRecentPortfolio.computeIfAbsent(id, it -> new Account.Builder(accountID)
+                .withBalance(pippetesFromDouble(simulatorProperties.getAccountBalanceDollars()))
+                .withLastTransactionID(getLatestTransactionId(accountID))
+                .build());
 
         return mostRecentPortfolio.get(id);
     }

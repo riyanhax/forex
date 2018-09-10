@@ -53,7 +53,10 @@ class TraderSpec extends Specification {
         1 * ctx.getAccount(accountID) >> { throw new RequestException('Something bad happened') }
 
         and: 'the second succeeded'
-        1 * ctx.getAccount(accountID) >> new AccountGetResponse(new Account(accountID, 5000000L, new TransactionID('someId'), [], 0L))
+        1 * ctx.getAccount(accountID) >> new AccountGetResponse(new Account.Builder(accountID)
+                .withBalanceDollars(50)
+                .withLastTransactionID(new TransactionID('1234'))
+                .build())
     }
 
     @Unroll
@@ -61,11 +64,16 @@ class TraderSpec extends Specification {
 
         def testOpeningTrade = 'open trade' == description
 
-        def balance = testOpeningTrade ?  5000000L : 4913822L
+        def balance = testOpeningTrade ? 5000000L : 4913822L
         def openTrades = testOpeningTrade ? [] : [
                 new TradeSummary(USDEUR, 1, 86233L, 0L, 55L, LocalDateTime.of(2018, SEPTEMBER, 7, 7, 43, 13, 567036542), null, '309')
         ]
-        def currentAccount = new Account(accountID, balance, new TransactionID('3'), openTrades, 1L)
+        def currentAccount = new Account.Builder(accountID)
+                .withBalance(balance)
+                .withLastTransactionID(new TransactionID('3'))
+                .withTrades(openTrades)
+                .withProfitLoss(1L)
+                .build()
 
         def context = Mock(Context)
         context.getAccount(accountID) >> new AccountGetResponse(currentAccount)

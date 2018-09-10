@@ -3,15 +3,18 @@ package broker;
 import com.google.common.base.MoreObjects;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+
+import static broker.Quote.pippetesFromDouble;
 
 public class Account {
     private final AccountID id;
     private final long balance;
     private final TransactionID lastTransactionID;
     private final List<TradeSummary> trades;
-    private long profitLoss;
+    private final long profitLoss;
 
     public Account(AccountID id, long balance, TransactionID lastTransactionID, List<TradeSummary> trades, long profitLoss) {
         this.id = id;
@@ -75,7 +78,12 @@ public class Account {
         List<TradeSummary> newTrades = new ArrayList<>(this.trades);
         newTrades.add(position);
 
-        return new Account(this.id, newBalance, latestTransactionID, newTrades, this.profitLoss);
+        return new Account.Builder(this.id)
+                .withBalance(newBalance)
+                .withLastTransactionID(latestTransactionID)
+                .withTrades(newTrades)
+                .withProfitLoss(this.profitLoss)
+                .build();
     }
 
     public Account positionClosed(TradeSummary position, TransactionID latestTransactionID) {
@@ -85,6 +93,54 @@ public class Account {
         List<TradeSummary> newTrades = new ArrayList<>(this.trades);
         newTrades.removeIf(it -> it.getId().equals(position.getId()));
 
-        return new Account(this.id, newBalance, latestTransactionID, newTrades, newProfitLoss);
+        return new Account.Builder(this.id)
+                .withBalance(newBalance)
+                .withLastTransactionID(latestTransactionID)
+                .withTrades(newTrades)
+                .withProfitLoss(newProfitLoss)
+                .build();
+    }
+
+    public static class Builder {
+        private final AccountID id;
+        private long balance = 0L;
+        private TransactionID lastTransactionID;
+        private List<TradeSummary> trades = Collections.emptyList();
+        private long profitLoss = 0L;
+
+        public Builder(AccountID id) {
+            this.id = id;
+        }
+
+        public Builder withBalanceDollars(int balanceDollars) {
+            return withBalance(pippetesFromDouble(balanceDollars));
+        }
+
+        public Builder withBalance(long balance) {
+            this.balance = balance;
+            return this;
+        }
+
+        public Builder withLastTransactionID(TransactionID lastTransactionID) {
+            this.lastTransactionID = lastTransactionID;
+            return this;
+        }
+
+        public Builder withTrades(List<TradeSummary> trades) {
+            this.trades = trades;
+            return this;
+        }
+
+        public Builder withProfitLoss(long profitLoss) {
+            this.profitLoss = profitLoss;
+            return this;
+        }
+
+        public Account build() {
+            Objects.requireNonNull(id);
+            Objects.requireNonNull(trades);
+
+            return new Account(id, balance, lastTransactionID, trades, profitLoss);
+        }
     }
 }
