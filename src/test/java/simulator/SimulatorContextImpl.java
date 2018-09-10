@@ -3,6 +3,7 @@ package simulator;
 import broker.Account;
 import broker.AccountChangesRequest;
 import broker.AccountChangesResponse;
+import broker.AccountChangesState;
 import broker.AccountContext;
 import broker.AccountGetResponse;
 import broker.AccountID;
@@ -159,16 +160,17 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
                 throw new IllegalStateException(e);
             }
 
+            account = oldPortfolio.positionClosed(closedTrade, getLatestTransactionId(accountID));
+
             AccountChangesResponse accountChangesResponse = stagedAccountChanges(accountID);
-            accountChangesById.put(accountID, accountChangesResponse.tradeClosed(transactionId, closedTrade));
+            accountChangesById.put(accountID, accountChangesResponse.tradeClosed(transactionId, closedTrade, new AccountChangesState(account.getNetAssetValue(),
+                    account.getTrades().stream().mapToLong(TradeSummary::getUnrealizedPL).sum())));
 
             TradeHistory history = new TradeHistory(closedTrade, candles);
 
             SortedSet<TradeHistory> closedTradesForAccount = closedTradesForAccountId(accountID.getId());
             closedTradesForAccount.add(history);
             closedTrades.put(accountID.getId(), closedTradesForAccount);
-
-            account = oldPortfolio.positionClosed(closedTrade, getLatestTransactionId(accountID));
 
             long expectedPipettes = closedTradesForAccount.stream()
                     .mapToLong(TradeHistory::getRealizedProfitLoss)
@@ -183,20 +185,29 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
                     instrument, filled.getUnits(), price,
                     0L, 0L, now, null, filled.getId()));
 
+            account = oldPortfolio.positionOpened(filledPosition, getLatestTransactionId(accountID));
+
             AccountChangesResponse accountChangesResponse = stagedAccountChanges(accountID);
-            accountChangesById.put(accountID, accountChangesResponse.tradeOpened(transactionId, filledPosition));
+            accountChangesById.put(accountID, accountChangesResponse.tradeOpened(transactionId, filledPosition, new AccountChangesState(account.getNetAssetValue(),
+                    account.getTrades().stream().mapToLong(TradeSummary::getUnrealizedPL).sum())));
 
             Preconditions.checkArgument(filledPosition.getUnrealizedPL() == -simulatorProperties.getPippeteSpread(),
                     "Immediately after filling a position it should have an unrealized loss of the spread!");
 
-            account = oldPortfolio.positionOpened(filledPosition, getLatestTransactionId(accountID));
         }
 
         mostRecentPortfolio.put(accountID.getId(), account);
     }
 
     private AccountChangesResponse stagedAccountChanges(AccountID accountID) {
-        accountChangesById.computeIfAbsent(accountID, it -> AccountChangesResponse.empty(getLatestTransactionId(accountID)));
+
+        accountChangesById.computeIfAbsent(accountID, it ->  {
+            Account account = mostRecentPortfolio(accountID);
+            AccountChangesState state = new AccountChangesState(account.getNetAssetValue(),
+                    account.getTrades().stream().mapToLong(TradeSummary::getUnrealizedPL).sum());
+
+            return AccountChangesResponse.empty(getLatestTransactionId(accountID), state);
+        });
 
         return accountChangesById.get(accountID);
     }
@@ -286,7 +297,12 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
             TransactionID latestTransactionId = getLatestTransactionId(accountID);
 
             if (latestTransactionId.equals(request.getSinceTransactionID())) {
-                return AccountChangesResponse.empty(latestTransactionId);
+                TraderData traderData = getTraderData(accountID.getId());
+                AccountSnapshot mostRecentSnapshot = traderData.getMostRecentPortfolio();
+
+                return AccountChangesResponse.empty(latestTransactionId,
+                        new AccountChangesState(mostRecentSnapshot.getAccount().getNetAssetValue(),
+                                mostRecentSnapshot.unrealizedProfitAndLoss()));
             }
 
             AccountChangesResponse stagedChanges = stagedAccountChanges(accountID);
@@ -307,8 +323,10 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
     }
 
     private AccountSnapshot accountSnapshot(Account account) {
-        Account newAccount = new Account(account.getId(), account.getBalance(), account.getLastTransactionID(),
+        Account newAccount = new Account(account.getId(), account.getBalance(), account.getNetAssetValue(), account.getLastTransactionID(),
                 positionValues(account.getTrades()), account.getPl());
+
+        // TODO: net asset value should always be positionValues + balance!
 
         return new AccountSnapshot(newAccount, clock.now());
     }

@@ -32,13 +32,19 @@ public class AccountSnapshot implements Comparable<AccountSnapshot> {
     }
 
     public long netAssetValue() {
-        return account.getBalance() + pipettes();
+        // TODO: Write test that this calculates the correct value based on open trades
+        return account.getBalance() + account.getTrades().stream()
+                .mapToLong(it -> it.getPrice() *it.getCurrentUnits()).sum();
+    }
+
+    public long unrealizedProfitAndLoss() {
+        return account.getTrades().stream()
+                .mapToLong(TradeSummary::getUnrealizedPL)
+                .sum();
     }
 
     public long pipettes() {
-        return getPipettesProfit() + account.getTrades().stream()
-                .mapToLong(TradeSummary::getUnrealizedPL)
-                .sum();
+        return getPipettesProfit() + unrealizedProfitAndLoss();
     }
 
     public List<TradeSummary> getPositionValues() {

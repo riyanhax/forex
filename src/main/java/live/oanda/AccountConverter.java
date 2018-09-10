@@ -1,13 +1,14 @@
 package live.oanda;
 
 import broker.Account;
+import broker.AccountChanges;
 import broker.AccountChangesRequest;
 import broker.AccountChangesResponse;
+import broker.AccountChangesState;
 import broker.AccountGetResponse;
 import broker.AccountID;
 import broker.TradeSummary;
 import broker.TransactionID;
-import com.oanda.v20.account.AccountChanges;
 
 import java.util.List;
 
@@ -36,10 +37,16 @@ class AccountConverter {
 
     static AccountChangesResponse convert(com.oanda.v20.account.AccountChangesResponse oandaResponse) {
         TransactionID lastTransactionID = CommonConverter.convert(oandaResponse.getLastTransactionID());
-        return new AccountChangesResponse(lastTransactionID, convert(oandaResponse.getChanges()));
+        return new AccountChangesResponse(lastTransactionID, convert(oandaResponse.getChanges()),
+                convert(oandaResponse.getState()));
     }
 
-    private static broker.AccountChanges convert(AccountChanges oandaVersion) {
+    private static AccountChangesState convert(com.oanda.v20.account.AccountChangesState state) {
+        return new AccountChangesState(pippetesFromDouble(state.getNAV().doubleValue()),
+                pippetesFromDouble(state.getUnrealizedPL().doubleValue()));
+    }
+
+    private static AccountChanges convert(com.oanda.v20.account.AccountChanges oandaVersion) {
         List<TradeSummary> tradesClosed = oandaVersion.getTradesClosed().stream()
                 .map(TradeConverter::convert)
                 .collect(toList());
@@ -48,7 +55,7 @@ class AccountConverter {
                 .map(TradeConverter::convert)
                 .collect(toList());
 
-        return new broker.AccountChanges(tradesClosed, tradesOpened);
+        return new AccountChanges(tradesClosed, tradesOpened);
     }
 
     private static Account convert(com.oanda.v20.account.Account oandaAccount) {

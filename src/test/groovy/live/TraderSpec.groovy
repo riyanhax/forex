@@ -4,6 +4,7 @@ import broker.Account
 import broker.AccountChanges
 import broker.AccountChangesRequest
 import broker.AccountChangesResponse
+import broker.AccountChangesState
 import broker.AccountGetResponse
 import broker.AccountID
 import broker.Context
@@ -68,8 +69,12 @@ class TraderSpec extends Specification {
         def openTrades = testOpeningTrade ? [] : [
                 new TradeSummary(USDEUR, 1, 86233L, 0L, 55L, LocalDateTime.of(2018, SEPTEMBER, 7, 7, 43, 13, 567036542), null, '309')
         ]
+        def nav = balance
+        nav += (openTrades.isEmpty() ? 0L : openTrades[0].unrealizedPL + openTrades[0].price)
+
         def currentAccount = new Account.Builder(accountID)
                 .withBalance(balance)
+                .withNetAssetValue(nav)
                 .withLastTransactionID(new TransactionID('3'))
                 .withTrades(openTrades)
                 .withProfitLoss(1L)
@@ -95,24 +100,30 @@ class TraderSpec extends Specification {
         trader.account.get() == expected
 
         where:
-        description    | changes                                                                        | expected
-        'no changes'   | new AccountChangesResponse(new TransactionID('3'), new AccountChanges([], [])) | new Account(accountID, 4913822L, new TransactionID('3'), [
+        description                      | changes                                                                                                                | expected
+        'no changes'                     | new AccountChangesResponse(new TransactionID('3'), new AccountChanges([], []), new AccountChangesState(5000110L, 55L)) | new Account(accountID, 4913822L, 5000110L, new TransactionID('3'), [
                 new TradeSummary(USDEUR, 1, 86233L, 0L, 55L, LocalDateTime.of(2018, SEPTEMBER, 7, 7, 43, 13, 567036542), null, '309')
         ], 1L)
 
-        'closed trade' | new AccountChangesResponse(new TransactionID('4'), new AccountChanges([
+        // TODO DPJ: Update account nav and unrealized P&L
+        'updated NAV and unrealized P&L' | new AccountChangesResponse(new TransactionID('3'), new AccountChanges([], []), new AccountChangesState(5000055L, 57L)) | new Account(accountID, 4913822L, 5000055L, new TransactionID('3'), [
+                // TODO: Need to update the actual trade state too
+                new TradeSummary(USDEUR, 1, 86233L, 0L, 55L, LocalDateTime.of(2018, SEPTEMBER, 7, 7, 43, 13, 567036542), null, '309')
+        ], 1L)
+
+        'closed trade'                   | new AccountChangesResponse(new TransactionID('4'), new AccountChanges([
                 new TradeSummary(USDEUR, 1, 86241L, 63L, 0L,
                         LocalDateTime.of(2018, SEPTEMBER, 7, 7, 43, 13, 567036542),
                         LocalDateTime.of(2018, SEPTEMBER, 7, 7, 45, 11, 338759441), '309')
-        ], []))                                                                                         | new Account(accountID, 5000063, new TransactionID('4'), [], 64L)
+        ], []), new AccountChangesState(5000063, 0L))                                                                                                             | new Account(accountID, 5000063L, 5000063L, new TransactionID('4'), [], 64L)
 
-        'open trade'   | new AccountChangesResponse(new TransactionID('4'), new AccountChanges([], [
-                new TradeSummary(EURUSD, 2, 115879L, 150L, 0L,
+        'open trade'                     | new AccountChangesResponse(new TransactionID('4'), new AccountChanges([], [
+                new TradeSummary(EURUSD, 2, 115879L, 0L, 150L,
                         LocalDateTime.of(2018, SEPTEMBER, 7, 7, 31, 9, 524922739),
                         LocalDateTime.of(2018, SEPTEMBER, 7, 7, 42, 34, 554252280), '303')
 
-        ]))                                                                                             | new Account(accountID, 4768242L, new TransactionID('4'), [
-                new TradeSummary(EURUSD, 2, 115879L, 150L, 0L,
+        ]), new AccountChangesState(5000150, 300L))                                                                                                               | new Account(accountID, 4768392, 5000150, new TransactionID('4'), [
+                new TradeSummary(EURUSD, 2, 115879L, 0L, 150L,
                         LocalDateTime.of(2018, SEPTEMBER, 7, 7, 31, 9, 524922739),
                         LocalDateTime.of(2018, SEPTEMBER, 7, 7, 42, 34, 554252280), '303')
         ], 1L)

@@ -12,13 +12,15 @@ import static broker.Quote.pippetesFromDouble;
 public class Account {
     private final AccountID id;
     private final long balance;
+    private final long netAssetValue;
     private final TransactionID lastTransactionID;
     private final List<TradeSummary> trades;
     private final long profitLoss;
 
-    public Account(AccountID id, long balance, TransactionID lastTransactionID, List<TradeSummary> trades, long profitLoss) {
+    public Account(AccountID id, long balance, long netAssetValue, TransactionID lastTransactionID, List<TradeSummary> trades, long profitLoss) {
         this.id = id;
         this.balance = balance;
+        this.netAssetValue = netAssetValue;
         this.lastTransactionID = lastTransactionID;
         this.trades = trades;
         this.profitLoss = profitLoss;
@@ -26,6 +28,10 @@ public class Account {
 
     public AccountID getId() {
         return id;
+    }
+
+    public long getNetAssetValue() {
+        return netAssetValue;
     }
 
     public long getBalance() {
@@ -50,6 +56,7 @@ public class Account {
         if (o == null || getClass() != o.getClass()) return false;
         Account account = (Account) o;
         return balance == account.balance &&
+                netAssetValue == account.netAssetValue &&
                 profitLoss == account.profitLoss &&
                 Objects.equals(id, account.id) &&
                 Objects.equals(lastTransactionID, account.lastTransactionID) &&
@@ -58,7 +65,7 @@ public class Account {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, balance, lastTransactionID, trades, profitLoss);
+        return Objects.hash(id, balance, netAssetValue, lastTransactionID, trades, profitLoss);
     }
 
     @Override
@@ -66,6 +73,7 @@ public class Account {
         return MoreObjects.toStringHelper(this)
                 .add("id", id)
                 .add("balance", balance)
+                .add("netAssetValue", netAssetValue)
                 .add("lastTransactionID", lastTransactionID)
                 .add("trades", trades)
                 .add("profitLoss", profitLoss)
@@ -73,13 +81,17 @@ public class Account {
     }
 
     public Account positionOpened(TradeSummary position, TransactionID latestTransactionID) {
-        long newBalance = this.balance - (position.getCurrentUnits() * position.getPrice());
+        long purchasePrice = position.getPrice() - (position.getUnrealizedPL() / position.getCurrentUnits());
+        long newBalance = this.balance - (position.getCurrentUnits() * purchasePrice);
 
         List<TradeSummary> newTrades = new ArrayList<>(this.trades);
         newTrades.add(position);
 
+        long newNAV = newBalance + newTrades.stream().mapToLong(it -> it.getPrice() * it.getCurrentUnits()).sum();
+
         return new Account.Builder(this.id)
                 .withBalance(newBalance)
+                .withNetAssetValue(newNAV)
                 .withLastTransactionID(latestTransactionID)
                 .withTrades(newTrades)
                 .withProfitLoss(this.profitLoss)
@@ -93,17 +105,26 @@ public class Account {
         List<TradeSummary> newTrades = new ArrayList<>(this.trades);
         newTrades.removeIf(it -> it.getId().equals(position.getId()));
 
+        long newNAV = newBalance + newTrades.stream().mapToLong(it -> it.getPrice() * it.getCurrentUnits()).sum();
+
         return new Account.Builder(this.id)
                 .withBalance(newBalance)
+                .withNetAssetValue(newNAV)
                 .withLastTransactionID(latestTransactionID)
                 .withTrades(newTrades)
                 .withProfitLoss(newProfitLoss)
                 .build();
     }
 
+    public Account incorporateState(AccountChangesState stateChanges) {
+        // TODO: Add unrealized P&L to account
+        return new Account(this.id, this.balance, stateChanges.getNetAssetValue(), this.lastTransactionID, this.trades, this.profitLoss);
+    }
+
     public static class Builder {
         private final AccountID id;
         private long balance = 0L;
+        private long netAssetValue = 0L;
         private TransactionID lastTransactionID;
         private List<TradeSummary> trades = Collections.emptyList();
         private long profitLoss = 0L;
@@ -118,6 +139,11 @@ public class Account {
 
         public Builder withBalance(long balance) {
             this.balance = balance;
+            return this;
+        }
+
+        public Builder withNetAssetValue(long netAssetValue) {
+            this.netAssetValue = netAssetValue;
             return this;
         }
 
@@ -140,7 +166,7 @@ public class Account {
             Objects.requireNonNull(id);
             Objects.requireNonNull(trades);
 
-            return new Account(id, balance, lastTransactionID, trades, profitLoss);
+            return new Account(id, balance, netAssetValue, lastTransactionID, trades, profitLoss);
         }
     }
 }

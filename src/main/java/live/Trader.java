@@ -4,6 +4,7 @@ import broker.Account;
 import broker.AccountChanges;
 import broker.AccountChangesRequest;
 import broker.AccountChangesResponse;
+import broker.AccountChangesState;
 import broker.AccountID;
 import broker.Context;
 import broker.ForexBroker;
@@ -28,6 +29,7 @@ import java.util.Optional;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import static broker.Quote.doubleFromPippetes;
 import static java.time.DayOfWeek.FRIDAY;
 import static java.util.Comparator.comparing;
 
@@ -151,6 +153,19 @@ public class Trader implements ForexTrader {
                 this.account = this.account.positionOpened(openedTrade, mostRecentTransactionID);
             }
         }
+
+        AccountChangesState stateChanges = response.getAccountChangesState();
+        long brokerNetAssetValue = stateChanges.getNetAssetValue();
+
+        if (this.account.getNetAssetValue() != brokerNetAssetValue) {
+            //TODO: Uncomment when we consider position NAV changes from the broker
+//            LOG.error("Net asset value didn't match, were position changes resolved correctly? Ours: {}, Brokers: {}\nAccount: {}",
+//                    this.account.getNetAssetValue(), brokerNetAssetValue, this.account);
+        }
+        this.account = this.account.incorporateState(stateChanges);
+
+        LOG.info("NAV: {}, Unrealized profit & loss: {}", doubleFromPippetes(stateChanges.getNetAssetValue()),
+                doubleFromPippetes(stateChanges.getUnrealizedProfitAndLoss()));
     }
 
     private void initializeEverything() {

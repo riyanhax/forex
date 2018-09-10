@@ -21,7 +21,7 @@ class AccountSpec extends Specification {
         def actual = current.positionOpened(position, newTransactionID)
 
         expect:
-        actual == new Account(accountID, 4767954L, new TransactionID('2'), [
+        actual == new Account(accountID, 4767934L, 4999980L, new TransactionID('2'), [
                 position
         ], 0L)
     }
@@ -40,7 +40,7 @@ class AccountSpec extends Specification {
         def actual = current.positionClosed(position, newTransactionID)
 
         expect:
-        actual == new Account(accountID, 4999820L, new TransactionID('2'), [], -180L)
+        actual == new Account(accountID, 4999820L, 4999820, new TransactionID('2'), [], -180L)
     }
 
 }

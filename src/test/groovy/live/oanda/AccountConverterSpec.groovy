@@ -3,6 +3,7 @@ package live.oanda
 import broker.Account
 import broker.AccountChanges
 import broker.AccountChangesResponse
+import broker.AccountChangesState
 import broker.AccountGetResponse
 import broker.AccountID
 import broker.TradeSummary
@@ -11,7 +12,6 @@ import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.oanda.v20.order.OrderAdapter
 import com.oanda.v20.transaction.TransactionAdapter
-import live.oanda.AccountConverter
 import spock.lang.Specification
 
 import java.time.LocalDateTime
@@ -47,14 +47,13 @@ class AccountConverterSpec extends Specification {
     }
 
     def 'should convert account changes response correctly'() {
-
         def expected = new AccountChangesResponse(new TransactionID("999"), new AccountChanges([
                 new TradeSummary(USDEUR, 1, 86402L, -20L, 0L, LocalDateTime.of(2018, SEPTEMBER, 7, 10, 49, 6,
                         159247625), LocalDateTime.of(2018, SEPTEMBER, 7, 10, 50, 30, 782081491), '993')
         ], [
                 new TradeSummary(USDEUR, 1, 86395L, 0L, 0L, LocalDateTime.of(2018, SEPTEMBER, 7, 10, 50, 43,
                         289257), null, '997')
-        ]))
+        ]), new AccountChangesState(50216480L, -10L))
 
         def json = getClass().getResourceAsStream('AccountChangesResponse.json').text
         def response = gson.fromJson(json, com.oanda.v20.account.AccountChangesResponse.class)
