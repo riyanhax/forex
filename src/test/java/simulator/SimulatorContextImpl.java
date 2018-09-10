@@ -102,6 +102,10 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
     public void afterTraders() {
         // Process any submitted orders
         marketEngine.processUpdates();
+
+        mostRecentPortfolio.forEach((id, account) -> {
+            getTraderData(id).addSnapshot(accountSnapshot(account));
+        });
     }
 
     @Override
@@ -189,7 +193,6 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
         }
 
         mostRecentPortfolio.put(accountID.getId(), account);
-        getTraderData(accountID.getId()).addSnapshot(accountSnapshot(account));
     }
 
     private AccountChangesResponse stagedAccountChanges(AccountID accountID) {
@@ -294,20 +297,8 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
 
         @Override
         public AccountGetResponse get(AccountID accountID) throws RequestException {
-            TransactionID latestTransactionId = getLatestTransactionId(accountID);
-
-            Account account = mostRecentPortfolio(accountID);
-            AccountSnapshot accountSnapshot = accountSnapshot(account);
-
-            List<TradeSummary> trades = accountSnapshot.getPositionValues();
-
-            // TODO: Why don't we have a version cached already we can use?
-            return new AccountGetResponse(new Account.Builder(accountID)
-                    .withBalance(account.getBalance())
-                    .withLastTransactionID(latestTransactionId)
-                    .withTrades(trades)
-                    .withProfitLoss(accountSnapshot.getPipettesProfit())
-                    .build());
+            return new AccountGetResponse(getTraderData(accountID.getId())
+                    .getMostRecentPortfolio().getAccount());
         }
     }
 
@@ -481,12 +472,14 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
 
     @Override
     public TraderData getTraderData(String accountNumber) {
-        TraderData traderData = traderDataById.get(accountNumber);
-        if (traderData == null) {
-            traderData = new TraderData();
-            traderDataById.put(accountNumber, traderData);
-        }
+        traderDataById.computeIfAbsent(accountNumber, it -> {
+            Account account = mostRecentPortfolio(new AccountID(accountNumber));
 
-        return traderData;
+            TraderData traderData = new TraderData();
+            traderData.addSnapshot(accountSnapshot(account));
+
+            return traderData;
+        });
+        return traderDataById.get(accountNumber);
     }
 }
