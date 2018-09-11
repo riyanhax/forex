@@ -174,7 +174,7 @@ class BrokerSpec extends Specification {
 
     def 'should create the correct close position request'() {
 
-        def position = new TradeSummary(USDEUR, 3, 86233L, 6L, 0L,
+        def position = new TradeSummary(USDEUR, 3, 86239L, 6L, 0L,
                 LocalDateTime.of(2018, SEPTEMBER, 7, 7, 43, 13, 567036542),
                 LocalDateTime.of(2018, SEPTEMBER, 7, 07, 45, 11, 338759441), '309')
 

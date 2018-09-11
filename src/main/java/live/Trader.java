@@ -29,7 +29,7 @@ import java.util.Optional;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import static broker.Quote.doubleFromPippetes;
+import static broker.Quote.formatDollars;
 import static java.time.DayOfWeek.FRIDAY;
 import static java.util.Comparator.comparing;
 
@@ -62,7 +62,7 @@ public class Trader implements ForexTrader {
     @Override
     public void processUpdates(ForexBroker broker) throws Exception {
 
-        LOG.info("Trader: {}", tradingStrategy.getName());
+        LOG.info("Trader: {} ({})", tradingStrategy.getName(), accountId);
         refreshDataSinceLastInterval();
 
         if (account == null) {
@@ -155,17 +155,27 @@ public class Trader implements ForexTrader {
         }
 
         AccountChangesState stateChanges = response.getAccountChangesState();
-        long brokerNetAssetValue = stateChanges.getNetAssetValue();
 
-        if (this.account.getNetAssetValue() != brokerNetAssetValue) {
-            //TODO: Uncomment when we consider position NAV changes from the broker
-//            LOG.error("Net asset value didn't match, were position changes resolved correctly? Ours: {}, Brokers: {}\nAccount: {}",
-//                    this.account.getNetAssetValue(), brokerNetAssetValue, this.account);
-        }
         this.account = this.account.incorporateState(stateChanges);
 
-        LOG.info("NAV: {}, Unrealized profit & loss: {}", doubleFromPippetes(stateChanges.getNetAssetValue()),
-                doubleFromPippetes(stateChanges.getUnrealizedProfitAndLoss()));
+        // Would need to consider financing charges  and probably interest for the NAV to match exactly.
+        // So this is adjusting the balance when some kind of discrepancy exists.
+        long brokerNetAssetValue = stateChanges.getNetAssetValue();
+        long accountNetAssetValue = account.getNetAssetValue();
+        long balanceAdjustment = brokerNetAssetValue == accountNetAssetValue ? 0L :
+                brokerNetAssetValue - accountNetAssetValue;
+
+        // TODO Write test for balance adjustments that occur because of financing, interest, etc.
+        if (balanceAdjustment != 0) {
+            account = account.adjustBalance(balanceAdjustment);
+            accountNetAssetValue = account.getNetAssetValue();
+        }
+
+        LOG.info("Broker NAV: {}, Calculated NAV: {}{}, Unrealized profit: {}",
+                formatDollars(brokerNetAssetValue),
+                formatDollars(accountNetAssetValue),
+                balanceAdjustment == 0 ? "" : String.format(" [adjusted %s]", formatDollars(balanceAdjustment)),
+                formatDollars(stateChanges.getUnrealizedProfitAndLoss()));
     }
 
     private void initializeEverything() {

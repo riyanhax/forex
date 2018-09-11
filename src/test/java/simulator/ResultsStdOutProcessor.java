@@ -1,5 +1,6 @@
 package simulator;
 
+import broker.Quote;
 import live.LiveTraders;
 import market.AccountSnapshot;
 import org.slf4j.Logger;
@@ -15,8 +16,6 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-import static broker.Quote.formatDollars;
-import static broker.Quote.pipsFromPippetes;
 import static java.util.Comparator.comparing;
 import static market.MarketTime.formatRange;
 import static market.MarketTime.formatTimestamp;
@@ -74,22 +73,16 @@ public class ResultsStdOutProcessor implements ResultsProcessor {
             LOG.info("Profitable trades: {}/{}", allTrades.stream().filter(it -> it.getRealizedProfitLoss() > 0).count(), allTrades.size());
             LOG.info("Highest drawdown: {} at {}", profitLossDisplay(drawdownPortfolio), formatTimestamp(drawdownPortfolio.getTimestamp()));
             LOG.info("Highest profit: {} at {}", profitLossDisplay(profitPortfolio), formatTimestamp(profitPortfolio.getTimestamp()));
-            LOG.info("Average profit: {} from {}", profitLossDisplay(averageResult), formatRange(simulatorProperties.getStartTime(), simulatorProperties.getEndTime()));
+            LOG.info("Average profit: {} from {}", Quote.profitLossDisplay(averageResult), formatRange(simulatorProperties.getStartTime(), simulatorProperties.getEndTime()));
         }
     }
 
     private static String profitLossDisplay(AccountSnapshot portfolio) {
-        return profitLossDisplay(portfolio.netAssetValue());
+        return Quote.profitLossDisplay(portfolio.netAssetValue());
     }
 
     private static String profitLossDisplay(TradeHistory trade) {
-        return profitLossDisplay(trade.getRealizedProfitLoss()) + ", " + trade.getCurrentUnits() + " units";
-    }
-
-    private static String profitLossDisplay(long pipettes) {
-        String dollars = formatDollars(pipettes);
-
-        return String.format("%s, %s pips, (%d pipettes)", dollars, pipsFromPippetes(pipettes), pipettes);
+        return Quote.profitLossDisplay(trade.getRealizedProfitLoss()) + ", " + trade.getCurrentUnits() + " units";
     }
 }
 

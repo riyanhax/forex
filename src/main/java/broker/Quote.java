@@ -1,10 +1,10 @@
 package broker;
 
-import java.text.NumberFormat;
+import java.text.DecimalFormat;
 
 public interface Quote {
 
-    NumberFormat dollarFormatter= NumberFormat.getCurrencyInstance();
+    DecimalFormat dollarFormatter = new DecimalFormat("$####,###,##0.00000");
 
     /**
      * Used to convert from longs to a currency quote (e.g. 1.23456 is stored as 123456)
@@ -39,6 +39,12 @@ public interface Quote {
         long pips = pipettes / 10;
         long remainder = pipettes % 10;
 
-        return String.format("%s.%s", pips, Math.abs(remainder));
+        return String.format("%s.%s pips", pips, Math.abs(remainder));
+    }
+
+    static String profitLossDisplay(long pipettes) {
+        String dollars = formatDollars(pipettes);
+
+        return String.format("%s, %s, (%d pipettes)", dollars, pipsFromPippetes(pipettes), pipettes);
     }
 }

@@ -39,7 +39,7 @@ public class AccountSnapshot implements Comparable<AccountSnapshot> {
 
     public long unrealizedProfitAndLoss() {
         return account.getTrades().stream()
-                .mapToLong(TradeSummary::getUnrealizedPL)
+                .mapToLong(TradeSummary::getUnrealizedProfitLoss)
                 .sum();
     }
 

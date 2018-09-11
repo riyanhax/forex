@@ -7,7 +7,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import static broker.Quote.formatDollars;
 import static broker.Quote.pippetesFromDouble;
+import static broker.Quote.profitLossDisplay;
 
 public class Account {
     private final AccountID id;
@@ -72,26 +74,23 @@ public class Account {
     public String toString() {
         return MoreObjects.toStringHelper(this)
                 .add("id", id)
-                .add("balance", balance)
-                .add("netAssetValue", netAssetValue)
+                .add("balance", formatDollars(balance))
+                .add("netAssetValue", formatDollars(netAssetValue))
                 .add("lastTransactionID", lastTransactionID)
                 .add("trades", trades)
-                .add("profitLoss", profitLoss)
+                .add("profitLoss", profitLossDisplay(profitLoss))
                 .toString();
     }
 
     public Account positionOpened(TradeSummary position, TransactionID latestTransactionID) {
-        long purchasePrice = position.getPrice() - (position.getUnrealizedPL() / position.getCurrentUnits());
-        long newBalance = this.balance - (position.getCurrentUnits() * purchasePrice);
+        long newBalance = this.balance - position.getPurchaseValue();
 
         List<TradeSummary> newTrades = new ArrayList<>(this.trades);
         newTrades.add(position);
 
-        long newNAV = newBalance + newTrades.stream().mapToLong(it -> it.getPrice() * it.getCurrentUnits()).sum();
-
         return new Account.Builder(this.id)
                 .withBalance(newBalance)
-                .withNetAssetValue(newNAV)
+                .withNetAssetValue(calculateNav(newBalance, newTrades))
                 .withLastTransactionID(latestTransactionID)
                 .withTrades(newTrades)
                 .withProfitLoss(this.profitLoss)
@@ -99,17 +98,15 @@ public class Account {
     }
 
     public Account positionClosed(TradeSummary position, TransactionID latestTransactionID) {
-        long newBalance = this.balance + (position.getCurrentUnits() * position.getPrice());
+        long newBalance = this.balance + position.getNetAssetValue();
         long newProfitLoss = this.profitLoss + position.getRealizedProfitLoss();
 
         List<TradeSummary> newTrades = new ArrayList<>(this.trades);
         newTrades.removeIf(it -> it.getId().equals(position.getId()));
 
-        long newNAV = newBalance + newTrades.stream().mapToLong(it -> it.getPrice() * it.getCurrentUnits()).sum();
-
         return new Account.Builder(this.id)
                 .withBalance(newBalance)
-                .withNetAssetValue(newNAV)
+                .withNetAssetValue(calculateNav(newBalance, newTrades))
                 .withLastTransactionID(latestTransactionID)
                 .withTrades(newTrades)
                 .withProfitLoss(newProfitLoss)
@@ -118,7 +115,20 @@ public class Account {
 
     public Account incorporateState(AccountChangesState stateChanges) {
         // TODO: Add unrealized P&L to account
-        return new Account(this.id, this.balance, stateChanges.getNetAssetValue(), this.lastTransactionID, this.trades, this.profitLoss);
+        List<TradeSummary> newTrades = TradeSummary.incorporateState(this.trades, stateChanges);
+        // This intentionally calculates NAV on its own to make sure our calculations stay in line with the broker
+        return new Account(this.id, this.balance, calculateNav(this.balance, newTrades), this.lastTransactionID, newTrades, this.profitLoss);
+    }
+
+    public static long calculateNav(long balance, List<TradeSummary> trades) {
+        return balance + trades.stream().mapToLong(TradeSummary::getNetAssetValue).sum();
+    }
+
+    public Account adjustBalance(long balanceAdjustment) {
+        long newBalance = this.balance + balanceAdjustment;
+        long newNav = calculateNav(newBalance, trades);
+
+        return new Account(id, newBalance, newNav, lastTransactionID, trades, profitLoss);
     }
 
     public static class Builder {

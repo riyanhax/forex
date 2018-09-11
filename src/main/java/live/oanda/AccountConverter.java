@@ -9,6 +9,7 @@ import broker.AccountGetResponse;
 import broker.AccountID;
 import broker.TradeSummary;
 import broker.TransactionID;
+import com.oanda.v20.trade.CalculatedTradeState;
 
 import java.util.List;
 
@@ -43,7 +44,8 @@ class AccountConverter {
 
     private static AccountChangesState convert(com.oanda.v20.account.AccountChangesState state) {
         return new AccountChangesState(pippetesFromDouble(state.getNAV().doubleValue()),
-                pippetesFromDouble(state.getUnrealizedPL().doubleValue()));
+                pippetesFromDouble(state.getUnrealizedPL().doubleValue()),
+                state.getTrades().stream().map(TradeConverter::convert).collect(toList()));
     }
 
     private static AccountChanges convert(com.oanda.v20.account.AccountChanges oandaVersion) {

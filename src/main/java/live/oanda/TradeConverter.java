@@ -1,5 +1,6 @@
 package live.oanda;
 
+import broker.CalculatedTradeState;
 import broker.MarketOrderTransaction;
 import broker.TradeCloseResponse;
 import broker.TradeListRequest;
@@ -72,6 +73,10 @@ class TradeConverter {
                 tradeSummary.getId());
     }
 
+    static CalculatedTradeState convert(com.oanda.v20.trade.CalculatedTradeState state) {
+        return new CalculatedTradeState(state.getId().toString(), pippetesFromDouble(state.getUnrealizedPL().doubleValue()));
+    }
+
     private static TradeSummary createTradeSummary(InstrumentName instrumentName, DateTime openDateTime, DateTime closeDateTime,
                                                    PriceValue priceValue, AccountUnits realizedPl, AccountUnits unrealizedPl,
                                                    DecimalNumber initialUnits, TradeID id) {
@@ -81,6 +86,7 @@ class TradeConverter {
         long price = pippetesFromDouble(priceValue.doubleValue());
         long realizedProfitLoss = pippetesFromDouble(realizedPl == null ? 0L : realizedPl.doubleValue());
         long unrealizedProfitLoss = pippetesFromDouble(unrealizedPl == null ? 0L : unrealizedPl.doubleValue());
+        long currentPrice = price + (realizedPl == null ? unrealizedProfitLoss : realizedProfitLoss);
 
         if (initialUnits.doubleValue() < 0) {
             instrument = instrument.getOpposite();
