@@ -76,3 +76,39 @@ oanda:
   - # 10/10 SL/TP
     account: '101-001-1775714-008'
     strategy: HIGH_FREQ_MARTINGALE
+  - # 10/10 SL/TP
+    account: '101-001-1775714-009'
+    strategy: HIGH_FREQ_MARTINGALE_FIVEK_START
+  - # 10/10 SL/TP
+    account: '101-001-1775714-010'
+    strategy: HIGH_FREQ_MARTINGALE_FIVEK_START
+  - # 10/10 SL/TP
+    account: '101-001-1775714-011'
+    strategy: HIGH_FREQ_MARTINGALE_FIVEK_START
+  - # 10/10 SL/TP
+    account: '101-001-1775714-012'
+    strategy: HIGH_FREQ_MARTINGALE_FIVEK_START
+  - # 10/10 SL/TP
+    account: '101-001-1775714-013'
+    strategy: HIGH_FREQ_MARTINGALE_FIVEK_START
+  - # 10/10 SL/TP
+    account: '101-001-1775714-014'
+    strategy: HIGH_FREQ_MARTINGALE_FIVEK_START
+  - # 10/10 SL/TP
+    account: '101-001-1775714-015'
+    strategy: HIGH_FREQ_MARTINGALE_FIVEK_START
+  - # 10/10 SL/TP
+    account: '101-001-1775714-016'
+    strategy: HIGH_FREQ_MARTINGALE_FIVEK_START
+  - # 10/10 SL/TP
+    account: '101-001-1775714-017'
+    strategy: HIGH_FREQ_MARTINGALE_FIVEK_START
+  - # 10/10 SL/TP
+    account: '101-001-1775714-018'
+    strategy: HIGH_FREQ_MARTINGALE_FIVEK_START
+  - # 10/10 SL/TP
+    account: '101-001-1775714-019'
+    strategy: HIGH_FREQ_MARTINGALE_FIVEK_START
+  - # 10/10 SL/TP
+    account: '101-001-1775714-020'
+    strategy: HIGH_FREQ_MARTINGALE_FIVEK_START

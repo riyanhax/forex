@@ -20,12 +20,21 @@ import java.util.Random;
 
 public enum TradingStrategies implements TradingStrategy {
 
-    HIGH_FREQ_MARTINGALE {
+    HIGH_FREQ_MARTINGALE_FIVEK_START {
         @Override
         public Optional<OpenPositionRequest> shouldOpenPosition(ForexTrader trader, ForexBroker broker, MarketTime clock) throws Exception {
             Optional<OpenPositionRequest> openPositionRequest = OPEN_RANDOM_POSITION_HIGH_FREQUENCY.shouldOpenPosition(trader, broker, clock);
             if (openPositionRequest.isPresent()) {
-                return martingaleRequest(openPositionRequest.get(), trader);
+                return martingaleRequest(openPositionRequest.get(), trader, 100);
+            }
+            return openPositionRequest;
+        }
+    }, HIGH_FREQ_MARTINGALE {
+        @Override
+        public Optional<OpenPositionRequest> shouldOpenPosition(ForexTrader trader, ForexBroker broker, MarketTime clock) throws Exception {
+            Optional<OpenPositionRequest> openPositionRequest = OPEN_RANDOM_POSITION_HIGH_FREQUENCY.shouldOpenPosition(trader, broker, clock);
+            if (openPositionRequest.isPresent()) {
+                return martingaleRequest(openPositionRequest.get(), trader, 1);
             }
             return openPositionRequest;
         }
@@ -86,9 +95,9 @@ public enum TradingStrategies implements TradingStrategy {
             }
 
             Instrument instrument = todayHigher ? pair : pair.getOpposite();
-            int units = martingaleUnits(trader);
+            int units = martingaleUnits(trader, 1);
 
-            return martingaleRequest(new OpenPositionRequest(instrument, units, null, 1000L, 2000L), trader);
+            return martingaleRequest(new OpenPositionRequest(instrument, units, null, 1000L, 2000L), trader, 1);
         }
     },
     SMARTER_MARTINGALE {
@@ -101,7 +110,7 @@ public enum TradingStrategies implements TradingStrategy {
 
             Optional<OpenPositionRequest> openPositionRequest = SMARTER_RANDOM_POSITION.shouldOpenPosition(trader, broker, clock);
             if (openPositionRequest.isPresent()) {
-                return martingaleRequest(openPositionRequest.get(), trader);
+                return martingaleRequest(openPositionRequest.get(), trader, 1);
             }
 
             return openPositionRequest;
@@ -175,8 +184,8 @@ public enum TradingStrategies implements TradingStrategy {
 
     private static final Random random = new Random();
 
-    private static Optional<OpenPositionRequest> martingaleRequest(OpenPositionRequest toCopy, ForexTrader trader) throws RequestException {
-        int units = martingaleUnits(trader);
+    private static Optional<OpenPositionRequest> martingaleRequest(OpenPositionRequest toCopy, ForexTrader trader, int baseUnits) throws RequestException {
+        int units = martingaleUnits(trader, baseUnits);
         return Optional.of(new OpenPositionRequest(toCopy.getPair(), units, toCopy.getLimit().orElse(null),
                 toCopy.getStopLoss().orElse(null), toCopy.getTakeProfit().orElse(null)));
     }
@@ -184,8 +193,8 @@ public enum TradingStrategies implements TradingStrategy {
     /**
      * Determines the martingale units to purchase in the next trade based on the last trade.
      */
-    private static int martingaleUnits(ForexTrader trader) throws RequestException {
-        int units = 1;
+    private static int martingaleUnits(ForexTrader trader, int baseUnits) throws RequestException {
+        int units = baseUnits;
         Optional<TradeSummary> lastClosedTrade = trader.getLastClosedTrade();
         if (lastClosedTrade.isPresent()) {
             TradeSummary trade = lastClosedTrade.get();
