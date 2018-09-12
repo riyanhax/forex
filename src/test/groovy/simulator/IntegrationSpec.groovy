@@ -49,12 +49,14 @@ class IntegrationSpec extends Specification {
 
         expect: 'history comparator profit/loss was calculated correctly'
         historyComparatorPortfolio1.pipettesProfit == -13256L
+        historyComparatorPortfolio1.getNetAssetValue() == 4986744L
 
         and: 'both history comparator traders had the same profit/loss'
         historyComparatorPortfolio2.pipettesProfit == historyComparatorPortfolio1.pipettesProfit
 
         and: 'regression comparator profit/loss was calculated correctly'
         regressionComparatorPortfolio3.pipettesProfit == 5422L
+        regressionComparatorPortfolio3.getNetAssetValue() == 5005422L
 
         and: 'both regression comparator traders had the same profit/loss'
         regressionComparatorPortfolio4.pipettesProfit == regressionComparatorPortfolio3.pipettesProfit

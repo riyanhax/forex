@@ -47,7 +47,7 @@ public class ResultsStdOutProcessor implements ResultsProcessor {
 
                 LOG.info("End: {} at {}", profitLossDisplay(end), formatTimestamp(end.getTimestamp()));
 
-                averageResult += end.netAssetValue();
+                averageResult += end.getNetAssetValue();
 
                 TraderData traderData = context.getTraderData(trader.getAccountNumber());
                 portfolios.add(traderData.getDrawdownPortfolio());
@@ -78,7 +78,7 @@ public class ResultsStdOutProcessor implements ResultsProcessor {
     }
 
     private static String profitLossDisplay(AccountSnapshot portfolio) {
-        return Quote.profitLossDisplay(portfolio.netAssetValue());
+        return Quote.profitLossDisplay(portfolio.getNetAssetValue());
     }
 
     private static String profitLossDisplay(TradeHistory trade) {

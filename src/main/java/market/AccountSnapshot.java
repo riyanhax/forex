@@ -31,10 +31,8 @@ public class AccountSnapshot implements Comparable<AccountSnapshot> {
         return timestamp;
     }
 
-    public long netAssetValue() {
-        // TODO: Write test that this calculates the correct value based on open trades
-        return account.getBalance() + account.getTrades().stream()
-                .mapToLong(it -> it.getPrice() *it.getCurrentUnits()).sum();
+    public long getNetAssetValue() {
+        return account.getNetAssetValue();
     }
 
     public long unrealizedProfitAndLoss() {

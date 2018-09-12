@@ -1,6 +1,7 @@
 package broker
 
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import static java.time.LocalDateTime.now
 import static market.Instrument.EURUSD
@@ -43,4 +44,28 @@ class AccountSpec extends Specification {
         actual == new Account(accountID, 4999860, 4999860, new TransactionID('2'), [], -180L)
     }
 
+    @Unroll
+    def 'should calculate net asset value based on account balance and open trade value: #expected'() {
+
+        def account = new Account.Builder(accountID)
+                .withBalance(4767954L)
+                .withTrades(trades)
+                .build()
+
+        def actual = Account.calculateNav(account.getBalance(), account.getTrades())
+
+        expect:
+        actual == expected
+
+        where:
+        expected | trades
+        5232116L | [
+                new TradeSummary(EURUSD, 2, 116043L, 0L, -10L, now(), null, '100'),
+                new TradeSummary(EURUSD, 2, 116053L, 0L, -20L, now(), null, '101')
+        ]
+        5232136L | [
+                new TradeSummary(EURUSD, 2, 116058, 0L, -15L, now(), null, '100'),
+                new TradeSummary(EURUSD, 2, 116028, 0L, 25L, now(), null, '101')
+        ]
+    }
 }

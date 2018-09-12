@@ -29,4 +29,24 @@ class TradeSummarySpec extends Specification {
         86283L   | 10L          | 100L       | 2     | 86233L | LocalDateTime.of(2018, Month.SEPTEMBER, 7, 07, 45, 11, 338759441)
         86238L   | 10L          | 0L         | 2     | 86233L | null
     }
+
+    @Unroll
+    def 'should calculate net asset value based on price and unrealized/realized P&L: @expected'() {
+
+        def actual = new TradeSummary(USDEUR, units, 86233L, realizedPL, unrealizedPL,
+                LocalDateTime.of(2018, Month.SEPTEMBER, 7, 7, 43, 13, 567036542), closeTime, '309')
+                .netAssetValue
+
+        expect:
+        actual == expected
+
+        where:
+        expected | unrealizedPL | realizedPL | units | price  | closeTime
+        86333L   | 0L           | 100L       | 1     | 86233L | LocalDateTime.of(2018, Month.SEPTEMBER, 7, 07, 45, 11, 338759441)
+        86333L   | 10L          | 100L       | 1     | 86233L | LocalDateTime.of(2018, Month.SEPTEMBER, 7, 07, 45, 11, 338759441)
+        86243L   | 10L          | 0L         | 1     | 86233L | null
+        86243L   | 10L          | 100L       | 1     | 86233L | null
+        172566L  | 10L          | 100L       | 2     | 86233L | LocalDateTime.of(2018, Month.SEPTEMBER, 7, 07, 45, 11, 338759441)
+        172476L  | 10L          | 0L         | 2     | 86233L | null
+    }
 }
