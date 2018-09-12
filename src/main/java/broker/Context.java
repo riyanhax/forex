@@ -1,5 +1,7 @@
 package broker;
 
+import static broker.TradeStateFilter.CLOSED;
+
 public interface Context {
 
     PricingGetResponse getPricing(PricingGetRequest request) throws broker.RequestException;
@@ -18,7 +20,7 @@ public interface Context {
 
     default AccountAndTrades initializeAccount(String accountId, int numLastTrades) throws RequestException {
         Account account = getAccount(new AccountID(accountId)).getAccount();
-        TradeListResponse tradeListResponse = listTrade(new TradeListRequest(new AccountID(accountId), numLastTrades));
+        TradeListResponse tradeListResponse = listTrade(new TradeListRequest(new AccountID(accountId), CLOSED, numLastTrades));
 
         return new AccountAndTrades(account, tradeListResponse.getTrades());
     }

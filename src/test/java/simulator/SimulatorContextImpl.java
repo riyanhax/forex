@@ -58,10 +58,9 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.SortedSet;
-import java.util.TreeSet;
 
 import static broker.Quote.pippetesFromDouble;
-import static java.util.Comparator.comparing;
+import static broker.TradeStateFilter.CLOSED;
 import static java.util.stream.Collectors.toList;
 
 class SimulatorContextImpl extends BaseContext implements OrderListener, SimulatorContext {
@@ -71,10 +70,10 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
     private final SimulatorProperties simulatorProperties;
     private final InstrumentHistoryService instrumentHistoryService;
     private final SequenceService sequenceService;
+    private final TradeService tradeService;
 
     private final Map<String, Account> mostRecentPortfolio = new HashMap<>();
     private final Map<String, AccountID> accountIdsByOrderId = new HashMap<>();
-    private final Map<String, SortedSet<TradeHistory>> closedTrades = new HashMap<>();
     private final Map<String, TraderData> traderDataById = new HashMap<>();
     private final Map<AccountID, MarketOrderRequest> stopLossTakeProfitsById = new HashMap<>();
     private final Map<AccountID, AccountChangesResponse> accountChangesById = new HashMap<>();
@@ -172,9 +171,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
 
             TradeHistory history = new TradeHistory(closedTrade, candles);
 
-            SortedSet<TradeHistory> closedTradesForAccount = closedTradesForAccountId(accountID.getId());
-            closedTradesForAccount.add(history);
-            closedTrades.put(accountID.getId(), closedTradesForAccount);
+            SortedSet<TradeHistory> closedTradesForAccount = tradeService.tradeClosed(accountID, history);
 
             long expectedPipettes = closedTradesForAccount.stream()
                     .mapToLong(TradeHistory::getRealizedProfitLoss)
@@ -285,6 +282,12 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
 
         @Override
         public TradeListResponse list(TradeListRequest request) throws RequestException {
+
+            if (request.getCount() > 500) {
+                throw new RequestException("Invalid request: A maximum of 500 trades can be retrieved");
+            }
+
+            Preconditions.checkArgument(request.getFilter() == CLOSED, "Only closed trades are supported at this time!");
 
             AccountID accountID = request.getAccountID();
 
@@ -404,18 +407,19 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
     }
 
     SimulatorContextImpl(MarketTime clock, InstrumentHistoryService instrumentHistoryService,
-                         SequenceService sequenceService,
+                         SequenceService sequenceService, TradeService tradeService,
                          MarketEngine marketEngine, SimulatorProperties simulatorProperties) {
         this.clock = clock;
         this.instrumentHistoryService = instrumentHistoryService;
         this.sequenceService = sequenceService;
+        this.tradeService = tradeService;
         this.marketEngine = marketEngine;
         this.simulatorProperties = simulatorProperties;
     }
 
     @Override
     public SortedSet<TradeHistory> closedTradesForAccountId(String id) {
-        return closedTrades.getOrDefault(id, new TreeSet<>(comparing(TradeHistory::getOpenTime)));
+        return tradeService.getClosedTradesForAccountID(id);
     }
 
     private Account mostRecentPortfolio(AccountID accountID) {

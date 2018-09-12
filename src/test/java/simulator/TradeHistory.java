@@ -2,6 +2,7 @@ package simulator;
 
 import broker.CandlestickData;
 import broker.TradeSummary;
+import com.google.common.base.MoreObjects;
 import market.Instrument;
 
 import java.time.LocalDateTime;
@@ -62,5 +63,13 @@ public class TradeHistory {
     @Override
     public int hashCode() {
         return Objects.hash(trade, candles);
+    }
+
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(this)
+                .add("trade", trade)
+                .add("candles", candles)
+                .toString();
     }
 }

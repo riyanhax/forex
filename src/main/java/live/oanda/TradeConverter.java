@@ -5,6 +5,7 @@ import broker.MarketOrderTransaction;
 import broker.TradeCloseResponse;
 import broker.TradeListRequest;
 import broker.TradeListResponse;
+import broker.TradeStateFilter;
 import broker.TradeSummary;
 import com.oanda.v20.pricing.PriceValue;
 import com.oanda.v20.primitives.AccountUnits;
@@ -14,7 +15,6 @@ import com.oanda.v20.primitives.InstrumentName;
 import com.oanda.v20.trade.TradeCloseRequest;
 import com.oanda.v20.trade.TradeID;
 import com.oanda.v20.trade.TradeSpecifier;
-import com.oanda.v20.trade.TradeStateFilter;
 import market.Instrument;
 
 import java.time.LocalDateTime;
@@ -48,11 +48,14 @@ class TradeConverter {
     static com.oanda.v20.trade.TradeListRequest convert(TradeListRequest request) {
         com.oanda.v20.trade.TradeListRequest oandaRequest = new com.oanda.v20.trade.TradeListRequest(
                 new com.oanda.v20.account.AccountID(request.getAccountID().getId()));
-        // TODO: Needs to be passed in
-        oandaRequest.setState(TradeStateFilter.CLOSED);
+        oandaRequest.setState(convert(request.getFilter()));
         oandaRequest.setCount(request.getCount());
 
         return oandaRequest;
+    }
+
+    static com.oanda.v20.trade.TradeStateFilter convert(TradeStateFilter filter) {
+        return com.oanda.v20.trade.TradeStateFilter.valueOf(filter.name());
     }
 
     static TradeListResponse convert(com.oanda.v20.trade.TradeListResponse oandaResponse) {

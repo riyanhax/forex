@@ -35,8 +35,10 @@ public class SimulatorConfig {
     SimulatorContext context(SimulatorProperties simulatorProperties, MarketTime clock,
                              InstrumentHistoryService instrumentHistoryService,
                              SequenceService sequenceService,
+                             TradeService tradeService,
                              MarketEngine marketEngine) {
-        return new SimulatorContextImpl(clock, instrumentHistoryService, sequenceService, marketEngine, simulatorProperties);
+        return new SimulatorContextImpl(clock, instrumentHistoryService, sequenceService,
+                tradeService, marketEngine, simulatorProperties);
     }
 
     @Bean

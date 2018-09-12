@@ -8,6 +8,7 @@ import broker.TransactionID
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.oanda.v20.order.OrderAdapter
+import com.oanda.v20.trade.TradeStateFilter
 import com.oanda.v20.transaction.TransactionAdapter
 import spock.lang.Specification
 import spock.lang.Unroll
@@ -15,6 +16,10 @@ import spock.lang.Unroll
 import java.time.LocalDateTime
 import java.time.Month
 
+import static broker.TradeStateFilter.ALL
+import static broker.TradeStateFilter.CLOSED
+import static broker.TradeStateFilter.CLOSE_WHEN_TRADEABLE
+import static broker.TradeStateFilter.OPEN
 import static market.Instrument.EURUSD
 import static market.Instrument.USDEUR
 
@@ -71,5 +76,21 @@ class TradeConverterSpec extends Specification {
 
         expect:
         actual == expected
+    }
+
+    @Unroll
+    def 'should convert trade state filter to oanda version correctly: #filter'() {
+
+        def actual = TradeConverter.convert(filter)
+
+        expect:
+        actual == expected
+
+        where:
+        filter               | expected
+        OPEN                 | TradeStateFilter.OPEN
+        CLOSED               | TradeStateFilter.CLOSED
+        CLOSE_WHEN_TRADEABLE | TradeStateFilter.CLOSE_WHEN_TRADEABLE
+        ALL                  | TradeStateFilter.ALL
     }
 }
