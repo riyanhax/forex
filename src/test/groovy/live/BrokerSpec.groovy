@@ -1,7 +1,7 @@
 package live
 
 import broker.Account
-import broker.AccountGetResponse
+import broker.AccountAndTrades
 import broker.AccountID
 import broker.Candlestick
 import broker.CandlestickData
@@ -17,7 +17,6 @@ import broker.Quote
 import broker.StopLossDetails
 import broker.TakeProfitDetails
 import broker.TradeCloseResponse
-import broker.TradeListResponse
 import broker.TradeSummary
 import broker.TransactionID
 import com.google.common.collect.Range
@@ -148,17 +147,17 @@ class BrokerSpec extends Specification {
     }
 
     def 'should use the specified units from the request'() {
+        def id = '1'
         def context = Mock(Context)
-        context.listTrade(_) >> new TradeListResponse([], null)
-        context.getAccount(_) >> new AccountGetResponse(new Account.Builder(new AccountID('someAccountId'))
+        context.initializeAccount(id, _) >> new AccountAndTrades(new Account.Builder(new AccountID(id))
                 .withBalanceDollars(50)
                 .withLastTransactionID(new TransactionID('someId'))
                 .withProfitLoss(13L)
-                .build())
+                .build(), [])
         context.getPricing(_) >> new PricingGetResponse([new Price(EURUSD, 10010L, 10020L)])
 
         def clock = Mock(MarketTime)
-        def trader = new TestTrader(context, clock)
+        def trader = new TestTrader(id, context, clock)
 
         Broker oanda = new Broker(clock, new LiveTraders([trader]))
 
@@ -174,11 +173,12 @@ class BrokerSpec extends Specification {
 
     def 'should create the correct close position request'() {
 
+        def id = '1'
         def position = new TradeSummary(USDEUR, 3, 86239L, 6L, 0L,
                 LocalDateTime.of(2018, SEPTEMBER, 7, 7, 43, 13, 567036542),
                 LocalDateTime.of(2018, SEPTEMBER, 7, 07, 45, 11, 338759441), '309')
 
-        def currentAccount = new Account.Builder(new AccountID('1'))
+        def currentAccount = new Account.Builder(new AccountID(id))
                 .withBalanceDollars(50)
                 .withLastTransactionID(new TransactionID('3'))
                 .withTrades([position])
@@ -186,11 +186,10 @@ class BrokerSpec extends Specification {
                 .build()
 
         def context = Mock(Context)
-        context.getAccount(_) >> new AccountGetResponse(currentAccount)
-        context.listTrade(_) >> new TradeListResponse([], null)
+        context.initializeAccount(id, _) >> new AccountAndTrades(currentAccount, [])
 
         def clock = Mock(MarketTime)
-        def trader = new TestTrader(context, clock)
+        def trader = new TestTrader(id, context, clock)
 
         Broker oanda = new Broker(clock, new LiveTraders([trader]))
 

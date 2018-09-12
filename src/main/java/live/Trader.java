@@ -1,17 +1,13 @@
 package live;
 
 import broker.Account;
-import broker.AccountChanges;
+import broker.AccountAndTrades;
 import broker.AccountChangesRequest;
 import broker.AccountChangesResponse;
-import broker.AccountChangesState;
-import broker.AccountID;
 import broker.Context;
 import broker.ForexBroker;
 import broker.OpenPositionRequest;
 import broker.RequestException;
-import broker.TradeListRequest;
-import broker.TradeListResponse;
 import broker.TradeSummary;
 import broker.TransactionID;
 import com.google.common.base.MoreObjects;
@@ -29,7 +25,6 @@ import java.util.Optional;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import static broker.Quote.formatDollars;
 import static java.time.DayOfWeek.FRIDAY;
 import static java.util.Comparator.comparing;
 
@@ -43,7 +38,7 @@ public class Trader implements ForexTrader {
     private final MarketTime clock;
 
     private Account account;
-    private SortedSet<TradeSummary> lastTenClosedTrades = new TreeSet<>(comparing(TradeSummary::getOpenTime));
+    private SortedSet<TradeSummary> lastTenClosedTrades = closedTrades();
 
     public Trader(String accountId, Context ctx, TradingStrategy tradingStrategy, MarketTime clock) {
         this.accountId = accountId;
@@ -122,76 +117,31 @@ public class Trader implements ForexTrader {
             return;
         }
 
-        TransactionID mostRecentTransactionID = response.getLastTransactionID();
+        this.account = this.account.processChanges(response);
 
-        boolean changesExist = !mostRecentTransactionID.equals(lastKnowTransactionID);
-
-        if (changesExist) {
-            LOG.info("Changes exist: transaction id {} != {}", mostRecentTransactionID, lastKnowTransactionID);
-
-            AccountChanges changes = response.getAccountChanges();
-            List<TradeSummary> tradesClosed = changes.getTradesClosed();
-            List<TradeSummary> tradesOpened = changes.getTradesOpened();
-
-            if (!tradesClosed.isEmpty()) {
-                int toRemove = (lastTenClosedTrades.size() + tradesClosed.size()) - 10;
-                if (toRemove > 0) {
-                    Iterator<TradeSummary> iter = lastTenClosedTrades.iterator();
-                    for (int i = 0; i < toRemove; i++) {
-                        iter.next();
-                        iter.remove();
-                    }
-                }
-                lastTenClosedTrades.addAll(tradesClosed);
-
-                for (TradeSummary closedTrade : tradesClosed) {
-                    this.account = this.account.positionClosed(closedTrade, mostRecentTransactionID);
+        List<TradeSummary> tradesClosed = response.getAccountChanges().getTradesClosed();
+        if (!tradesClosed.isEmpty()) {
+            int toRemove = (lastTenClosedTrades.size() + tradesClosed.size()) - 10;
+            if (toRemove > 0) {
+                Iterator<TradeSummary> iter = lastTenClosedTrades.iterator();
+                for (int i = 0; i < toRemove; i++) {
+                    iter.next();
+                    iter.remove();
                 }
             }
-
-            for (TradeSummary openedTrade : tradesOpened) {
-                this.account = this.account.positionOpened(openedTrade, mostRecentTransactionID);
-            }
+            lastTenClosedTrades.addAll(tradesClosed);
         }
-
-        AccountChangesState stateChanges = response.getAccountChangesState();
-
-        this.account = this.account.incorporateState(stateChanges);
-
-        // Would need to consider financing charges  and probably interest for the NAV to match exactly.
-        // So this is adjusting the balance when some kind of discrepancy exists.
-        long brokerNetAssetValue = stateChanges.getNetAssetValue();
-        long accountNetAssetValue = account.getNetAssetValue();
-        long balanceAdjustment = brokerNetAssetValue == accountNetAssetValue ? 0L :
-                brokerNetAssetValue - accountNetAssetValue;
-
-        // TODO Write test for balance adjustments that occur because of financing, interest, etc.
-        if (balanceAdjustment != 0) {
-            account = account.adjustBalance(balanceAdjustment);
-            accountNetAssetValue = account.getNetAssetValue();
-        }
-
-        LOG.info("Broker NAV: {}, Calculated NAV: {}{}, Unrealized profit: {}",
-                formatDollars(brokerNetAssetValue),
-                formatDollars(accountNetAssetValue),
-                balanceAdjustment == 0 ? "" : String.format(" [adjusted %s]", formatDollars(balanceAdjustment)),
-                formatDollars(stateChanges.getUnrealizedProfitAndLoss()));
     }
 
     private void initializeEverything() {
         Stopwatch timer = Stopwatch.createStarted();
 
-        boolean initializeClosedTrades = account == null;
         try {
-            account = ctx.getAccount(new AccountID(this.accountId)).getAccount();
+            AccountAndTrades accountAndLastTenTrades = ctx.initializeAccount(this.accountId, 10);
+            this.account = accountAndLastTenTrades.getAccount();
+            this.lastTenClosedTrades.addAll(accountAndLastTenTrades.getTrades());
 
-            if (initializeClosedTrades) {
-                TradeListResponse tradeListResponse = ctx.listTrade(new TradeListRequest(new AccountID(this.accountId), 10));
-                lastTenClosedTrades.addAll(tradeListResponse.getTrades());
-            }
-
-            LOG.info("Loaded account {} {}in {}", accountId, initializeClosedTrades ?
-                    "and closed trades " : "", timer);
+            LOG.info("Loaded account {} and {} closed trades in {}", accountId, lastTenClosedTrades.size(), timer);
         } catch (RequestException e) {
             LOG.error("Unable to retrieve the account and closed trades!", e);
         }
@@ -223,5 +173,9 @@ public class Trader implements ForexTrader {
                 .add("accountId", accountId)
                 .add("tradingStrategy", tradingStrategy)
                 .toString();
+    }
+
+    private static SortedSet<TradeSummary> closedTrades() {
+        return new TreeSet<>(comparing(TradeSummary::getOpenTime));
     }
 }

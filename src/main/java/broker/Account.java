@@ -1,6 +1,8 @@
 package broker;
 
 import com.google.common.base.MoreObjects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,6 +14,8 @@ import static broker.Quote.pippetesFromDouble;
 import static broker.Quote.profitLossDisplay;
 
 public class Account {
+    private static final Logger LOG = LoggerFactory.getLogger(Account.class);
+
     private final AccountID id;
     private final long balance;
     private final long netAssetValue;
@@ -113,22 +117,66 @@ public class Account {
                 .build();
     }
 
-    public Account incorporateState(AccountChangesState stateChanges) {
+    Account processStateChanges(AccountChangesState stateChanges) {
         // TODO: Add unrealized P&L to account
         List<TradeSummary> newTrades = TradeSummary.incorporateState(this.trades, stateChanges);
+        long newBalance = this.balance;
+
         // This intentionally calculates NAV on its own to make sure our calculations stay in line with the broker
-        return new Account(this.id, this.balance, calculateNav(this.balance, newTrades), this.lastTransactionID, newTrades, this.profitLoss);
+        long newNAV = calculateNav(newBalance, newTrades);
+
+        // Would need to consider financing charges  and probably interest for the NAV to match exactly.
+        // So this is adjusting the balance when some kind of discrepancy exists.
+        long brokerNetAssetValue = stateChanges.getNetAssetValue();
+        long balanceAdjustment = brokerNetAssetValue == newNAV ? 0L :
+                brokerNetAssetValue - newNAV;
+
+        if (balanceAdjustment != 0) {
+            newBalance = this.balance + balanceAdjustment;
+            newNAV = calculateNav(newBalance, trades);
+        }
+
+        LOG.info("Broker NAV: {}, Calculated NAV: {}{}, Unrealized profit: {}",
+                formatDollars(brokerNetAssetValue),
+                formatDollars(newNAV),
+                balanceAdjustment == 0 ? "" : String.format(" [adjusted %s]", formatDollars(balanceAdjustment)),
+                formatDollars(stateChanges.getUnrealizedProfitAndLoss()));
+
+        return new Account(this.id, newBalance, newNAV, this.lastTransactionID, newTrades, this.profitLoss);
     }
 
     public static long calculateNav(long balance, List<TradeSummary> trades) {
         return balance + trades.stream().mapToLong(TradeSummary::getNetAssetValue).sum();
     }
 
-    public Account adjustBalance(long balanceAdjustment) {
-        long newBalance = this.balance + balanceAdjustment;
-        long newNav = calculateNav(newBalance, trades);
+    public Account processChanges(AccountChangesResponse state) {
+        TransactionID mostRecentTransactionID = state.getLastTransactionID();
 
-        return new Account(id, newBalance, newNav, lastTransactionID, trades, profitLoss);
+        boolean changesExist = !mostRecentTransactionID.equals(lastTransactionID);
+
+        Account newAccount = this;
+
+        if (changesExist) {
+            LOG.info("Changes exist: transaction id {} != {}", mostRecentTransactionID, lastTransactionID);
+
+            AccountChanges changes = state.getAccountChanges();
+            List<TradeSummary> tradesClosed = changes.getTradesClosed();
+            List<TradeSummary> tradesOpened = changes.getTradesOpened();
+
+            if (!tradesClosed.isEmpty()) {
+                for (TradeSummary closedTrade : tradesClosed) {
+                    newAccount = newAccount.positionClosed(closedTrade, mostRecentTransactionID);
+                }
+            }
+
+            for (TradeSummary openedTrade : tradesOpened) {
+                newAccount = newAccount.positionOpened(openedTrade, mostRecentTransactionID);
+            }
+        }
+
+        AccountChangesState stateChanges = state.getAccountChangesState();
+
+        return newAccount.processStateChanges(stateChanges);
     }
 
     public static class Builder {
@@ -157,6 +205,10 @@ public class Account {
             return this;
         }
 
+        public Builder withNetAssetValueDollars(int navDollars) {
+            return withNetAssetValue(pippetesFromDouble(navDollars));
+        }
+
         public Builder withLastTransactionID(TransactionID lastTransactionID) {
             this.lastTransactionID = lastTransactionID;
             return this;
@@ -178,5 +230,6 @@ public class Account {
 
             return new Account(id, balance, netAssetValue, lastTransactionID, trades, profitLoss);
         }
+
     }
 }

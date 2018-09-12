@@ -2,7 +2,7 @@ spring:
   main:
     web-application-type: none
 
-logging.file: app.log
+logging.level.root: INFO
 
 oanda:
   traders:
@@ -17,8 +17,7 @@ oanda:
 spring: # Simulated backtesting
   profiles: simulation
 
-logging.level.live: warn
-logging.level.trader: warn
+logging.level.root: WARN
 
 simulation:
   startTime: 2017-01-01 01:00
@@ -33,8 +32,7 @@ simulation:
 spring: # Integration test
   profiles: integration
 
-logging.level.live: warn
-logging.level.trader: warn
+logging.level.root: WARN
 
 simulation:
   startTime: 2017-01-01 01:00
@@ -49,12 +47,16 @@ simulation:
 spring: # Real trading accounts with live brokers
   profiles: prod
 
+logging.file: app.log
+
 oanda:
   endpoint: 'https://api-fxtrade.oanda.com/'
 
 ---
 spring: # Demo trading accounts with live brokers
   profiles: demo
+
+logging.file: app.log
 
 oanda:
   traders:

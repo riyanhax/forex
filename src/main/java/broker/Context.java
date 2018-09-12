@@ -15,4 +15,11 @@ public interface Context {
     InstrumentCandlesResponse instrumentCandles(InstrumentCandlesRequest request) throws RequestException;
 
     TradeListResponse listTrade(TradeListRequest request) throws RequestException;
+
+    default AccountAndTrades initializeAccount(String accountId, int numLastTrades) throws RequestException {
+        Account account = getAccount(new AccountID(accountId)).getAccount();
+        TradeListResponse tradeListResponse = listTrade(new TradeListRequest(new AccountID(accountId), numLastTrades));
+
+        return new AccountAndTrades(account, tradeListResponse.getTrades());
+    }
 }
