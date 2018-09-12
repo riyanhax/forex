@@ -20,8 +20,8 @@ import static java.util.Comparator.comparing;
 public enum CandleTimeFrame {
     ONE_MINUTE(1) {
         @Override
-        public LocalDateTime nextCandle(LocalDateTime current) {
-            return current.plusMinutes(1);
+        LocalDateTime adjustToNextCandle(LocalDateTime candleStart) {
+            return candleStart.plusMinutes(1);
         }
 
         @Override
@@ -35,8 +35,8 @@ public enum CandleTimeFrame {
         }
     }, FIVE_MINUTE(2) {
         @Override
-        public LocalDateTime nextCandle(LocalDateTime current) {
-            return current.plusMinutes(5);
+        LocalDateTime adjustToNextCandle(LocalDateTime candleStart) {
+            return candleStart.plusMinutes(5);
         }
 
         @Override
@@ -50,8 +50,8 @@ public enum CandleTimeFrame {
         }
     }, FIFTEEN_MINUTE(3) {
         @Override
-        public LocalDateTime nextCandle(LocalDateTime current) {
-            return current.plusMinutes(15);
+        LocalDateTime adjustToNextCandle(LocalDateTime candleStart) {
+            return candleStart.plusMinutes(15);
         }
 
         @Override
@@ -65,8 +65,8 @@ public enum CandleTimeFrame {
         }
     }, THIRTY_MINUTE(4) {
         @Override
-        public LocalDateTime nextCandle(LocalDateTime current) {
-            return current.plusMinutes(30);
+        LocalDateTime adjustToNextCandle(LocalDateTime candleStart) {
+            return candleStart.plusMinutes(30);
         }
 
         @Override
@@ -80,8 +80,8 @@ public enum CandleTimeFrame {
         }
     }, ONE_HOUR(5) {
         @Override
-        public LocalDateTime nextCandle(LocalDateTime current) {
-            return current.plusHours(1);
+        LocalDateTime adjustToNextCandle(LocalDateTime candleStart) {
+            return candleStart.plusHours(1);
         }
 
         @Override
@@ -95,8 +95,8 @@ public enum CandleTimeFrame {
         }
     }, FOUR_HOURS(6) {
         @Override
-        public LocalDateTime nextCandle(LocalDateTime current) {
-            return current.plusHours(4);
+        LocalDateTime adjustToNextCandle(LocalDateTime candleStart) {
+            return candleStart.plusHours(4);
         }
 
         @Override
@@ -113,8 +113,8 @@ public enum CandleTimeFrame {
         }
     }, ONE_DAY(7) {
         @Override
-        public LocalDateTime nextCandle(LocalDateTime current) {
-            return current.plusDays(1);
+        LocalDateTime adjustToNextCandle(LocalDateTime candleStart) {
+            return candleStart.plusDays(1);
         }
 
         @Override
@@ -132,8 +132,8 @@ public enum CandleTimeFrame {
         }
     }, ONE_WEEK(8) {
         @Override
-        public LocalDateTime nextCandle(LocalDateTime current) {
-            return current.plusWeeks(1);
+        LocalDateTime adjustToNextCandle(LocalDateTime candleStart) {
+            return candleStart.plusWeeks(1);
         }
 
         @Override
@@ -147,12 +147,11 @@ public enum CandleTimeFrame {
         }
     }, ONE_MONTH(9) {
         @Override
-        public LocalDateTime nextCandle(LocalDateTime current) {
-            // TODO: Write a specific test for this instead of relying on rollup tests
+        LocalDateTime adjustToNextCandle(LocalDateTime candleStart) {
             for (int i = 1; i < 3; i++) {
-                LocalDateTime startOfNextTradingMonth = calculateStart(current.plusMonths(i));
+                LocalDateTime startOfNextTradingMonth = calculateStart(candleStart.plusMonths(i));
 
-                if (!startOfNextTradingMonth.equals(current)) {
+                if (!startOfNextTradingMonth.equals(candleStart)) {
                     return startOfNextTradingMonth;
                 }
             }
@@ -209,14 +208,18 @@ public enum CandleTimeFrame {
         return result;
     }
 
-    public abstract LocalDateTime nextCandle(LocalDateTime current);
-
     public abstract Optional<CandleTimeFrame> smaller();
 
     abstract LocalDateTime calculateStart(LocalDateTime firstTime, int endOfTradingDayHour, DayOfWeek weeklyAlignment);
 
+    abstract LocalDateTime adjustToNextCandle(LocalDateTime candleStart);
+
     public final LocalDateTime calculateStart(LocalDateTime time) {
         return calculateStart(time, MarketTime.END_OF_TRADING_DAY_HOUR, MarketTime.WEEKLY_ALIGNMENT);
+    }
+
+    public final LocalDateTime nextCandle(LocalDateTime current) {
+        return adjustToNextCandle(calculateStart(current));
     }
 
     public static SortedSet<CandleTimeFrame> descendingSmallerThan(CandleTimeFrame timeFrame) {
