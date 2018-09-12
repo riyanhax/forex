@@ -24,7 +24,7 @@ public class AccountSnapshot implements Comparable<AccountSnapshot> {
     }
 
     public long getPipettesProfit() {
-        return account.getPl();
+        return account.getProfitLoss();
     }
 
     public LocalDateTime getTimestamp() {

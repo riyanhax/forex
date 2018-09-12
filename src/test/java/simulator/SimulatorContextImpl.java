@@ -179,7 +179,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
             long expectedPipettes = closedTradesForAccount.stream()
                     .mapToLong(TradeHistory::getRealizedProfitLoss)
                     .sum();
-            Preconditions.checkArgument(expectedPipettes == account.getPl());
+            Preconditions.checkArgument(expectedPipettes == account.getProfitLoss());
         } else {
             Preconditions.checkArgument(filled.isBuyOrder(), "What other type of order was it?");
             Preconditions.checkArgument(existingPosition == null, "Shouldn't have more than one position open for a pair at a time!");
@@ -340,7 +340,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
 
         // TODO: net asset value should always be positionValues + balance! Just get rid of the field.
         Account newAccount = new Account(account.getId(), account.getBalance(), newNAV, account.getLastTransactionID(),
-                newTradeValues, account.getPl());
+                newTradeValues, account.getProfitLoss());
 
         return new AccountSnapshot(newAccount, clock.now());
     }

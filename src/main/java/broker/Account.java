@@ -52,8 +52,12 @@ public class Account {
         return trades;
     }
 
-    public long getPl() {
+    public long getProfitLoss() {
         return profitLoss;
+    }
+
+    public long getUnrealizedProfitLoss() {
+        return trades.stream().mapToLong(TradeSummary::getUnrealizedProfitLoss).sum();
     }
 
     @Override
@@ -118,7 +122,6 @@ public class Account {
     }
 
     Account processStateChanges(AccountChangesState stateChanges) {
-        // TODO: Add unrealized P&L to account
         List<TradeSummary> newTrades = TradeSummary.incorporateState(this.trades, stateChanges);
         long newBalance = this.balance;
 
@@ -136,13 +139,21 @@ public class Account {
             newNAV = calculateNav(newBalance, trades);
         }
 
-        LOG.info("Broker NAV: {}, Calculated NAV: {}{}, Unrealized profit: {}",
+        Account newAccount = new Account(this.id, newBalance, newNAV, this.lastTransactionID, newTrades, this.profitLoss);
+        long newUnrealizedProfitLoss = newAccount.getUnrealizedProfitLoss();
+
+        if (newUnrealizedProfitLoss != stateChanges.getUnrealizedProfitAndLoss()) {
+            LOG.error("Why wasn't the broker's unrealized profit and loss the same as ours? Open trades: {}", newTrades);
+        }
+
+        LOG.info("Broker NAV: {}, Calculated NAV: {}{}, Broker unrealized profit: {}, Calculated unrealized profit: {}",
                 formatDollars(brokerNetAssetValue),
                 formatDollars(newNAV),
                 balanceAdjustment == 0 ? "" : String.format(" [adjusted %s]", formatDollars(balanceAdjustment)),
-                formatDollars(stateChanges.getUnrealizedProfitAndLoss()));
+                formatDollars(stateChanges.getUnrealizedProfitAndLoss()),
+                formatDollars(newUnrealizedProfitLoss));
 
-        return new Account(this.id, newBalance, newNAV, this.lastTransactionID, newTrades, this.profitLoss);
+        return newAccount;
     }
 
     public static long calculateNav(long balance, List<TradeSummary> trades) {

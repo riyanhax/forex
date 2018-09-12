@@ -75,6 +75,31 @@ class AccountSpec extends Specification {
     }
 
     @Unroll
+    def 'should calculate unrealized P&L based on open trade unrealized P&L: #expected'() {
+
+        def account = new Account.Builder(accountID)
+                .withBalance(4767954L)
+                .withTrades(trades)
+                .build()
+
+        def actual = account.getUnrealizedProfitLoss();
+
+        expect:
+        actual == expected
+
+        where:
+        expected | trades
+        -30      | [
+                new TradeSummary(EURUSD, 2, 116043L, 0L, -10L, now(), null, '100'),
+                new TradeSummary(EURUSD, 2, 116053L, 0L, -20L, now(), null, '101')
+        ]
+        10       | [
+                new TradeSummary(EURUSD, 2, 116058, 0L, -15L, now(), null, '100'),
+                new TradeSummary(EURUSD, 2, 116028, 0L, 25L, now(), null, '101')
+        ]
+    }
+
+    @Unroll
     def 'should merge account changes correctly: #description'() {
 
         def testOpeningTrade = 'open trade' == description
@@ -106,7 +131,6 @@ class AccountSpec extends Specification {
                 new TradeSummary(USDEUR, 1, 86288L, 0L, 55L, LocalDateTime.of(2018, SEPTEMBER, 7, 7, 43, 13, 567036542), null, '309')
         ], 1L)
 
-        // TODO DPJ: Update unrealized P&L
         'updated NAV and unrealized P&L' | new AccountChangesResponse(new TransactionID('3'), new AccountChanges([], []), new AccountChangesState(5000167, 57L, [new CalculatedTradeState('309', 57L)])) | new Account(accountID, 4913822L, 5000167L, new TransactionID('3'), [
                 new TradeSummary(USDEUR, 1, 86288L, 0L, 57L, LocalDateTime.of(2018, SEPTEMBER, 7, 7, 43, 13, 567036542), null, '309')
         ], 1L)
