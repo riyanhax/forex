@@ -1,8 +1,8 @@
 package market.order;
 
-import broker.Expiry;
 import market.Instrument;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 public interface Order {
@@ -11,7 +11,7 @@ public interface Order {
 
     int getUnits();
 
-    Optional<Expiry> expiry();
+    Optional<LocalDateTime> expiration();
 
     Optional<Long> limit();
 

@@ -1,6 +1,5 @@
 package market.order;
 
-import broker.Expiry;
 import market.Instrument;
 import market.MarketTime;
 
@@ -21,8 +20,8 @@ public interface OrderRequest extends Order {
     LocalDateTime getProcessedDate();
 
     default boolean isExpired(LocalDateTime now) {
-        Optional<Expiry> expiry = expiry();
-        return expiry.isPresent() && !expiry.get().getExpiration(getSubmissionDate()).isAfter(now);
+        Optional<LocalDateTime> expiration = expiration();
+        return expiration.isPresent() && !expiration.get().isAfter(now);
     }
 
     static OrderRequest open(Order order, MarketTime clock) {
@@ -94,8 +93,8 @@ public interface OrderRequest extends Order {
         }
 
         @Override
-        public Optional<Expiry> expiry() {
-            return order.expiry();
+        public Optional<LocalDateTime> expiration() {
+            return order.expiration();
         }
 
         @Override

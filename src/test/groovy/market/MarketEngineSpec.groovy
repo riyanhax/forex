@@ -17,7 +17,7 @@ import static market.order.Orders.sellMarketOrder
 
 class MarketEngineSpec extends Specification {
 
-    MarketTime clock = new TestClock(LocalDateTime.of(2017, Month.JANUARY, 17, 12, 31))
+    static MarketTime clock = new TestClock(LocalDateTime.of(2017, Month.JANUARY, 17, 12, 31))
     OrderListener broker = Mock()
     ForexMarket market = Mock()
 
@@ -117,5 +117,43 @@ class MarketEngineSpec extends Specification {
         marketEngine.getOrder(submittedOrder).status == OrderStatus.OPEN
     }
 
-    // TODO: Add support for expiring orders
+    @Unroll
+    def 'should cancel unfilled expired orders: #expiration'() {
+        MarketEngine marketEngine = MarketEngine.create(market, clock)
+        market.isAvailable() >> true
+
+        given: 'a limit order was previously submitted'
+        OrderRequest submittedOrder = marketEngine.submit(broker, buyLimitOrder(5, EURUSD, 10L, expiration))
+
+        when: 'updates are ran'
+        marketEngine.processUpdates()
+
+        then: 'the expired order is cancelled'
+        1 * broker.orderCancelled({ it.id == submittedOrder.id })
+
+        where:
+        expiration << [
+                clock.now().minusHours(1), clock.now().minusMinutes(1), clock.now()
+        ]
+    }
+
+    @Unroll
+    def 'should not cancel unfilled unexpired orders: #expiration'() {
+        MarketEngine marketEngine = MarketEngine.create(market, clock)
+        market.isAvailable() >> true
+
+        given: 'a limit order was previously submitted'
+        marketEngine.submit(broker, buyLimitOrder(5, EURUSD, 10L, expiration))
+
+        when: 'updates are ran'
+        marketEngine.processUpdates()
+
+        then: 'the expired order is cancelled'
+        0 * broker.orderCancelled(_ as OrderRequest)
+
+        where:
+        expiration << [
+                clock.now().plusHours(1), clock.now().plusMinutes(1)
+        ]
+    }
 }
