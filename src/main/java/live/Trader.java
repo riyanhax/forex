@@ -27,6 +27,7 @@ import java.util.TreeSet;
 
 import static java.time.DayOfWeek.FRIDAY;
 import static java.util.Comparator.comparing;
+import static java.util.stream.Collectors.toList;
 
 public class Trader implements ForexTrader {
 
@@ -139,7 +140,8 @@ public class Trader implements ForexTrader {
         try {
             AccountAndTrades accountAndLastTenTrades = ctx.initializeAccount(this.accountId, 10);
             this.account = accountAndLastTenTrades.getAccount();
-            this.lastTenClosedTrades.addAll(accountAndLastTenTrades.getTrades());
+            this.lastTenClosedTrades.addAll(accountAndLastTenTrades.getTrades().stream()
+                    .map(TradeSummary::new).collect(toList()));
 
             LOG.info("Loaded account {} and {} closed trades in {}", accountId, lastTenClosedTrades.size(), timer);
         } catch (RequestException e) {

@@ -7,9 +7,9 @@ import java.util.Objects;
 
 public class AccountAndTrades {
     private final Account account;
-    private final List<TradeSummary> trades;
+    private final List<Trade> trades;
 
-    public AccountAndTrades(Account account, List<TradeSummary> trades) {
+    public AccountAndTrades(Account account, List<Trade> trades) {
         this.account = account;
         this.trades = trades;
     }
@@ -18,7 +18,7 @@ public class AccountAndTrades {
         return account;
     }
 
-    public List<TradeSummary> getTrades() {
+    public List<Trade> getTrades() {
         return trades;
     }
 

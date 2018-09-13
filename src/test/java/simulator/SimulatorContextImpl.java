@@ -26,12 +26,14 @@ import broker.PricingGetRequest;
 import broker.PricingGetResponse;
 import broker.RequestException;
 import broker.Stance;
+import broker.Trade;
 import broker.TradeCloseRequest;
 import broker.TradeCloseResponse;
 import broker.TradeContext;
 import broker.TradeListRequest;
 import broker.TradeListResponse;
 import broker.TradeSpecifier;
+import broker.TradeState;
 import broker.TradeSummary;
 import broker.TransactionID;
 import com.google.common.base.Preconditions;
@@ -51,6 +53,7 @@ import market.order.SellMarketOrder;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -293,11 +296,17 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
 
             AccountID accountID = request.getAccountID();
 
-            List<TradeSummary> closed = closedTradesForAccountId(accountID.getId())
+            List<Trade> closed = closedTradesForAccountId(accountID.getId())
                     .stream()
                     .sorted(Comparator.comparing(TradeHistory::getOpenTime).reversed())
                     .limit(request.getCount())
-                    .map(TradeHistory::getTrade)
+                    .map(it ->
+                            new Trade(it.getId(), it.getInstrument(), it.getTrade().getPrice(), it.getOpenTime(), TradeState.CLOSED,
+                                    // TODO: This should be initial units
+                                    it.getCurrentUnits(), 0, it.getRealizedProfitLoss(), 0L, 0L, it.getCandles().lastEntry().getValue().getO(),
+                                    // TODO: need transaction ids
+                                    Collections.emptyList(), 0L, it.getTrade().getCloseTime())
+                    )
                     .collect(toList());
 
             return new TradeListResponse(closed, closed.isEmpty() ? null : getLatestTransactionId(accountID));

@@ -8,16 +8,15 @@ import java.util.Optional;
 
 public class TradeListResponse {
 
-    // TODO: Create our version of Oanda Trade class
-    private final List<TradeSummary> trades;
+    private final List<Trade> trades;
     private final TransactionID lastTransactionID;
 
-    public TradeListResponse(List<TradeSummary> trades, TransactionID lastTransactionID) {
+    public TradeListResponse(List<Trade> trades, TransactionID lastTransactionID) {
         this.trades = trades;
         this.lastTransactionID = lastTransactionID;
     }
 
-    public List<TradeSummary> getTrades() {
+    public List<Trade> getTrades() {
         return trades;
     }
 

@@ -122,4 +122,8 @@ class InstrumentConverter {
     private static CandlestickGranularity convert(com.oanda.v20.instrument.CandlestickGranularity oandaVersion) {
         return granularities.inverse().get(oandaVersion);
     }
+
+    static Instrument convert(InstrumentName instrumentName) {
+        return Instrument.bySymbol.get(instrumentName.toString());
+    }
 }

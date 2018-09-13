@@ -25,6 +25,7 @@ public class TradeSummary {
     private final LocalDateTime closeTime;
     private final String id;
 
+    // TODO: Move id to first spot in signature
     public TradeSummary(Instrument instrument, int currentUnits, long price, long realizedProfitLoss,
                         long unrealizedProfitLoss, LocalDateTime openTime, LocalDateTime closeTime, String id) {
         this.instrument = instrument;
@@ -35,6 +36,15 @@ public class TradeSummary {
         this.openTime = openTime;
         this.closeTime = closeTime;
         this.id = id;
+    }
+
+    /**
+     * Create a summary from a detailed {@link Trade}.
+     */
+    public TradeSummary(Trade trade) {
+        // TODO: Add initial units
+        this(trade.getInstrument(), trade.getCurrentUnits(), trade.getPrice(), trade.getRealizedProfitLoss(),
+                trade.getUnrealizedProfitLoss(), trade.getOpenTime(), trade.getCloseTime(), trade.getId());
     }
 
     public Instrument getInstrument() {
@@ -70,7 +80,7 @@ public class TradeSummary {
     }
 
     public long getCurrentPrice() {
-        return  price + ((closeTime == null ? unrealizedProfitLoss : realizedProfitLoss) / currentUnits);
+        return price + ((closeTime == null ? unrealizedProfitLoss : realizedProfitLoss) / currentUnits);
     }
 
     public long getPurchaseValue() {
