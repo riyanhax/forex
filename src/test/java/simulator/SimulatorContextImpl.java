@@ -222,15 +222,17 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
     private class SimulatorPricingContext implements PricingContext {
         @Override
         public PricingGetResponse get(PricingGetRequest request) throws RequestException {
-            // TODO: Should handle multiple instruments
-            Instrument pair = request.getInstruments().iterator().next();
 
-            long price = marketEngine.getPrice(pair);
-            long bid = adjustPriceForSpread(price, pair, Stance.SHORT);
-            long ask = adjustPriceForSpread(price, pair, Stance.LONG);
+            List<Price> prices = request.getInstruments().stream()
+                    .distinct()
+                    .map(it -> {
+                        long price = marketEngine.getPrice(it);
+                        long bid = adjustPriceForSpread(price, it, Stance.SHORT);
+                        long ask = adjustPriceForSpread(price, it, Stance.LONG);
 
-            List<Price> prices = new ArrayList<>();
-            prices.add(new Price(pair, bid, ask));
+                        return new Price(it, bid, ask);
+                    })
+                    .collect(toList());
 
             return new PricingGetResponse(prices);
         }

@@ -2,9 +2,12 @@ package simulator
 
 import broker.AccountID
 import broker.InstrumentCandlesRequest
+import broker.Price
+import broker.PricingGetRequest
 import broker.TradeListRequest
 import broker.TradeSummary
 import com.google.common.collect.Range
+import market.Instrument
 import market.InstrumentHistoryService
 import market.MarketEngine
 import market.MarketTime
@@ -25,6 +28,7 @@ import static java.time.Month.AUGUST
 import static java.time.Month.SEPTEMBER
 import static java.util.EnumSet.of
 import static market.Instrument.EURUSD
+import static market.Instrument.USDEUR
 import static market.MarketTime.ZONE
 
 class SimulatorContextImplSpec extends Specification {
@@ -169,5 +173,32 @@ class SimulatorContextImplSpec extends Specification {
         count | rejected
         501   | true
         500   | false
+    }
+
+    @Unroll
+    def 'should return prices for all requested instruments with spread applied: #instruments'() {
+
+        def clock = Mock(MarketTime)
+        def marketEngine = Mock(MarketEngine)
+
+        def context = new SimulatorContextImpl(clock, Mock(InstrumentHistoryService), Mock(SequenceService),
+                Mock(TradeService), marketEngine, new SimulatorProperties(pippeteSpread: 20L))
+
+        when: 'the price request is made'
+        def response = context.pricing().get(new PricingGetRequest(new AccountID('1'), instruments as Set))
+        def actual = response.prices
+
+        then: 'the correct prices were returned for all instruments'
+        actual == expected
+
+        and: 'the market engine gave the price'
+        instruments.size() * marketEngine.getPrice(_ as Instrument) >> { it ->
+            return it[0] == EURUSD ? 112345L : 54321L
+        }
+
+        where:
+        instruments      | expected
+        [EURUSD]         | [new Price(EURUSD, 112335L, 112355L)]
+        [EURUSD, USDEUR] | [new Price(EURUSD, 112335L, 112355L), new Price(USDEUR, 54311L, 54331L)]
     }
 }

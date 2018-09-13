@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Objects;
 
 public class PricingGetResponse {
-    private List<Price> prices;
+    private final List<Price> prices;
 
     public PricingGetResponse(List<Price> prices) {
         this.prices = prices;

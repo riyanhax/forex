@@ -6,7 +6,6 @@ logging.level.root: INFO
 
 oanda:
   traders:
-  - # TODO: Use a better trading strategy when possible
     account: '101-001-1775714-001'
     strategy: OPEN_RANDOM_POSITION
   api:
