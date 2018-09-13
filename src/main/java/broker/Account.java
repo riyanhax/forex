@@ -18,15 +18,13 @@ public class Account {
 
     private final AccountID id;
     private final long balance;
-    private final long netAssetValue;
     private final TransactionID lastTransactionID;
     private final List<TradeSummary> trades;
     private final long profitLoss;
 
-    public Account(AccountID id, long balance, long netAssetValue, TransactionID lastTransactionID, List<TradeSummary> trades, long profitLoss) {
+    public Account(AccountID id, long balance, TransactionID lastTransactionID, List<TradeSummary> trades, long profitLoss) {
         this.id = id;
         this.balance = balance;
-        this.netAssetValue = netAssetValue;
         this.lastTransactionID = lastTransactionID;
         this.trades = trades;
         this.profitLoss = profitLoss;
@@ -37,7 +35,7 @@ public class Account {
     }
 
     public long getNetAssetValue() {
-        return netAssetValue;
+        return balance + trades.stream().mapToLong(TradeSummary::getNetAssetValue).sum();
     }
 
     public long getBalance() {
@@ -66,7 +64,6 @@ public class Account {
         if (o == null || getClass() != o.getClass()) return false;
         Account account = (Account) o;
         return balance == account.balance &&
-                netAssetValue == account.netAssetValue &&
                 profitLoss == account.profitLoss &&
                 Objects.equals(id, account.id) &&
                 Objects.equals(lastTransactionID, account.lastTransactionID) &&
@@ -75,7 +72,7 @@ public class Account {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, balance, netAssetValue, lastTransactionID, trades, profitLoss);
+        return Objects.hash(id, balance, lastTransactionID, trades, profitLoss);
     }
 
     @Override
@@ -83,7 +80,7 @@ public class Account {
         return MoreObjects.toStringHelper(this)
                 .add("id", id)
                 .add("balance", formatDollars(balance))
-                .add("netAssetValue", formatDollars(netAssetValue))
+                .add("netAssetValue", formatDollars(getNetAssetValue()))
                 .add("lastTransactionID", lastTransactionID)
                 .add("trades", trades)
                 .add("profitLoss", profitLossDisplay(profitLoss))
@@ -98,7 +95,6 @@ public class Account {
 
         return new Account.Builder(this.id)
                 .withBalance(newBalance)
-                .withNetAssetValue(calculateNav(newBalance, newTrades))
                 .withLastTransactionID(latestTransactionID)
                 .withTrades(newTrades)
                 .withProfitLoss(this.profitLoss)
@@ -114,7 +110,6 @@ public class Account {
 
         return new Account.Builder(this.id)
                 .withBalance(newBalance)
-                .withNetAssetValue(calculateNav(newBalance, newTrades))
                 .withLastTransactionID(latestTransactionID)
                 .withTrades(newTrades)
                 .withProfitLoss(newProfitLoss)
@@ -125,8 +120,10 @@ public class Account {
         List<TradeSummary> newTrades = TradeSummary.incorporateState(this.trades, stateChanges);
         long newBalance = this.balance;
 
+        Account newAccount = new Account(this.id, newBalance, this.lastTransactionID, newTrades, this.profitLoss);
+
         // This intentionally calculates NAV on its own to make sure our calculations stay in line with the broker
-        long newNAV = calculateNav(newBalance, newTrades);
+        long newNAV = newAccount.getNetAssetValue();
 
         // Would need to consider financing charges  and probably interest for the NAV to match exactly.
         // So this is adjusting the balance when some kind of discrepancy exists.
@@ -136,10 +133,9 @@ public class Account {
 
         if (balanceAdjustment != 0) {
             newBalance = this.balance + balanceAdjustment;
-            newNAV = calculateNav(newBalance, trades);
+            newAccount = new Account(this.id, newBalance, this.lastTransactionID, newTrades, this.profitLoss);
         }
 
-        Account newAccount = new Account(this.id, newBalance, newNAV, this.lastTransactionID, newTrades, this.profitLoss);
         long newUnrealizedProfitLoss = newAccount.getUnrealizedProfitLoss();
 
         if (newUnrealizedProfitLoss != stateChanges.getUnrealizedProfitAndLoss()) {
@@ -154,10 +150,6 @@ public class Account {
                 formatDollars(newUnrealizedProfitLoss));
 
         return newAccount;
-    }
-
-    public static long calculateNav(long balance, List<TradeSummary> trades) {
-        return balance + trades.stream().mapToLong(TradeSummary::getNetAssetValue).sum();
     }
 
     public Account processChanges(AccountChangesResponse state) {
@@ -211,15 +203,6 @@ public class Account {
             return this;
         }
 
-        public Builder withNetAssetValue(long netAssetValue) {
-            this.netAssetValue = netAssetValue;
-            return this;
-        }
-
-        public Builder withNetAssetValueDollars(int navDollars) {
-            return withNetAssetValue(pippetesFromDouble(navDollars));
-        }
-
         public Builder withLastTransactionID(TransactionID lastTransactionID) {
             this.lastTransactionID = lastTransactionID;
             return this;
@@ -239,7 +222,7 @@ public class Account {
             Objects.requireNonNull(id);
             Objects.requireNonNull(trades);
 
-            return new Account(id, balance, netAssetValue, lastTransactionID, trades, profitLoss);
+            return new Account(id, balance, lastTransactionID, trades, profitLoss);
         }
 
     }

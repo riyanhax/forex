@@ -59,7 +59,6 @@ class TraderSpec extends Specification {
 
         def currentAccount = new Account.Builder(accountID)
                 .withBalanceDollars(50)
-                .withNetAssetValueDollars(50)
                 .withLastTransactionID(new TransactionID('3'))
                 .withTrades([])
                 .withProfitLoss(1L)

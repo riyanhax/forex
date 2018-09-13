@@ -339,10 +339,8 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
 
     private AccountSnapshot accountSnapshot(Account account) {
         List<TradeSummary> newTradeValues = positionValues(account.getTrades());
-        long newNAV = Account.calculateNav(account.getBalance(), newTradeValues);
 
-        // TODO: net asset value should always be positionValues + balance! Just get rid of the field.
-        Account newAccount = new Account(account.getId(), account.getBalance(), newNAV, account.getLastTransactionID(),
+        Account newAccount = new Account(account.getId(), account.getBalance(), account.getLastTransactionID(),
                 newTradeValues, account.getProfitLoss());
 
         return new AccountSnapshot(newAccount, clock.now());
@@ -430,7 +428,6 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
 
             return new Account.Builder(accountID)
                     .withBalance(balance)
-                    .withNetAssetValue(balance)
                     .withLastTransactionID(getLatestTransactionId(accountID))
                     .build();
         });
