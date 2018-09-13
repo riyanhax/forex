@@ -93,7 +93,7 @@ class ResultsFileProcessor implements ResultsProcessor {
                     writeFile(file, sb);
                 }
             }
-       }
+        }
     }
 
     private static void writeFile(File file, StringBuilder contents) {

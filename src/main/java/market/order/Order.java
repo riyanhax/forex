@@ -18,6 +18,7 @@ public interface Order {
     default boolean isSellOrder() {
         return false;
     }
+
     default boolean isBuyOrder() {
         return false;
     }

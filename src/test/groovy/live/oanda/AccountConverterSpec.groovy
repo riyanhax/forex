@@ -34,7 +34,7 @@ class AccountConverterSpec extends Specification {
         def expected = new AccountGetResponse(new Account.Builder(new AccountID("101-001-1775714-008"))
                 .withBalance(5001930L)
                 .withLastTransactionID(new TransactionID('293'))
-                .withTrades([new TradeSummary(EURUSD, 2, 116085L, 0L, 110L, LocalDateTime.of(2018, SEPTEMBER, 7, 6, 27, 48, 889977095), null, '291')])
+                .withTrades([new TradeSummary('291', EURUSD, 116085L, LocalDateTime.of(2018, SEPTEMBER, 7, 6, 27, 48, 889977095), 2, 2, 0L, 110L, null)])
                 .withProfitLoss(1890L)
                 .build())
 
@@ -54,11 +54,11 @@ class AccountConverterSpec extends Specification {
         ]
 
         def expected = new AccountChangesResponse(new TransactionID("999"), new AccountChanges([
-                new TradeSummary(USDEUR, 1, 86402L, -20L, 0L, LocalDateTime.of(2018, SEPTEMBER, 7, 10, 49, 6,
-                        159247625), LocalDateTime.of(2018, SEPTEMBER, 7, 10, 50, 30, 782081491), '993')
+                new TradeSummary('993', USDEUR, 86402L, LocalDateTime.of(2018, SEPTEMBER, 7, 10, 49, 6,
+                        159247625), 1, 0, -20L, 0L, LocalDateTime.of(2018, SEPTEMBER, 7, 10, 50, 30, 782081491))
         ], [
-                new TradeSummary(USDEUR, 1, 86395L, 0L, 0L, LocalDateTime.of(2018, SEPTEMBER, 7, 10, 50, 43,
-                        289257), null, '997')
+                new TradeSummary('997', USDEUR, 86395L, LocalDateTime.of(2018, SEPTEMBER, 7, 10, 50, 43,
+                        289257), 1, 1, 0L, 0L, null)
         ]), new AccountChangesState(50216480L, -10L, expectedTrades))
 
         def json = getClass().getResourceAsStream('AccountChangesResponse.json').text

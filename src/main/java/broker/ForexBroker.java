@@ -40,5 +40,5 @@ public interface ForexBroker {
     /**
      * Retrieve one week candles based on an inclusive start and exclusive end.
      */
-    NavigableMap<LocalDateTime,CandlestickData> getOneWeekCandles(ForexTrader trader, Instrument pair, Range<LocalDateTime> closed) throws RequestException;
+    NavigableMap<LocalDateTime, CandlestickData> getOneWeekCandles(ForexTrader trader, Instrument pair, Range<LocalDateTime> closed) throws RequestException;
 }

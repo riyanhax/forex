@@ -174,9 +174,8 @@ class BrokerSpec extends Specification {
     def 'should create the correct close position request'() {
 
         def id = '1'
-        def position = new TradeSummary(USDEUR, 3, 86239L, 6L, 0L,
-                LocalDateTime.of(2018, SEPTEMBER, 7, 7, 43, 13, 567036542),
-                LocalDateTime.of(2018, SEPTEMBER, 7, 07, 45, 11, 338759441), '309')
+        def position = new TradeSummary('309', USDEUR, 86239L, LocalDateTime.of(2018, SEPTEMBER, 7, 7, 43, 13, 567036542),
+                3, 3, 6L, 0L, LocalDateTime.of(2018, SEPTEMBER, 7, 07, 45, 11, 338759441))
 
         def currentAccount = new Account.Builder(new AccountID(id))
                 .withBalanceDollars(50)

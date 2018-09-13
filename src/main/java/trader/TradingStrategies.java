@@ -200,7 +200,7 @@ public enum TradingStrategies implements TradingStrategy {
             TradeSummary trade = lastClosedTrade.get();
 
             if (trade.getRealizedProfitLoss() < 0) {
-                units = trade.getCurrentUnits() * 2;
+                units = trade.getInitialUnits() * 2;
 
                 LOG.info("Using {} units due to unprofitable trade: {}", units, trade);
             }

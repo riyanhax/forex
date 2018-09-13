@@ -108,9 +108,9 @@ class SimulatorContextImplSpec extends Specification {
     }
 
     @Shared
-    def tradeHistories = [new TradeHistory(new TradeSummary(EURUSD, 2, 116058, -15L, 0L, now.minusHours(3), now.minusHours(2).minusMinutes(3), '99'), candles([(now.minusHours(2).minusMinutes(3)): new CandlestickData(116050L, 116070L, 116040L, 116040L)])),
-                          new TradeHistory(new TradeSummary(EURUSD, 2, 116058, -15L, 0L, now.minusHours(2), now.minusHours(1).minusMinutes(2), '100'), candles([(now.minusHours(1).minusMinutes(2)): new CandlestickData(116050L, 116070L, 116040L, 116040L)])),
-                          new TradeHistory(new TradeSummary(EURUSD, 2, 116028, 25L, 0L, now.minusHours(1), now, '101'), candles([(now): new CandlestickData(116040L, 116060L, 116030L, 116030L)]))]
+    def tradeHistories = [new TradeHistory(new TradeSummary('99', EURUSD, 116058, now.minusHours(3), 2, 0, -15L, 0L, now.minusHours(2).minusMinutes(3)), candles([(now.minusHours(2).minusMinutes(3)): new CandlestickData(116050L, 116070L, 116040L, 116040L)])),
+                          new TradeHistory(new TradeSummary('100', EURUSD, 116058, now.minusHours(2), 2, 0, -15L, 0L, now.minusHours(1).minusMinutes(2)), candles([(now.minusHours(1).minusMinutes(2)): new CandlestickData(116050L, 116070L, 116040L, 116040L)])),
+                          new TradeHistory(new TradeSummary('101', EURUSD, 116028, now.minusHours(1), 2, 0, 25L, 0L, now), candles([(now): new CandlestickData(116040L, 116060L, 116030L, 116030L)]))]
 
     @Unroll
     def 'should return the correct trades based on filter in descending time'() {

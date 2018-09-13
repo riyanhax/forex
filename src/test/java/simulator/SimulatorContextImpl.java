@@ -146,14 +146,8 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
             long profitLoss = (price - opened) * filled.getUnits();
 
             TradeSummary closedTrade = new TradeSummary(
-                    existingPosition.getInstrument(),
-                    existingPosition.getCurrentUnits(),
-                    existingPosition.getPrice(),
-                    profitLoss,
-                    0L,
-                    existingPosition.getOpenTime(),
-                    now,
-                    existingPosition.getId());
+                    existingPosition.getId(), existingPosition.getInstrument(), existingPosition.getPrice(), existingPosition.getOpenTime(),
+                    existingPosition.getCurrentUnits(), 0, profitLoss, 0L, now);
 
             NavigableMap<LocalDateTime, CandlestickData> candles;
             try {
@@ -186,8 +180,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
             Preconditions.checkArgument(!positionsByInstrument.containsKey(instrument.getOpposite()), "Shouldn't have more than one position open for a pair at a time!");
 
             TradeSummary filledPosition = positionValue(new TradeSummary(
-                    instrument, filled.getUnits(), price,
-                    0L, 0L, now, null, filled.getId()));
+                    filled.getId(), instrument, price, now, filled.getUnits(), filled.getUnits(), 0L, 0L, null));
 
             account = oldPortfolio.positionOpened(filledPosition, getLatestTransactionId(accountID));
             List<TradeSummary> openTrades = account.getTrades();
@@ -296,15 +289,14 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
 
             AccountID accountID = request.getAccountID();
 
+            // TradeHistory should be using Trade and not TradeSummary
             List<Trade> closed = closedTradesForAccountId(accountID.getId())
                     .stream()
                     .sorted(Comparator.comparing(TradeHistory::getOpenTime).reversed())
                     .limit(request.getCount())
                     .map(it ->
                             new Trade(it.getId(), it.getInstrument(), it.getTrade().getPrice(), it.getOpenTime(), TradeState.CLOSED,
-                                    // TODO: This should be initial units
-                                    it.getCurrentUnits(), 0, it.getRealizedProfitLoss(), 0L, 0L, it.getCandles().lastEntry().getValue().getO(),
-                                    // TODO: need transaction ids
+                                    it.getTrade().getInitialUnits(), 0, it.getRealizedProfitLoss(), 0L, 0L, it.getCandles().lastEntry().getValue().getO(),
                                     Collections.emptyList(), 0L, it.getTrade().getCloseTime())
                     )
                     .collect(toList());
@@ -371,14 +363,8 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
         long currentPrice = adjustPriceForSpread(price, instrument, stance);
         long unrealizedProfitLoss = currentPrice - position.getPrice();
 
-        return new TradeSummary(instrument,
-                position.getCurrentUnits(),
-                position.getPrice(),
-                0L,
-                unrealizedProfitLoss,
-                position.getOpenTime(),
-                null,
-                position.getId());
+        return new TradeSummary(position.getId(), instrument, position.getPrice(), position.getOpenTime(), position.getInitialUnits(),
+                position.getCurrentUnits(), 0L, unrealizedProfitLoss, null);
     }
 
     private class SimulatorInstrumentContext implements InstrumentContext {

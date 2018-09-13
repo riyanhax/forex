@@ -47,8 +47,8 @@ public class TradeHistory {
         return trade.getInstrument();
     }
 
-    public int getCurrentUnits() {
-        return trade.getCurrentUnits();
+    public int getInitialUnits() {
+        return trade.getInitialUnits();
     }
 
     @Override

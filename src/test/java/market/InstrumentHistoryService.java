@@ -17,9 +17,9 @@ public interface InstrumentHistoryService {
 
     NavigableMap<LocalDateTime, CandlestickData> getFiveMinuteCandles(Instrument instrument, Range<LocalDateTime> closed);
 
-    NavigableMap<LocalDateTime,CandlestickData> getOneMinuteCandles(Instrument instrument, Range<LocalDateTime> closed);
+    NavigableMap<LocalDateTime, CandlestickData> getOneMinuteCandles(Instrument instrument, Range<LocalDateTime> closed);
 
-    NavigableMap<LocalDateTime,CandlestickData> getOneWeekCandles(Instrument pair, Range<LocalDateTime> range);
+    NavigableMap<LocalDateTime, CandlestickData> getOneWeekCandles(Instrument pair, Range<LocalDateTime> range);
 
     Optional<InstrumentHistory> getData(Instrument instrument, LocalDateTime time);
 

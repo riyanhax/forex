@@ -31,7 +31,7 @@ class OrdersSpec extends Specification {
         order.limit() == Optional.of(255000L)
 
         where:
-        type   | order                                     | expectedType
+        type   | order                                      | expectedType
         'buy'  | Orders.buyLimitOrder(10, EURUSD, 255000L)  | BuyLimitOrder
         'sell' | Orders.sellLimitOrder(10, EURUSD, 255000L) | SellLimitOrder
     }

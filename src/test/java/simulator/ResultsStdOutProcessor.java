@@ -82,7 +82,7 @@ public class ResultsStdOutProcessor implements ResultsProcessor {
     }
 
     private static String profitLossDisplay(TradeHistory trade) {
-        return Quote.profitLossDisplay(trade.getRealizedProfitLoss()) + ", " + trade.getCurrentUnits() + " units";
+        return Quote.profitLossDisplay(trade.getRealizedProfitLoss()) + ", " + trade.getInitialUnits() + " units";
     }
 }
 

@@ -16,39 +16,42 @@ import static com.google.common.base.Preconditions.checkState;
 import static market.MarketTime.formatTimestamp;
 
 public class TradeSummary {
+    private final String id;
     private final Instrument instrument;
-    private final int currentUnits;
     private final long price;
+    private final LocalDateTime openTime;
+    private final int initialUnits;
+    private final int currentUnits;
     private final long realizedProfitLoss;
     private final long unrealizedProfitLoss;
-    private final LocalDateTime openTime;
     private final LocalDateTime closeTime;
-    private final String id;
 
-    // TODO: Move id to first spot in signature
-    public TradeSummary(Instrument instrument, int currentUnits, long price, long realizedProfitLoss,
-                        long unrealizedProfitLoss, LocalDateTime openTime, LocalDateTime closeTime, String id) {
+    public TradeSummary(String id, Instrument instrument, long price, LocalDateTime openTime, int initialUnits, int currentUnits, long realizedProfitLoss, long unrealizedProfitLoss, LocalDateTime closeTime) {
+        this.id = id;
         this.instrument = instrument;
-        this.currentUnits = currentUnits;
         this.price = price;
+        this.openTime = openTime;
+        this.initialUnits = initialUnits;
+        this.currentUnits = currentUnits;
         this.realizedProfitLoss = realizedProfitLoss;
         this.unrealizedProfitLoss = unrealizedProfitLoss;
-        this.openTime = openTime;
         this.closeTime = closeTime;
-        this.id = id;
     }
 
     /**
      * Create a summary from a detailed {@link Trade}.
      */
     public TradeSummary(Trade trade) {
-        // TODO: Add initial units
-        this(trade.getInstrument(), trade.getCurrentUnits(), trade.getPrice(), trade.getRealizedProfitLoss(),
-                trade.getUnrealizedProfitLoss(), trade.getOpenTime(), trade.getCloseTime(), trade.getId());
+        this(trade.getId(), trade.getInstrument(), trade.getPrice(), trade.getOpenTime(), trade.getInitialUnits(),
+                trade.getCurrentUnits(), trade.getRealizedProfitLoss(), trade.getUnrealizedProfitLoss(), trade.getCloseTime());
     }
 
     public Instrument getInstrument() {
         return instrument;
+    }
+
+    public int getInitialUnits() {
+        return initialUnits;
     }
 
     public int getCurrentUnits() {
@@ -79,8 +82,8 @@ public class TradeSummary {
         return id;
     }
 
-    public long getCurrentPrice() {
-        return price + ((closeTime == null ? unrealizedProfitLoss : realizedProfitLoss) / currentUnits);
+    public long getCurrentPrice() { // Assumes full trade closes
+        return price + ((closeTime == null ? unrealizedProfitLoss : realizedProfitLoss) / initialUnits);
     }
 
     public long getPurchaseValue() {
@@ -88,7 +91,7 @@ public class TradeSummary {
     }
 
     public long getNetAssetValue() {
-        return getCurrentPrice() * getCurrentUnits();
+        return getCurrentPrice() * getInitialUnits();
     }
 
     @Override
@@ -96,33 +99,35 @@ public class TradeSummary {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         TradeSummary that = (TradeSummary) o;
-        return currentUnits == that.currentUnits &&
-                price == that.price &&
+        return price == that.price &&
+                initialUnits == that.initialUnits &&
+                currentUnits == that.currentUnits &&
                 realizedProfitLoss == that.realizedProfitLoss &&
                 unrealizedProfitLoss == that.unrealizedProfitLoss &&
+                Objects.equals(id, that.id) &&
                 instrument == that.instrument &&
                 Objects.equals(openTime, that.openTime) &&
-                Objects.equals(closeTime, that.closeTime) &&
-                Objects.equals(id, that.id);
+                Objects.equals(closeTime, that.closeTime);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(instrument, currentUnits, price, realizedProfitLoss, unrealizedProfitLoss, openTime, closeTime, id);
+        return Objects.hash(id, instrument, price, openTime, initialUnits, currentUnits, realizedProfitLoss, unrealizedProfitLoss, closeTime);
     }
 
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
+                .add("id", id)
                 .add("instrument", instrument)
-                .add("currentUnits", currentUnits)
                 .add("price", doubleFromPippetes(price))
                 .add("currentPrice", doubleFromPippetes(getCurrentPrice()))
+                .add("openTime", formatTimestamp(openTime))
+                .add("initialUnits", initialUnits)
+                .add("currentUnits", currentUnits)
                 .add("realizedProfitLoss", profitLossDisplay(realizedProfitLoss))
                 .add("unrealizedProfitLoss", profitLossDisplay(unrealizedProfitLoss))
-                .add("openTime", formatTimestamp(openTime))
                 .add("closeTime", closeTime == null ? null : formatTimestamp(closeTime))
-                .add("id", id)
                 .toString();
     }
 
@@ -131,8 +136,7 @@ public class TradeSummary {
 
         long newUnrealizedProfitLoss = calculatedTradeState.getUnrealizedProfitLoss();
 
-        return new TradeSummary(instrument, currentUnits, price, realizedProfitLoss,
-                newUnrealizedProfitLoss, openTime, closeTime, id);
+        return new TradeSummary(id, instrument, price, openTime, initialUnits, currentUnits, realizedProfitLoss, newUnrealizedProfitLoss, closeTime);
     }
 
     static List<TradeSummary> incorporateState(List<TradeSummary> trades, AccountChangesState stateChanges) {
