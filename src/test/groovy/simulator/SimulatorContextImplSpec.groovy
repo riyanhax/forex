@@ -24,6 +24,7 @@ import static broker.CandlePrice.ASK
 import static broker.CandlePrice.BID
 import static broker.CandlePrice.MID
 import static broker.CandlestickGranularity.D
+import static broker.CandlestickGranularity.M1
 import static broker.CandlestickGranularity.W
 import static broker.TradeStateFilter.CLOSED
 import static java.time.DayOfWeek.FRIDAY
@@ -105,6 +106,42 @@ class SimulatorContextImplSpec extends Specification {
                 LocalDateTime.of(2016, SEPTEMBER, 7, 16, 0),
                 LocalDateTime.of(2016, SEPTEMBER, 8, 16, 0)
         ]
+    }
+
+    @Unroll
+    def 'should prevent candle requests with a from parameter in the future: #description'() {
+
+        InstrumentCandlesRequest request = new InstrumentCandlesRequest(EURUSD);
+        request.setPrice(of(BID, MID, ASK));
+        request.setGranularity(M1);
+        request.setFrom(from);
+        request.setTo(to);
+        request.setIncludeFirst(true);
+
+        def clock = Mock(MarketTime)
+        clock.now() >> LocalDateTime.of(2016, SEPTEMBER, 9, 10, 30)
+        clock.getZone() >> ZONE
+
+        def context = new SimulatorContextImpl(clock, new HistoryDataService(clock), Mock(SequenceService),
+                Mock(TradeService), Mock(MarketEngine), new SimulatorProperties())
+
+        def requestException = null
+
+        when: 'candles are requested'
+        try {
+            context.instrumentCandles(request)
+        } catch (Exception e) {
+            requestException = e
+        }
+
+        then: 'an exception was thrown for invalid dates'
+        expectedFailed == (requestException != null)
+
+        where:
+        description                              | from                                         | to                                           | expectedFailed
+        'requesting previous and current minute' | LocalDateTime.of(2016, SEPTEMBER, 9, 10, 29) | LocalDateTime.of(2016, SEPTEMBER, 9, 10, 30) | false
+        'requesting current minute'              | LocalDateTime.of(2016, SEPTEMBER, 9, 10, 30) | LocalDateTime.of(2016, SEPTEMBER, 9, 10, 30) | false
+        'requesting future minute'               | LocalDateTime.of(2016, SEPTEMBER, 9, 10, 31) | LocalDateTime.of(2016, SEPTEMBER, 9, 10, 31) | true
     }
 
     @Shared

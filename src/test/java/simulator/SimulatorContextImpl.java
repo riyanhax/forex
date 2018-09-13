@@ -65,6 +65,7 @@ import java.util.SortedSet;
 import static broker.Quote.pippetesFromDouble;
 import static broker.TradeStateFilter.CLOSED;
 import static java.util.stream.Collectors.toList;
+import static market.MarketTime.formatTimestamp;
 
 class SimulatorContextImpl extends BaseContext implements OrderListener, SimulatorContext {
 
@@ -379,16 +380,21 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
             Range<LocalDateTime> range = Range.closed(from, to);
             CandlestickGranularity granularity = request.getGranularity();
 
-            Preconditions.checkArgument(!to.isAfter(clock.now()), "Can't request candles after the current minute!");
+            LocalDateTime now = clock.now();
 
             NavigableMap<LocalDateTime, CandlestickData> data;
             try {
+                Preconditions.checkArgument(!from.isAfter(now), "Can't request candles after the current minute! Now: %s, Request From: %s",
+                        formatTimestamp(now), formatTimestamp(from));
+
                 if (CandlestickGranularity.H4.equals(granularity)) {
                     data = instrumentHistoryService.getFourHourCandles(pair, range);
                 } else if (CandlestickGranularity.D.equals(granularity)) {
                     data = instrumentHistoryService.getOneDayCandles(pair, range);
                 } else if (CandlestickGranularity.W.equals(granularity)) {
                     data = instrumentHistoryService.getOneWeekCandles(pair, range);
+                } else if (CandlestickGranularity.M1.equals(granularity)) {
+                    data = instrumentHistoryService.getOneMinuteCandles(pair, range);
                 } else {
                     throw new UnsupportedOperationException("Need to support granularity: " + granularity);
                 }

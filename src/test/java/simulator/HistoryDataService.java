@@ -207,7 +207,6 @@ class HistoryDataService implements InstrumentHistoryService {
     private final LoadingCache<CurrencyPairYear, CurrencyData> oneDayCache = timeFrameAggregateCache(fourHourCache, ONE_DAY);
     private final LoadingCache<CurrencyPairYear, CurrencyData> oneWeekCache = timeFrameAggregateCache(oneDayCache, ONE_WEEK);
     private final LoadingCache<CurrencyPairYear, CurrencyData> oneMonthCache = timeFrameAggregateCache(oneDayCache, ONE_MONTH);
-    // TODO: Need to simulate an "ongoing" candle, which is what a live broker returns for the current minute, five minute, hour, day, etc.
     private final ImmutableMap<CandleTimeFrame, LoadingCache<CurrencyPairYear, CurrencyData>> caches = ImmutableMap.<CandleTimeFrame, LoadingCache<CurrencyPairYear, CurrencyData>>
             builder()
             .put(ONE_MINUTE, minuteCache)

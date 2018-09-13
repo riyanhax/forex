@@ -82,4 +82,18 @@ class HistoryDataServiceSpec extends Specification {
         ]
     }
 
+    def 'should create a pseudo candle based on prior data when the request end is prior to the candle end'() {
+
+        def firstFourMinutes = closed(
+                LocalDateTime.of(2017, JANUARY, 2, 17, 0),
+                LocalDateTime.of(2017, JANUARY, 2, 17, 3)
+        )
+
+        def actual = service.getOHLC(FIVE_MINUTE, EURUSD, firstFourMinutes)
+
+        expect:
+        actual == [
+                (LocalDateTime.of(2017, JANUARY, 2, 17, 0)): new CandlestickData(104684L, 104711L, 104654L, 104680L)
+        ]
+    }
 }
