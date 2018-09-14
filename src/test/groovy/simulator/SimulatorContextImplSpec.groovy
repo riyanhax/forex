@@ -5,6 +5,7 @@ import broker.CandlestickData
 import broker.InstrumentCandlesRequest
 import broker.Price
 import broker.PricingGetRequest
+import broker.RequestException
 import broker.Trade
 import broker.TradeListRequest
 import broker.TradeState
@@ -39,6 +40,72 @@ import static market.MarketTime.ZONE
 class SimulatorContextImplSpec extends Specification {
 
     static final LocalDateTime now = now()
+
+    def 'should return the correct number of candles for requests with counts'() {
+
+        def now = LocalDateTime.of(2016, SEPTEMBER, 11, 10, 30)
+        def start = now.minusWeeks(3)
+
+        InstrumentCandlesRequest request = new InstrumentCandlesRequest(EURUSD);
+        request.setPrice(of(BID, MID, ASK));
+        request.setGranularity(W);
+        request.setFrom(start);
+        request.setCount(4);
+        request.setIncludeFirst(true);
+        request.setWeeklyAlignment(FRIDAY);
+
+        def clock = Mock(MarketTime)
+        clock.now() >> now
+        clock.getZone() >> ZONE
+
+        def context = new SimulatorContextImpl(clock, new HistoryDataService(clock), Mock(SequenceService),
+                Mock(TradeService), Mock(MarketEngine), new SimulatorProperties())
+
+        when: 'weekly candles are requested'
+        def response = context.instrumentCandles(request)
+        def actual = response.candles.collect { it.time }
+
+        then: 'the correct candles were returned'
+        actual == [
+                LocalDateTime.of(2016, AUGUST, 19, 16, 0),
+                LocalDateTime.of(2016, AUGUST, 26, 16, 0),
+                LocalDateTime.of(2016, SEPTEMBER, 2, 16, 0),
+                LocalDateTime.of(2016, SEPTEMBER, 9, 16, 0)
+        ]
+    }
+
+    @Unroll
+    def 'should prevent invalid requests: #description'() {
+
+        def now = LocalDateTime.of(2016, SEPTEMBER, 11, 10, 30)
+
+        def clock = Mock(MarketTime)
+        clock.now() >> now
+        clock.getZone() >> ZONE
+
+        def context = new SimulatorContextImpl(clock, new HistoryDataService(clock), Mock(SequenceService),
+                Mock(TradeService), Mock(MarketEngine), new SimulatorProperties())
+
+        when: 'an invalid request is specified'
+        context.instrumentCandles(request)
+
+        then: 'an exception is thrown'
+        thrown RequestException
+
+        where:
+        description                   | request
+        'specified both to and count' | new InstrumentCandlesRequest(instrument: EURUSD, price: of(BID, MID, ASK),
+                granularity: W, from: now.minusWeeks(3), to: LocalDateTime.of(2016, SEPTEMBER, 11, 10, 30),
+                includeFirst: true, weeklyAlignment: FRIDAY, count: 4)
+
+        'negative count'              | new InstrumentCandlesRequest(instrument: EURUSD, price: of(BID, MID, ASK),
+                granularity: W, from: now.minusWeeks(3), to: now,
+                includeFirst: true, weeklyAlignment: FRIDAY, count: -1)
+
+        'from in the future'          | new InstrumentCandlesRequest(instrument: EURUSD, price: of(BID, MID, ASK),
+                granularity: W, from: now.plusMinutes(1), to: now.plusMinutes(1),
+                includeFirst: true, weeklyAlignment: FRIDAY)
+    }
 
     def 'should return the correct time frames for weekly candle requests'() {
 
@@ -109,7 +176,7 @@ class SimulatorContextImplSpec extends Specification {
     }
 
     @Unroll
-    def 'should prevent candle requests with a from parameter in the future: #description'() {
+    def 'should allow requests with a from parameter up to current time: #description'() {
 
         InstrumentCandlesRequest request = new InstrumentCandlesRequest(EURUSD);
         request.setPrice(of(BID, MID, ASK));
@@ -125,23 +192,16 @@ class SimulatorContextImplSpec extends Specification {
         def context = new SimulatorContextImpl(clock, new HistoryDataService(clock), Mock(SequenceService),
                 Mock(TradeService), Mock(MarketEngine), new SimulatorProperties())
 
-        def requestException = null
-
         when: 'candles are requested'
-        try {
-            context.instrumentCandles(request)
-        } catch (Exception e) {
-            requestException = e
-        }
+        context.instrumentCandles(request)
 
         then: 'an exception was thrown for invalid dates'
-        expectedFailed == (requestException != null)
+        notThrown(Exception)
 
         where:
-        description                              | from                                         | to                                           | expectedFailed
-        'requesting previous and current minute' | LocalDateTime.of(2016, SEPTEMBER, 9, 10, 29) | LocalDateTime.of(2016, SEPTEMBER, 9, 10, 30) | false
-        'requesting current minute'              | LocalDateTime.of(2016, SEPTEMBER, 9, 10, 30) | LocalDateTime.of(2016, SEPTEMBER, 9, 10, 30) | false
-        'requesting future minute'               | LocalDateTime.of(2016, SEPTEMBER, 9, 10, 31) | LocalDateTime.of(2016, SEPTEMBER, 9, 10, 31) | true
+        description                              | from                                         | to
+        'requesting previous and current minute' | LocalDateTime.of(2016, SEPTEMBER, 9, 10, 29) | LocalDateTime.of(2016, SEPTEMBER, 9, 10, 30)
+        'requesting current minute'              | LocalDateTime.of(2016, SEPTEMBER, 9, 10, 30) | LocalDateTime.of(2016, SEPTEMBER, 9, 10, 30)
     }
 
     @Shared

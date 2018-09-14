@@ -8,7 +8,7 @@ import java.time.ZoneId;
 import java.util.Set;
 
 public class InstrumentCandlesRequest {
-    private final Instrument instrument;
+    private Instrument instrument;
     private Set<CandlePrice> price;
     private CandlestickGranularity granularity;
     private LocalDateTime from;
@@ -17,6 +17,10 @@ public class InstrumentCandlesRequest {
     private ZoneId alignmentTimezone;
     private int dailyAlignment;
     private DayOfWeek weeklyAlignment;
+    private int count;
+
+    public InstrumentCandlesRequest() {
+    }
 
     public InstrumentCandlesRequest(Instrument instrument) {
         this.instrument = instrument;
@@ -100,5 +104,13 @@ public class InstrumentCandlesRequest {
      */
     public void setWeeklyAlignment(DayOfWeek weeklyAlignment) {
         this.weeklyAlignment = weeklyAlignment;
+    }
+
+    public int getCount() {
+        return count;
+    }
+
+    public void setCount(int count) {
+        this.count = count;
     }
 }

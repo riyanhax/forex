@@ -1,6 +1,7 @@
 package market;
 
 import broker.CandlestickData;
+import broker.CandlestickGranularity;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -180,6 +181,31 @@ public enum CandleTimeFrame {
 
     CandleTimeFrame(int sortOrder) {
         this.sortOrder = sortOrder;
+    }
+
+    public static CandleTimeFrame from(CandlestickGranularity granularity) {
+        switch (granularity) {
+            case M1:
+                return ONE_MINUTE;
+            case M5:
+                return FIVE_MINUTE;
+            case M15:
+                return FIFTEEN_MINUTE;
+            case M30:
+                return THIRTY_MINUTE;
+            case H1:
+                return ONE_HOUR;
+            case H4:
+                return FOUR_HOURS;
+            case D:
+                return ONE_DAY;
+            case W:
+                return ONE_WEEK;
+            case M:
+                return ONE_MONTH;
+            default:
+                throw new IllegalArgumentException("Unsupported granularity: " + granularity);
+        }
     }
 
     public int getSortOrder() {

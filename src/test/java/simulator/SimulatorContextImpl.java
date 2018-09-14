@@ -41,6 +41,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Range;
 import market.AccountSnapshot;
+import market.CandleTimeFrame;
 import market.Instrument;
 import market.InstrumentHistoryService;
 import market.MarketEngine;
@@ -375,10 +376,28 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
             List<Candlestick> candlesticks = new ArrayList<>();
 
             Instrument pair = request.getInstrument();
+            CandlestickGranularity granularity = request.getGranularity();
             LocalDateTime from = request.getFrom();
             LocalDateTime to = request.getTo();
+            int count = request.getCount();
+
+            if (to == null) {
+                if (count < 0) {
+                    throw new RequestException("Invalid value specified for 'count'");
+                } else if (count == 0) {
+                    return new InstrumentCandlesResponse(pair, granularity, candlesticks);
+                }
+                CandleTimeFrame timeFrame = CandleTimeFrame.from(request.getGranularity());
+                to = from;
+
+                for (int i = 0; i < count - 1; i++) {
+                    to = timeFrame.nextCandle(to);
+                }
+            } else if (count > 0) {
+                throw new RequestException("'count' cannot be specified when 'to' and 'from' parameters are set");
+            }
+
             Range<LocalDateTime> range = Range.closed(from, to);
-            CandlestickGranularity granularity = request.getGranularity();
 
             LocalDateTime now = clock.now();
 
