@@ -1,50 +1,49 @@
 package market;
 
-import com.google.common.collect.Range;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.time.LocalDateTime;
-import java.util.Comparator;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
-import static broker.Context.MAXIMUM_CANDLES_PER_RETRIEVAL;
-import static java.util.Collections.emptySortedSet;
-import static market.CandleTimeFrame.ONE_MINUTE;
+public class DataRetriever<REQUEST, RESPONSE> {
 
-public class DataRetriever {
+    private static final Logger LOG = LoggerFactory.getLogger(DataRetriever.class);
+
+    @FunctionalInterface
+    interface RequestHandler<REQUEST, RESPONSE> {
+        RESPONSE handleRequest(REQUEST request);
+    }
 
     private final MarketTime clock;
+    private final RequestHandler<REQUEST, RESPONSE> handler;
 
-    public DataRetriever(MarketTime clock) {
+    public DataRetriever(MarketTime clock, RequestHandler<REQUEST, RESPONSE> handler) {
         this.clock = clock;
+        this.handler = handler;
     }
 
-    public SortedSet<Range<LocalDateTime>> determineRetrievalRanges() {
-        LocalDateTime latestStored = findLatestStoredMinute();
-        LocalDateTime mostRecentCompletedCandle = ONE_MINUTE.previousCandle(clock.now());
-        LocalDateTime startOfRetrievals = ONE_MINUTE.nextCandle(latestStored);
+    public List<RESPONSE> retrieve(List<REQUEST> requests) {
 
-        if (latestStored.equals(mostRecentCompletedCandle)) {
-            return emptySortedSet();
-        }
+        List<RESPONSE> responses = new ArrayList<>(requests.size());
 
-        TreeSet<Range<LocalDateTime>> ranges = new TreeSet<>(Comparator.comparing(Range::lowerEndpoint));
+        boolean throttle = false;
 
-        for (LocalDateTime startOfThisRange = startOfRetrievals; !startOfThisRange.isAfter(mostRecentCompletedCandle); ) {
-            LocalDateTime endOfThisRange = startOfThisRange.plusMinutes(MAXIMUM_CANDLES_PER_RETRIEVAL);
-
-            if (endOfThisRange.isAfter(mostRecentCompletedCandle)) {
-                endOfThisRange = mostRecentCompletedCandle;
+        for (REQUEST request : requests) {
+            if (throttle) {
+                try {
+                    clock.sleep(2, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    LOG.error("Interrupted while throttling!", e);
+                }
+            } else {
+                throttle = true;
             }
 
-            ranges.add(Range.closed(startOfThisRange, endOfThisRange));
-            startOfThisRange = endOfThisRange.plusMinutes(1);
+            responses.add(handler.handleRequest(request));
         }
 
-        return ranges;
-    }
-
-    LocalDateTime findLatestStoredMinute() {
-        return null;
+        return responses;
     }
 }

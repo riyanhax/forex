@@ -1,40 +1,49 @@
 package market
 
+import market.DataRetriever.RequestHandler
 import spock.lang.Specification
-import spock.lang.Unroll
 
-import java.time.LocalDateTime
-import java.time.Month
-
-import static com.google.common.collect.Range.closed
-import static java.time.LocalDateTime.of as ldt
+import static java.util.concurrent.TimeUnit.SECONDS
 
 class DataRetrieverSpec extends Specification {
 
-    @Unroll
-    def 'should batch any deltas from the latest stored candle to most recent completed minute into ranges of 5000 minutes: #expected'() {
+    def 'should throttle multiple requests'() {
 
         def clock = Mock(MarketTime)
-        clock.now() >> now
+        def handler = Mock(RequestHandler)
 
-        def latestStoredMinute = latestStored
-        def actual = new DataRetriever(clock) {
-            @Override
-            LocalDateTime findLatestStoredMinute() {
-                return latestStoredMinute
-            }
-        }.determineRetrievalRanges()
+        def service = new DataRetriever<String, String>(clock, handler)
 
-        expect:
-        actual == expected as Set
+        when: 'multiple requests are provided'
+        def actual = service.retrieve(['request1', 'request2'])
 
-        where:
-        latestStored                          | now                                       | expected
-        ldt(2018, Month.SEPTEMBER, 14, 8, 30) | ldt(2018, Month.SEPTEMBER, 14, 8, 31)     | []
-        ldt(2018, Month.SEPTEMBER, 14, 8, 29) | ldt(2018, Month.SEPTEMBER, 14, 8, 31)     | [closed(ldt(2018, Month.SEPTEMBER, 14, 8, 30), ldt(2018, Month.SEPTEMBER, 14, 8, 30))]
-        ldt(2018, Month.SEPTEMBER, 14, 8, 29) | ldt(2018, Month.SEPTEMBER, 14, 8, 31, 59) | [closed(ldt(2018, Month.SEPTEMBER, 14, 8, 30), ldt(2018, Month.SEPTEMBER, 14, 8, 30))]
-        ldt(2018, Month.SEPTEMBER, 14, 8, 29) | ldt(2018, Month.SEPTEMBER, 14, 8, 32)     | [closed(ldt(2018, Month.SEPTEMBER, 14, 8, 30), ldt(2018, Month.SEPTEMBER, 14, 8, 31))]
-        ldt(2018, Month.SEPTEMBER, 10, 8, 29) | ldt(2018, Month.SEPTEMBER, 14, 8, 32)     | [closed(ldt(2018, Month.SEPTEMBER, 10, 8, 30), ldt(2018, Month.SEPTEMBER, 13, 19, 50)),
-                                                                                             closed(ldt(2018, Month.SEPTEMBER, 13, 19, 51), ldt(2018, Month.SEPTEMBER, 14, 8, 31))]
+        then: 'a request is handled'
+        1 * handler.handleRequest('request1') >> 'response1'
+
+        and: 'a throttle is performed'
+        1 * clock.sleep(2, SECONDS)
+
+        and: 'another request is handled'
+        1 * handler.handleRequest('request2') >> 'response2'
+
+        and: 'the results are returned'
+        actual == ['response1', 'response2']
+    }
+
+    def 'should not throttle single requests'() {
+
+        def clock = Mock(MarketTime)
+        def handler = Mock(RequestHandler)
+
+        def service = new DataRetriever<String, String>(clock, handler)
+
+        when: 'a single request is provided'
+        def actual = service.retrieve(['request1'])
+
+        then: 'a request is handled'
+        1 * handler.handleRequest('request1') >> 'response1'
+
+        and: 'no throttling occurs'
+        0 * clock.sleep(_, _)
     }
 }

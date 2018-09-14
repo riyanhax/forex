@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.TemporalUnit;
+import java.util.concurrent.TimeUnit;
 
 class SimulatorClock implements MarketTime {
 
@@ -48,6 +49,10 @@ class SimulatorClock implements MarketTime {
     @Override
     public LocalDate nowLocalDate() {
         return today;
+    }
+
+    @Override
+    public void sleep(long amount, TimeUnit unit) {
     }
 
     @Override

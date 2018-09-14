@@ -7,6 +7,7 @@ import java.time.Month;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.concurrent.TimeUnit;
 
 import static java.time.DayOfWeek.FRIDAY;
 
@@ -24,6 +25,8 @@ public interface MarketTime {
     LocalDateTime now();
 
     LocalDate nowLocalDate();
+
+    void sleep(long amount, TimeUnit unit) throws InterruptedException;
 
     default LocalDate tomorrow() {
         return nowLocalDate().plusDays(1);
