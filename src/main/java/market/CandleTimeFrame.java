@@ -26,6 +26,11 @@ public enum CandleTimeFrame {
         }
 
         @Override
+        LocalDateTime adjustToPreviousCandle(LocalDateTime candleStart) {
+            return candleStart.minusMinutes(1);
+        }
+
+        @Override
         public Optional<CandleTimeFrame> smaller() {
             return Optional.empty();
         }
@@ -38,6 +43,11 @@ public enum CandleTimeFrame {
         @Override
         LocalDateTime adjustToNextCandle(LocalDateTime candleStart) {
             return candleStart.plusMinutes(5);
+        }
+
+        @Override
+        LocalDateTime adjustToPreviousCandle(LocalDateTime candleStart) {
+            return candleStart.minusMinutes(5);
         }
 
         @Override
@@ -56,6 +66,11 @@ public enum CandleTimeFrame {
         }
 
         @Override
+        LocalDateTime adjustToPreviousCandle(LocalDateTime candleStart) {
+            return candleStart.minusMinutes(15);
+        }
+
+        @Override
         public Optional<CandleTimeFrame> smaller() {
             return Optional.of(FIVE_MINUTE);
         }
@@ -68,6 +83,11 @@ public enum CandleTimeFrame {
         @Override
         LocalDateTime adjustToNextCandle(LocalDateTime candleStart) {
             return candleStart.plusMinutes(30);
+        }
+
+        @Override
+        LocalDateTime adjustToPreviousCandle(LocalDateTime candleStart) {
+            return candleStart.minusMinutes(30);
         }
 
         @Override
@@ -86,6 +106,11 @@ public enum CandleTimeFrame {
         }
 
         @Override
+        LocalDateTime adjustToPreviousCandle(LocalDateTime candleStart) {
+            return candleStart.minusHours(1);
+        }
+
+        @Override
         public Optional<CandleTimeFrame> smaller() {
             return Optional.of(THIRTY_MINUTE);
         }
@@ -98,6 +123,11 @@ public enum CandleTimeFrame {
         @Override
         LocalDateTime adjustToNextCandle(LocalDateTime candleStart) {
             return candleStart.plusHours(4);
+        }
+
+        @Override
+        LocalDateTime adjustToPreviousCandle(LocalDateTime candleStart) {
+            return candleStart.minusHours(4);
         }
 
         @Override
@@ -116,6 +146,11 @@ public enum CandleTimeFrame {
         @Override
         LocalDateTime adjustToNextCandle(LocalDateTime candleStart) {
             return candleStart.plusDays(1);
+        }
+
+        @Override
+        LocalDateTime adjustToPreviousCandle(LocalDateTime candleStart) {
+            return candleStart.minusDays(1);
         }
 
         @Override
@@ -138,6 +173,11 @@ public enum CandleTimeFrame {
         }
 
         @Override
+        LocalDateTime adjustToPreviousCandle(LocalDateTime candleStart) {
+            return candleStart.minusWeeks(1);
+        }
+
+        @Override
         public Optional<CandleTimeFrame> smaller() {
             return Optional.of(ONE_DAY);
         }
@@ -157,6 +197,18 @@ public enum CandleTimeFrame {
                 }
             }
             throw new IllegalStateException("Was unable to calculate next trading month start in 2 iterations!");
+        }
+
+        @Override
+        LocalDateTime adjustToPreviousCandle(LocalDateTime candleStart) {
+            for (int i = 0; i < 2; i++) {
+                LocalDateTime startOfNextTradingMonth = calculateStart(candleStart.minusWeeks(i));
+
+                if (!startOfNextTradingMonth.equals(candleStart)) {
+                    return startOfNextTradingMonth;
+                }
+            }
+            throw new IllegalStateException("Was unable to calculate previous trading month start in 2 iterations!");
         }
 
         @Override
@@ -239,6 +291,7 @@ public enum CandleTimeFrame {
     abstract LocalDateTime calculateStart(LocalDateTime firstTime, int endOfTradingDayHour, DayOfWeek weeklyAlignment);
 
     abstract LocalDateTime adjustToNextCandle(LocalDateTime candleStart);
+    abstract LocalDateTime adjustToPreviousCandle(LocalDateTime candleStart);
 
     public final LocalDateTime calculateStart(LocalDateTime time) {
         return calculateStart(time, MarketTime.END_OF_TRADING_DAY_HOUR, MarketTime.WEEKLY_ALIGNMENT);
@@ -248,9 +301,12 @@ public enum CandleTimeFrame {
         return adjustToNextCandle(calculateStart(current));
     }
 
+    public final LocalDateTime previousCandle(LocalDateTime current) {
+        return adjustToPreviousCandle(calculateStart(current));
+    }
+
     public static SortedSet<CandleTimeFrame> descendingSmallerThan(CandleTimeFrame timeFrame) {
         return DESCENDING_TIME.tailSet(timeFrame.smaller().orElseThrow(() ->
                 new IllegalArgumentException("None smaller than " + timeFrame)));
     }
-
 }

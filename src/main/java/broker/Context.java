@@ -4,6 +4,8 @@ import static broker.TradeStateFilter.CLOSED;
 
 public interface Context {
 
+    int MAXIMUM_CANDLES_PER_RETRIEVAL = 5000;
+
     PricingGetResponse getPricing(PricingGetRequest request) throws broker.RequestException;
 
     AccountChangesResponse accountChanges(AccountChangesRequest request) throws RequestException;

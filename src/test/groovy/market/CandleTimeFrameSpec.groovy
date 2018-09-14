@@ -154,4 +154,51 @@ class CandleTimeFrameSpec extends Specification {
         ONE_MINUTE     | of(2016, JANUARY, 3, 16, 0, 0)   | of(2016, JANUARY, 3, 16, 1, 0)// First 30s of trading 1m
         ONE_MINUTE     | of(2016, JANUARY, 3, 16, 57, 30) | of(2016, JANUARY, 3, 16, 58, 0)// Halfway into trading 1m
     }
+
+    @Unroll
+    def 'should calculate previous trading candle start correctly: #timeFrame, #time, #expected'() {
+
+        def actual = timeFrame.previousCandle(time)
+
+        expect:
+        actual == expected
+
+        where:
+        timeFrame      | time                            | expected
+        ONE_MONTH      | of(2016, FEBRUARY, 29, 15, 59)  | of(2015, DECEMBER, 31, 16, 0) // Last minute of trading month
+        ONE_MONTH      | of(2016, FEBRUARY, 29, 16, 0)   | of(2016, JANUARY, 31, 16, 0)// First minute of trading month
+        ONE_MONTH      | of(2016, MARCH, 15, 13, 0)      | of(2016, JANUARY, 31, 16, 0)// Middle of trading month
+
+        ONE_WEEK       | of(2016, SEPTEMBER, 9, 15, 59)  | of(2016, AUGUST, 26, 16, 0)// Last minute of trading week
+        ONE_WEEK       | of(2016, SEPTEMBER, 9, 16, 0)   | of(2016, SEPTEMBER, 2, 16, 0) // First minute of trading week
+        ONE_WEEK       | of(2016, SEPTEMBER, 11, 10, 30) | of(2016, SEPTEMBER, 2, 16, 0) // Middle of trading week
+
+        ONE_DAY        | of(2016, JANUARY, 3, 15, 59)    | of(2016, JANUARY, 1, 16, 0)// Last minute of trading day
+        ONE_DAY        | of(2016, JANUARY, 3, 16, 0)     | of(2016, JANUARY, 2, 16, 0)// First minute of trading day
+        ONE_DAY        | of(2016, JANUARY, 4, 4, 0)      | of(2016, JANUARY, 2, 16, 0)// Halfway into trading day
+
+        FOUR_HOURS     | of(2016, JANUARY, 3, 15, 59)    | of(2016, JANUARY, 3, 8, 0)// Last minute of trading 4h
+        FOUR_HOURS     | of(2016, JANUARY, 3, 16, 0)     | of(2016, JANUARY, 3, 12, 0)// First minute of trading 4h
+        FOUR_HOURS     | of(2016, JANUARY, 3, 18, 0)     | of(2016, JANUARY, 3, 12, 0)// Halfway into trading 4h
+
+        ONE_HOUR       | of(2016, JANUARY, 3, 15, 59)    | of(2016, JANUARY, 3, 14, 0)// Last minute of trading hour
+        ONE_HOUR       | of(2016, JANUARY, 3, 16, 0)     | of(2016, JANUARY, 3, 15, 0)// First minute of trading hour
+        ONE_HOUR       | of(2016, JANUARY, 3, 16, 30)    | of(2016, JANUARY, 3, 15, 0)// Halfway into trading hour
+
+        THIRTY_MINUTE  | of(2016, JANUARY, 3, 15, 59)    | of(2016, JANUARY, 3, 15, 0)// Last minute of trading 30m
+        THIRTY_MINUTE  | of(2016, JANUARY, 3, 16, 0)     | of(2016, JANUARY, 3, 15, 30)// First minute of trading 30m
+        THIRTY_MINUTE  | of(2016, JANUARY, 3, 16, 45)    | of(2016, JANUARY, 3, 16, 0)// Halfway into trading 30m
+
+        FIFTEEN_MINUTE | of(2016, JANUARY, 3, 15, 59)    | of(2016, JANUARY, 3, 15, 30)// Last minute of trading 15m
+        FIFTEEN_MINUTE | of(2016, JANUARY, 3, 16, 0)     | of(2016, JANUARY, 3, 15, 45)// First minute of trading 15m
+        FIFTEEN_MINUTE | of(2016, JANUARY, 3, 16, 49)    | of(2016, JANUARY, 3, 16, 30)// Halfway into trading 15m
+
+        FIVE_MINUTE    | of(2016, JANUARY, 3, 15, 59)    | of(2016, JANUARY, 3, 15, 50)// Last minute of trading 5m
+        FIVE_MINUTE    | of(2016, JANUARY, 3, 16, 0)     | of(2016, JANUARY, 3, 15, 55)// First minute of trading 5m
+        FIVE_MINUTE    | of(2016, JANUARY, 3, 16, 57)    | of(2016, JANUARY, 3, 16, 50)// Halfway into trading 5m
+
+        ONE_MINUTE     | of(2016, JANUARY, 3, 15, 59, 59) | of(2016, JANUARY, 3, 15, 58, 0)// Last 30s of trading 1m
+        ONE_MINUTE     | of(2016, JANUARY, 3, 16, 0, 0)   | of(2016, JANUARY, 3, 15, 59, 0)// First 30s of trading 1m
+        ONE_MINUTE     | of(2016, JANUARY, 3, 16, 57, 30) | of(2016, JANUARY, 3, 16, 56, 0)// Halfway into trading 1m
+    }
 }
