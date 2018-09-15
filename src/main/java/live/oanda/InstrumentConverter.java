@@ -6,6 +6,7 @@ import broker.CandlestickData;
 import broker.CandlestickGranularity;
 import broker.InstrumentCandlesRequest;
 import broker.InstrumentCandlesResponse;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.oanda.v20.instrument.WeeklyAlignment;
@@ -77,8 +78,22 @@ class InstrumentConverter {
         ZonedDateTime zonedDateTime = parseToZone(data.getTime().toString(), ZONE);
         LocalDateTime timestamp = zonedDateTime.toLocalDateTime();
 
-        return new Candlestick(timestamp, convert(inverse, data.getAsk()),
-                convert(inverse, data.getBid()), convert(inverse, data.getMid()));
+        CandlestickData bid = convert(inverse, data.getBid());
+        CandlestickData ask = convert(inverse, data.getAsk());
+        CandlestickData mid = convert(inverse, data.getMid());
+
+        if (inverse) {
+            CandlestickData actualBid = ask;
+            ask = bid;
+            bid = actualBid;
+        }
+
+        Preconditions.checkArgument(bid.getO() < ask.getO() && bid.getH() < ask.getH() && bid.getL() < ask.getL() && bid.getC() < ask.getC(),
+                "A bid value seems lesser than the ask value");
+        Preconditions.checkArgument(bid.getL() <= bid.getH() && ask.getL() <= ask.getH() && mid.getL() <= mid.getH(),
+                "A low value seems greater than the high value");
+
+        return new Candlestick(timestamp, bid, ask, mid);
     }
 
     private static Map<DayOfWeek, WeeklyAlignment> alignments = stream(DayOfWeek.values())

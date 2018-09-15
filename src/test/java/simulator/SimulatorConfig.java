@@ -4,10 +4,11 @@ import broker.BrokerConfig;
 import live.Broker;
 import live.LiveTraders;
 import live.Trader;
+import market.ForexMarket;
 import market.InstrumentHistoryService;
-import market.MarketConfig;
 import market.MarketEngine;
 import market.MarketTime;
+import market.PersistenceConfig;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -22,7 +23,7 @@ import java.util.List;
 
 @Configuration
 @EnableConfigurationProperties(SimulatorProperties.class)
-@ComponentScan(basePackageClasses = {SimulatorConfig.class, MarketConfig.class,
+@ComponentScan(basePackageClasses = {SimulatorConfig.class, PersistenceConfig.class,
         BrokerConfig.class, TraderConfig.class})
 public class SimulatorConfig {
 
@@ -60,6 +61,11 @@ public class SimulatorConfig {
         });
 
         return new LiveTraders(traders);
+    }
+
+    @Bean
+    public MarketEngine forexEngine(ForexMarket market, MarketTime clock) {
+        return MarketEngine.create(market, clock);
     }
 
     private Collection<ForexTrader> createInstances(TradingStrategy tradingStrategy,

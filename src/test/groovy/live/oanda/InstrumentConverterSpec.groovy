@@ -40,20 +40,20 @@ class InstrumentConverterSpec extends Specification {
         instrument | expected
         EURUSD     | new InstrumentCandlesResponse(EURUSD, W, [
                 new Candlestick(LocalDateTime.of(2018, AUGUST, 10, 16, 0),
-                        new CandlestickData(113745, 114456, 113016, 114406),
                         new CandlestickData(113685, 114443, 113003, 114346),
+                        new CandlestickData(113745, 114456, 113016, 114406),
                         new CandlestickData(113715, 114450, 113010, 114376)),
                 new Candlestick(LocalDateTime.of(2018, AUGUST, 17, 16, 0),
-                        new CandlestickData(114425, 116412, 113953, 116250),
                         new CandlestickData(114365, 116393, 113938, 116190),
+                        new CandlestickData(114425, 116412, 113953, 116250),
                         new CandlestickData(114395, 116402, 113946, 116220)),
                 new Candlestick(LocalDateTime.of(2018, AUGUST, 24, 16, 0),
-                        new CandlestickData(116181, 117345, 115851, 116049),
                         new CandlestickData(116126, 117330, 115836, 115989),
+                        new CandlestickData(116181, 117345, 115851, 116049),
                         new CandlestickData(116154, 117337, 115844, 116019)),
                 new Candlestick(LocalDateTime.of(2018, AUGUST, 31, 16, 0),
-                        new CandlestickData(116010, 116602, 115309, 115749),
                         new CandlestickData(115955, 116587, 115296, 115738),
+                        new CandlestickData(116010, 116602, 115309, 115749),
                         new CandlestickData(115982, 116594, 115302, 115744))])
 
         USDEUR     | new InstrumentCandlesResponse(USDEUR, W, [

@@ -31,16 +31,20 @@ jar {
 dependencies {
     compile "org.slf4j:slf4j-api:$slf4jVersion"
     compile "org.springframework.boot:spring-boot-starter"
+    compile "org.springframework.boot:spring-boot-starter-data-jpa"
     compile "com.google.guava:guava:$guavaVersion"
     compile "com.oanda.v20:v20:$oandaVersion"
-
     compile "org.codehaus.groovy:groovy-all:$groovyVersion"
+    compile 'org.flywaydb:flyway-core:5.1.4'
+
+    runtime 'mysql:mysql-connector-java:5.1.47'
 
     testCompile "org.springframework:spring-test"
     testCompile "org.springframework.boot:spring-boot-test"
     testCompile("org.spockframework:spock-spring:$spockVersion") {
         exclude group: 'org.codehaus.groovy'
     }
+    testCompile'com.h2database:h2:1.4.197'
 }
 
 task stopService(type: Exec) {

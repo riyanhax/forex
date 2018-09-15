@@ -1,4 +1,8 @@
 spring:
+  flyway:
+    enabled: false
+  jpa:
+    generate-ddl: true
   main:
     web-application-type: none
 
@@ -17,8 +21,6 @@ oanda:
 spring: # Simulated backtesting
   profiles: simulation
 
-logging.level.root: WARN
-
 simulation:
   startTime: 2017-01-01 01:00
   endTime: 2017-12-31 23:59
@@ -31,8 +33,6 @@ simulation:
 ---
 spring: # Integration test
   profiles: integration
-
-logging.level.root: WARN
 
 simulation:
   startTime: 2017-01-01 01:00
@@ -114,3 +114,14 @@ oanda:
   - # 10/10 SL/TP
     account: '101-001-1775714-020'
     strategy: HIGH_FREQ_MARTINGALE_FIVEK_START
+
+---
+spring:
+  profiles: mysql # Use a MySQL database
+  datasource:
+    url: jdbc:mysql://localhost:3306/forex
+    username: root
+  flyway:
+    enabled: true
+  jpa:
+    generate-ddl: false
