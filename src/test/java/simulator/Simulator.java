@@ -1,7 +1,7 @@
 package simulator;
 
 import broker.ForexBroker;
-import live.LiveTraders;
+import broker.LiveTraders;
 import market.BaseWatcher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

@@ -2,6 +2,7 @@ package live
 
 import broker.Context
 import market.MarketTime
+import trader.Trader
 import trader.TradingStrategies
 
 class TestTrader extends Trader {

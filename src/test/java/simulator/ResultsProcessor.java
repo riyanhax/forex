@@ -1,6 +1,6 @@
 package simulator;
 
-import live.LiveTraders;
+import broker.LiveTraders;
 
 public interface ResultsProcessor {
 

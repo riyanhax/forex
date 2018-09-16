@@ -1,33 +1,11 @@
-package live;
+package broker;
 
-import broker.Account;
-import broker.AccountID;
-import broker.CandlestickData;
-import broker.CandlestickGranularity;
-import broker.Context;
-import broker.ForexBroker;
-import broker.InstrumentCandlesRequest;
-import broker.InstrumentCandlesResponse;
-import broker.MarketOrderRequest;
-import broker.OpenPositionRequest;
-import broker.OrderCreateRequest;
-import broker.OrderCreateResponse;
-import broker.Price;
-import broker.PricingGetRequest;
-import broker.PricingGetResponse;
-import broker.Quote;
-import broker.RequestException;
-import broker.StopLossDetails;
-import broker.TakeProfitDetails;
-import broker.TradeCloseRequest;
-import broker.TradeCloseResponse;
-import broker.TradeSpecifier;
-import broker.TradeSummary;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Range;
 import market.AccountSnapshot;
 import market.Instrument;
+import market.InstrumentDataRetriever;
 import market.MarketTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,10 +36,12 @@ public class Broker implements ForexBroker {
     private static final Logger LOG = LoggerFactory.getLogger(Broker.class);
     private final Map<String, ForexTrader> tradersByAccountId;
     private final MarketTime clock;
+    private final InstrumentDataRetriever instrumentDataRetriever;
 
-    public Broker(MarketTime clock, LiveTraders traders) {
+    public Broker(MarketTime clock, LiveTraders traders, InstrumentDataRetriever instrumentDataRetriever) {
         this.clock = clock;
         this.tradersByAccountId = Maps.uniqueIndex(traders.getTraders(), ForexTrader::getAccountNumber);
+        this.instrumentDataRetriever = instrumentDataRetriever;
     }
 
     @Override
@@ -169,6 +149,13 @@ public class Broker implements ForexBroker {
 
     @Override
     public void processUpdates() {
+
+        try {
+            instrumentDataRetriever.retrieveClosedCandles();
+        } catch (RequestException e) {
+            LOG.error("Unable to retrieve closed candles!", e);
+        }
+
         if (isClosed()) {
             LOG.info("Market is closed.");
             return;

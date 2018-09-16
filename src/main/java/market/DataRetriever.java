@@ -1,5 +1,6 @@
 package market;
 
+import broker.RequestException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -7,13 +8,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static com.google.common.collect.Iterables.size;
+
 public class DataRetriever<REQUEST, RESPONSE> {
 
     private static final Logger LOG = LoggerFactory.getLogger(DataRetriever.class);
 
     @FunctionalInterface
-    interface RequestHandler<REQUEST, RESPONSE> {
-        RESPONSE handleRequest(REQUEST request);
+    public interface RequestHandler<REQUEST, RESPONSE> {
+        RESPONSE handleRequest(REQUEST request) throws RequestException;
     }
 
     private final MarketTime clock;
@@ -24,9 +27,9 @@ public class DataRetriever<REQUEST, RESPONSE> {
         this.handler = handler;
     }
 
-    public List<RESPONSE> retrieve(List<REQUEST> requests) {
+    public List<RESPONSE> retrieve(Iterable<REQUEST> requests) throws RequestException {
 
-        List<RESPONSE> responses = new ArrayList<>(requests.size());
+        List<RESPONSE> responses = new ArrayList<>(size(requests));
 
         boolean throttle = false;
 

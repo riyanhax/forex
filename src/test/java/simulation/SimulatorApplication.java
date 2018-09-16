@@ -1,5 +1,6 @@
 package simulation;
 
+import market.MarketConfig;
 import market.PersistenceConfig;
 import market.Watcher;
 import org.springframework.boot.CommandLineRunner;
@@ -10,7 +11,7 @@ import org.springframework.context.annotation.Import;
 import simulator.SimulatorConfig;
 
 @SpringBootApplication
-@Import({SimulatorConfig.class, PersistenceConfig.class})
+@Import({SimulatorConfig.class, PersistenceConfig.class, MarketConfig.class})
 class SimulatorApplication {
 
     public static void main(String[] args) {

@@ -1,6 +1,7 @@
 package simulator
 
 import broker.AccountID
+import broker.Candlestick
 import broker.CandlestickData
 import broker.InstrumentCandlesRequest
 import broker.Price
@@ -37,6 +38,8 @@ import static market.Instrument.EURUSD
 import static market.Instrument.USDEUR
 import static market.MarketTime.ZONE
 
+import static java.time.LocalDateTime.of as ldt
+
 class SimulatorContextImplSpec extends Specification {
 
     static final LocalDateTime now = now()
@@ -59,18 +62,18 @@ class SimulatorContextImplSpec extends Specification {
         clock.getZone() >> ZONE
 
         def context = new SimulatorContextImpl(clock, new HistoryDataService(clock), Mock(SequenceService),
-                Mock(TradeService), Mock(MarketEngine), new SimulatorProperties())
+                Mock(TradeService), Mock(MarketEngine), new SimulatorProperties(pippeteSpread: 20L))
 
         when: 'weekly candles are requested'
         def response = context.instrumentCandles(request)
-        def actual = response.candles.collect { it.time }
+        def actual = response.candles
 
         then: 'the correct candles were returned'
         actual == [
-                LocalDateTime.of(2016, AUGUST, 19, 16, 0),
-                LocalDateTime.of(2016, AUGUST, 26, 16, 0),
-                LocalDateTime.of(2016, SEPTEMBER, 2, 16, 0),
-                LocalDateTime.of(2016, SEPTEMBER, 9, 16, 0)
+                new Candlestick(ldt(2016, AUGUST, 19, 16, 0), new CandlestickData(113271, 113540, 111796, 111925), new CandlestickData(113291, 113560, 111816, 111945), new CandlestickData(113281, 113550, 111806, 111935)),
+                new Candlestick(ldt(2016, AUGUST, 26, 16, 0), new CandlestickData(111924, 112511, 111220, 111570), new CandlestickData(111944, 112531, 111240, 111590), new CandlestickData(111934, 112521, 111230, 111580)),
+                new Candlestick(ldt(2016, SEPTEMBER, 2, 16, 0), new CandlestickData(111570, 113259, 111381, 112251), new CandlestickData(111590, 113279, 111401, 112271), new CandlestickData(111580, 113269, 111391, 112261)),
+                new Candlestick(ldt(2016, SEPTEMBER, 9, 16, 0), new CandlestickData(112249, 112827, 111484, 111521), new CandlestickData(112269, 112847, 111504, 111541), new CandlestickData(112259, 112837, 111494, 111531))
         ]
     }
 

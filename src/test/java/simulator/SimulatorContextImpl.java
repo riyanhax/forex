@@ -417,7 +417,13 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
                 } else {
                     throw new UnsupportedOperationException("Need to support granularity: " + granularity);
                 }
-                data.forEach((time, ohlc) -> candlesticks.add(new Candlestick(time, null, null, ohlc)));
+                data.forEach((time, ohlc) -> {
+                    long halfSpread = simulatorProperties.getPippeteSpread() / 2;
+                    CandlestickData bid = new CandlestickData(ohlc.getO() - halfSpread, ohlc.getH() - halfSpread, ohlc.getL() - halfSpread, ohlc.getC() - halfSpread);
+                    CandlestickData ask = new CandlestickData(ohlc.getO() + halfSpread, ohlc.getH() + halfSpread, ohlc.getL() + halfSpread, ohlc.getC() + halfSpread);
+
+                    candlesticks.add(new Candlestick(time, bid, ask, ohlc));
+                });
             } catch (Exception e) {
                 throw new RequestException(e.getMessage(), e);
             }

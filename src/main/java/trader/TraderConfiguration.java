@@ -1,7 +1,6 @@
-package live;
+package trader;
 
 import com.google.common.base.MoreObjects;
-import trader.TradingStrategies;
 
 public class TraderConfiguration {
 

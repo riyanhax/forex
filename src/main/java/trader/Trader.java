@@ -1,4 +1,4 @@
-package live;
+package trader;
 
 import broker.Account;
 import broker.AccountAndTrades;
@@ -15,8 +15,6 @@ import com.google.common.base.Stopwatch;
 import market.MarketTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import trader.ForexTrader;
-import trader.TradingStrategy;
 
 import java.time.LocalDateTime;
 import java.util.Iterator;

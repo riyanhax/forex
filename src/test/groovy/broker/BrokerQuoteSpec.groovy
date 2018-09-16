@@ -1,6 +1,5 @@
-package live
+package broker
 
-import broker.Price
 import spock.lang.Specification
 
 import static market.Instrument.EURUSD

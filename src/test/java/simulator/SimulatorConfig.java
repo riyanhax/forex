@@ -1,11 +1,11 @@
 package simulator;
 
 import broker.BrokerConfig;
-import live.Broker;
-import live.LiveTraders;
-import live.Trader;
+import broker.LiveTraders;
 import market.ForexMarket;
+import market.InstrumentDataRetriever;
 import market.InstrumentHistoryService;
+import market.MarketConfig;
 import market.MarketEngine;
 import market.MarketTime;
 import market.PersistenceConfig;
@@ -14,6 +14,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import trader.ForexTrader;
+import trader.Trader;
 import trader.TraderConfig;
 import trader.TradingStrategy;
 
@@ -24,12 +25,19 @@ import java.util.List;
 @Configuration
 @EnableConfigurationProperties(SimulatorProperties.class)
 @ComponentScan(basePackageClasses = {SimulatorConfig.class, PersistenceConfig.class,
-        BrokerConfig.class, TraderConfig.class})
+        BrokerConfig.class, TraderConfig.class, MarketConfig.class})
 public class SimulatorConfig {
 
     @Bean
     public MarketTime clock(SimulatorProperties simulatorProperties) {
         return new SimulatorClock(simulatorProperties);
+    }
+
+    @Bean
+    InstrumentDataRetriever mockInstrumentDataRetriever() {
+        return () -> {
+            // Does nothing since this uses history data
+        };
     }
 
     @Bean
@@ -40,11 +48,6 @@ public class SimulatorConfig {
                              MarketEngine marketEngine) {
         return new SimulatorContextImpl(clock, instrumentHistoryService, sequenceService,
                 tradeService, marketEngine, simulatorProperties);
-    }
-
-    @Bean
-    Broker broker(MarketTime clock, LiveTraders traders) {
-        return new Broker(clock, traders);
     }
 
     @Bean

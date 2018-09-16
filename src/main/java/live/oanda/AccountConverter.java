@@ -9,7 +9,6 @@ import broker.AccountGetResponse;
 import broker.AccountID;
 import broker.TradeSummary;
 import broker.TransactionID;
-import com.oanda.v20.trade.CalculatedTradeState;
 
 import java.util.List;
 

@@ -1,7 +1,7 @@
 package simulator
 
 import broker.ForexBroker
-import live.LiveTraders
+import broker.LiveTraders
 import spock.lang.Specification
 
 import java.time.LocalDateTime

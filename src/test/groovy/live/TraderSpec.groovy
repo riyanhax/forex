@@ -14,6 +14,7 @@ import broker.TransactionID
 import market.MarketTime
 import spock.lang.Specification
 import spock.lang.Unroll
+import trader.Trader
 
 import java.time.LocalDateTime
 

@@ -1,7 +1,5 @@
-package live;
+package broker;
 
-import broker.Price;
-import broker.Quote;
 import com.google.common.base.MoreObjects;
 
 public class BrokerQuote implements Quote {
