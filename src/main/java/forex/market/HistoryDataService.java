@@ -1,6 +1,5 @@
-package forex.simulator;
+package forex.market;
 
-import forex.broker.CandlestickData;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Stopwatch;
 import com.google.common.cache.CacheBuilder;
@@ -8,25 +7,15 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Range;
-import com.google.common.io.CharStreams;
-import com.google.common.io.LineProcessor;
-import forex.market.CandleTimeFrame;
-import forex.market.Instrument;
-import forex.market.InstrumentHistory;
-import forex.market.InstrumentHistoryService;
-import forex.market.MarketTime;
+import forex.broker.CandlestickData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Nonnull;
-import java.io.InputStreamReader;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
@@ -38,7 +27,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-import static forex.broker.Quote.pippetesFromDouble;
+import static forex.broker.CandlestickData.inverse;
 import static forex.market.CandleTimeFrame.FIFTEEN_MINUTE;
 import static forex.market.CandleTimeFrame.FIVE_MINUTE;
 import static forex.market.CandleTimeFrame.FOUR_HOURS;
@@ -53,7 +42,6 @@ import static forex.market.CandleTimeFrame.THIRTY_MINUTE;
 class HistoryDataService implements InstrumentHistoryService {
 
     private static final Logger LOG = LoggerFactory.getLogger(HistoryDataService.class);
-    private static final String HISTORY_FILE_PATTERN = "/history/DAT_ASCII_%s_M1_%d.csv";
 
     private static class CandleRequest {
         final CandleTimeFrame timeFrame;
@@ -135,8 +123,7 @@ class HistoryDataService implements InstrumentHistoryService {
         }
     }
 
-    private final String historyFilePattern;
-    private final DateTimeFormatter timestampParser = DateTimeFormatter.ofPattern("yyyyMMdd HHmmss");
+    private final OneMinuteCandleReader oneMinuteCandleReader;
     private final LoadingCache<CurrencyPairYear, CurrencyData> minuteCache = CacheBuilder.newBuilder()
             .build(new CacheLoader<CurrencyPairYear, CurrencyData>() {
                 @Override
@@ -147,55 +134,25 @@ class HistoryDataService implements InstrumentHistoryService {
                     Instrument pair = pairYear.pair;
                     boolean inverse = pair.isInverse();
 
-                    String path = String.format(historyFilePattern, pair.getBrokerInstrument().name(), pairYear.year);
-                    try (InputStreamReader is = new InputStreamReader(HistoryDataService.class.getResourceAsStream(path))) {
+                    NavigableMap<LocalDateTime, CandlestickData> result = inverse ?
+                            minuteCache.getUnchecked(new CurrencyPairYear(pair.getOpposite(), pairYear.year)).ohlcData:
+                            oneMinuteCandleReader.instrumentData(pair, pairYear.year);
 
-                        NavigableMap<LocalDateTime, CandlestickData> result = CharStreams.readLines(is, new LineProcessor<NavigableMap<LocalDateTime, CandlestickData>>() {
-                            NavigableMap<LocalDateTime, CandlestickData> values = new TreeMap<>();
-
-                            @Override
-                            public boolean processLine(String line) {
-                                int part = 0;
-                                String[] parts = line.split(";");
-                                LocalDateTime parsedDate = LocalDateTime.parse(parts[part++], timestampParser).withSecond(0);
-                                // The files are at UTC-5 (no daylight savings timestamp observed)
-                                OffsetDateTime dateTime = parsedDate.atOffset(ZoneOffset.ofHours(-5));
-                                LocalDateTime dateTimeForLocal = dateTime.atZoneSameInstant(clock.getZone()).toLocalDateTime();
-
-                                double open = Double.parseDouble(parts[part++]);
-                                double high = Double.parseDouble(parts[part++]);
-                                double low = Double.parseDouble(parts[part++]);
-                                double close = Double.parseDouble(parts[part]);
-
-                                if (inverse) {
-                                    double actualHigh = low;
-                                    low = high;
-                                    high = actualHigh;
-                                }
-
-                                values.put(dateTimeForLocal, new CandlestickData(pippetesFromDouble(inverse, open), pippetesFromDouble(inverse, high),
-                                        pippetesFromDouble(inverse, low), pippetesFromDouble(inverse, close)));
-
-                                return true;
-                            }
-
-                            @Override
-                            public NavigableMap<LocalDateTime, CandlestickData> getResult() {
-                                return values;
-                            }
+                    if (inverse) {
+                        NavigableMap<LocalDateTime, CandlestickData> inverted = new TreeMap<>(result.comparator());
+                        result.forEach((time, candle) -> {
+                            inverted.put(time, inverse(candle));
                         });
-
-                        NavigableSet<LocalDate> availableDates = result.keySet().stream()
-                                .map(LocalDateTime::toLocalDate)
-                                .collect(Collectors.toCollection(TreeSet::new));
-
-                        LOG.info("Loaded {} in {}", pairYear, timer);
-
-                        return new CurrencyData(ONE_MINUTE, result, availableDates);
-                    } catch (Exception e) {
-                        LOG.error("Unable to load data!", e);
-                        return new CurrencyData(ONE_MINUTE, new TreeMap<>(), new TreeSet<>());
+                        result = inverted;
                     }
+
+                    NavigableSet<LocalDate> availableDates = result.keySet().stream()
+                            .map(LocalDateTime::toLocalDate)
+                            .collect(Collectors.toCollection(TreeSet::new));
+
+                    LOG.info("Loaded {} in {}", pairYear, timer);
+
+                    return new CurrencyData(ONE_MINUTE, result, availableDates);
                 }
             });
 
@@ -223,13 +180,9 @@ class HistoryDataService implements InstrumentHistoryService {
     private final MarketTime clock;
 
     @Autowired
-    HistoryDataService(MarketTime clock) {
-        this(clock, HISTORY_FILE_PATTERN);
-    }
-
-    HistoryDataService(MarketTime clock, String historyFilePattern) {
+    public HistoryDataService(MarketTime clock, OneMinuteCandleReader oneMinuteCandleReader) {
         this.clock = clock;
-        this.historyFilePattern = historyFilePattern;
+        this.oneMinuteCandleReader = oneMinuteCandleReader;
     }
 
     @Override
@@ -266,7 +219,7 @@ class HistoryDataService implements InstrumentHistoryService {
 
     @Override
     public NavigableMap<LocalDateTime, CandlestickData> getOneMinuteCandles(Instrument instrument, Range<LocalDateTime> closed) {
-        return loadCandleData(new CandleRequest(CandleTimeFrame.ONE_MINUTE, instrument, closed)); // No need to cache one minute data
+        return loadCandleData(new CandleRequest(ONE_MINUTE, instrument, closed)); // No need to cache one minute data
     }
 
     @Override

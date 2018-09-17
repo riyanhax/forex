@@ -8,6 +8,7 @@ import forex.market.InstrumentHistoryService;
 import forex.market.MarketConfig;
 import forex.market.MarketEngine;
 import forex.market.MarketTime;
+import forex.market.OneMinuteCandleReader;
 import forex.market.PersistenceConfig;
 import forex.trader.ForexTrader;
 import forex.trader.Trader;
@@ -39,6 +40,11 @@ public class SimulatorConfig {
         return () -> {
             // Does nothing since this uses history data
         };
+    }
+
+    @Bean
+    OneMinuteCandleReader candleDataReader() {
+        return new CSVHistoryFileReader();
     }
 
     @Bean

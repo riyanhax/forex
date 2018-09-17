@@ -48,15 +48,15 @@ class IntegrationSpec extends Specification {
         def regressionComparatorPortfolio4 = regressionComparatorData2.mostRecentPortfolio
 
         expect: 'history comparator profit/loss was calculated correctly'
-        historyComparatorPortfolio1.pipettesProfit == -13256L
-        historyComparatorPortfolio1.getNetAssetValue() == 4986744L
+        historyComparatorPortfolio1.pipettesProfit == -12503L
+        historyComparatorPortfolio1.getNetAssetValue() == 4987497L
 
         and: 'both history comparator traders had the same profit/loss'
         historyComparatorPortfolio2.pipettesProfit == historyComparatorPortfolio1.pipettesProfit
 
         and: 'regression comparator profit/loss was calculated correctly'
-        regressionComparatorPortfolio3.pipettesProfit == 5422L
-        regressionComparatorPortfolio3.getNetAssetValue() == 5005422L
+        regressionComparatorPortfolio3.pipettesProfit == 5444L
+        regressionComparatorPortfolio3.getNetAssetValue() == 5005444L
 
         and: 'both regression comparator traders had the same profit/loss'
         regressionComparatorPortfolio4.pipettesProfit == regressionComparatorPortfolio3.pipettesProfit

@@ -1,14 +1,17 @@
-package forex.simulator
+package forex.market
 
 import forex.broker.CandlestickData
+import forex.market.HistoryDataService
+import forex.simulator.CSVHistoryFileReader
+import forex.simulator.TestClock
+import org.springframework.boot.test.context.SpringBootTest
 import spock.lang.Specification
 import spock.lang.Unroll
 
+import javax.transaction.Transactional
 import java.time.LocalDateTime
 
 import static com.google.common.collect.Range.closed
-import static java.time.Month.FEBRUARY
-import static java.time.Month.JANUARY
 import static forex.market.CandleTimeFrame.FIFTEEN_MINUTE
 import static forex.market.CandleTimeFrame.FIVE_MINUTE
 import static forex.market.CandleTimeFrame.FOUR_HOURS
@@ -17,28 +20,14 @@ import static forex.market.CandleTimeFrame.ONE_HOUR
 import static forex.market.CandleTimeFrame.ONE_MONTH
 import static forex.market.CandleTimeFrame.ONE_WEEK
 import static forex.market.Instrument.EURUSD
+import static java.time.Month.FEBRUARY
+import static java.time.Month.JANUARY
 
+@SpringBootTest(classes = PersistenceConfig)
+@Transactional
 class HistoryDataServiceSpec extends Specification {
 
-    static HistoryDataService service = new HistoryDataService(new TestClock(LocalDateTime.now()), '/history/Oanda_%s_%d.csv')
-
-    def 'should read history file as UTC-5 minute data, convert to local, and treat data range inclusive'() {
-
-        def firstSixMinutes = service.getOneMinuteCandles(EURUSD, closed(
-                LocalDateTime.of(2017, JANUARY, 2, 17, 0),
-                LocalDateTime.of(2017, JANUARY, 2, 17, 5)
-        ))
-
-        expect:
-        firstSixMinutes == [
-                (LocalDateTime.of(2017, JANUARY, 2, 17, 0)): new CandlestickData(104684L, 104687L, 104662L, 104680L),
-                (LocalDateTime.of(2017, JANUARY, 2, 17, 1)): new CandlestickData(104680L, 104707L, 104675L, 104688L),
-                (LocalDateTime.of(2017, JANUARY, 2, 17, 2)): new CandlestickData(104690L, 104711L, 104674L, 104674L),
-                (LocalDateTime.of(2017, JANUARY, 2, 17, 3)): new CandlestickData(104670L, 104680L, 104654L, 104680L),
-                (LocalDateTime.of(2017, JANUARY, 2, 17, 4)): new CandlestickData(104674L, 104674L, 104646L, 104652L),
-                (LocalDateTime.of(2017, JANUARY, 2, 17, 5)): new CandlestickData(104656L, 104688L, 104656L, 104671L)
-        ]
-    }
+    static HistoryDataService service = new HistoryDataService(new TestClock(LocalDateTime.now()), new CSVHistoryFileReader('/history/Oanda_%s_%d.csv'))
 
     @Unroll
     def 'should rollup minute data and ranges correctly, timeFrame: #timeFrame, range: #range'() {

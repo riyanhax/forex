@@ -3,16 +3,19 @@ package forex.live;
 import forex.broker.Context;
 import forex.broker.LiveTraders;
 import forex.live.oanda.OandaContext;
+import forex.market.DatabaseHistoryReader;
+import forex.market.InstrumentCandleRepository;
 import forex.market.MarketTime;
+import forex.market.OneMinuteCandleReader;
+import forex.trader.ForexTrader;
+import forex.trader.Trader;
+import forex.trader.TraderConfiguration;
+import forex.trader.TradingStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import forex.trader.ForexTrader;
-import forex.trader.Trader;
-import forex.trader.TraderConfiguration;
-import forex.trader.TradingStrategy;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +29,11 @@ public class LiveConfig {
     @Bean
     Context context(OandaProperties properties) {
         return OandaContext.create(properties.getApi().getEndpoint(), properties.getApi().getToken());
+    }
+
+    @Bean
+    OneMinuteCandleReader candleDataReader(InstrumentCandleRepository instrumentCandleRepo) {
+        return new DatabaseHistoryReader(instrumentCandleRepo);
     }
 
     @Bean

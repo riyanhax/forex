@@ -12,6 +12,7 @@ import forex.broker.TradeListRequest
 import forex.broker.TradeState
 import forex.broker.TradeSummary
 import com.google.common.collect.Range
+import forex.market.HistoryDataService
 import forex.market.Instrument
 import forex.market.InstrumentHistoryService
 import forex.market.MarketEngine
@@ -61,7 +62,7 @@ class SimulatorContextImplSpec extends Specification {
         clock.now() >> now
         clock.getZone() >> ZONE
 
-        def context = new SimulatorContextImpl(clock, new HistoryDataService(clock), Mock(SequenceService),
+        def context = new SimulatorContextImpl(clock, new HistoryDataService(clock, new CSVHistoryFileReader()), Mock(SequenceService),
                 Mock(TradeService), Mock(MarketEngine), new SimulatorProperties(pippeteSpread: 20L))
 
         when: 'weekly candles are requested'
@@ -86,7 +87,7 @@ class SimulatorContextImplSpec extends Specification {
         clock.now() >> now
         clock.getZone() >> ZONE
 
-        def context = new SimulatorContextImpl(clock, new HistoryDataService(clock), Mock(SequenceService),
+        def context = new SimulatorContextImpl(clock, new HistoryDataService(clock, new CSVHistoryFileReader()), Mock(SequenceService),
                 Mock(TradeService), Mock(MarketEngine), new SimulatorProperties())
 
         when: 'an invalid request is specified'
@@ -128,7 +129,7 @@ class SimulatorContextImplSpec extends Specification {
         clock.now() >> end
         clock.getZone() >> ZONE
 
-        def context = new SimulatorContextImpl(clock, new HistoryDataService(clock), Mock(SequenceService),
+        def context = new SimulatorContextImpl(clock, new HistoryDataService(clock, new CSVHistoryFileReader()), Mock(SequenceService),
                 Mock(TradeService), Mock(MarketEngine), new SimulatorProperties())
 
         when: 'weekly candles are requested'
@@ -161,7 +162,7 @@ class SimulatorContextImplSpec extends Specification {
         clock.now() >> end
         clock.getZone() >> ZONE
 
-        def context = new SimulatorContextImpl(clock, new HistoryDataService(clock), Mock(SequenceService),
+        def context = new SimulatorContextImpl(clock, new HistoryDataService(clock, new CSVHistoryFileReader()), Mock(SequenceService),
                 Mock(TradeService), Mock(MarketEngine), new SimulatorProperties())
 
         when: 'weekly candles are requested'
@@ -192,7 +193,7 @@ class SimulatorContextImplSpec extends Specification {
         clock.now() >> LocalDateTime.of(2016, SEPTEMBER, 9, 10, 30)
         clock.getZone() >> ZONE
 
-        def context = new SimulatorContextImpl(clock, new HistoryDataService(clock), Mock(SequenceService),
+        def context = new SimulatorContextImpl(clock, new HistoryDataService(clock, new CSVHistoryFileReader()), Mock(SequenceService),
                 Mock(TradeService), Mock(MarketEngine), new SimulatorProperties())
 
         when: 'candles are requested'
