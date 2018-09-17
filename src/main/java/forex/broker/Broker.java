@@ -6,11 +6,12 @@ import com.google.common.collect.Range;
 import forex.market.AccountSnapshot;
 import forex.market.Instrument;
 import forex.market.InstrumentDataRetriever;
+import forex.market.InstrumentHistoryService;
 import forex.market.MarketTime;
+import forex.trader.ForexTrader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import forex.trader.ForexTrader;
 
 import javax.annotation.Nullable;
 import java.time.DayOfWeek;
@@ -21,29 +22,28 @@ import java.util.NavigableMap;
 import java.util.Optional;
 import java.util.TreeMap;
 
-import static forex.broker.CandlePrice.ASK;
-import static forex.broker.CandlePrice.BID;
-import static forex.broker.CandlePrice.MID;
-import static forex.broker.CandlestickGranularity.D;
-import static forex.broker.CandlestickGranularity.W;
 import static forex.broker.Quote.invert;
-import static forex.market.MarketTime.ZONE;
 import static java.util.Collections.singleton;
-import static java.util.EnumSet.of;
-import static forex.market.MarketTime.END_OF_TRADING_DAY_HOUR;
-import static forex.market.MarketTime.WEEKLY_ALIGNMENT;
 
 @Service
 public class Broker implements ForexBroker {
 
+    @FunctionalInterface
+    interface CandlesRequest {
+        NavigableMap<LocalDateTime, CandlestickData> request(Instrument instrument, Range<LocalDateTime> timeRange);
+    }
+
     private static final Logger LOG = LoggerFactory.getLogger(Broker.class);
     private final Map<String, ForexTrader> tradersByAccountId;
     private final MarketTime clock;
+    private final InstrumentHistoryService instrumentHistoryService;
     private final InstrumentDataRetriever instrumentDataRetriever;
 
-    public Broker(MarketTime clock, LiveTraders traders, InstrumentDataRetriever instrumentDataRetriever) {
+    public Broker(MarketTime clock, LiveTraders traders, InstrumentHistoryService instrumentHistoryService,
+                  InstrumentDataRetriever instrumentDataRetriever) {
         this.clock = clock;
         this.tradersByAccountId = Maps.uniqueIndex(traders.getTraders(), ForexTrader::getAccountNumber);
+        this.instrumentHistoryService = instrumentHistoryService;
         this.instrumentDataRetriever = instrumentDataRetriever;
     }
 
@@ -174,52 +174,24 @@ public class Broker implements ForexBroker {
     }
 
     @Override
-    public NavigableMap<LocalDateTime, CandlestickData> getOneDayCandles(ForexTrader trader, Instrument pair, Range<LocalDateTime> closed) throws RequestException {
-        return getCandles(trader, D, closed, pair);
+    public NavigableMap<LocalDateTime, CandlestickData> getOneDayCandles(ForexTrader trader, Instrument instrument, Range<LocalDateTime> timeRange) {
+        return getCandles(instrumentHistoryService::getOneDayCandles, instrument, timeRange);
     }
 
     @Override
-    public NavigableMap<LocalDateTime, CandlestickData> getFourHourCandles(ForexTrader trader, Instrument pair, Range<LocalDateTime> closed) throws RequestException {
-        return getCandles(trader, CandlestickGranularity.H4, closed, pair);
+    public NavigableMap<LocalDateTime, CandlestickData> getFourHourCandles(ForexTrader trader, Instrument instrument, Range<LocalDateTime> timeRange) {
+        return getCandles(instrumentHistoryService::getFourHourCandles, instrument, timeRange);
     }
 
     @Override
-    public NavigableMap<LocalDateTime, CandlestickData> getOneWeekCandles(ForexTrader trader, Instrument pair, Range<LocalDateTime> closed) throws RequestException {
-        return getCandles(trader, W, closed, pair);
+    public NavigableMap<LocalDateTime, CandlestickData> getOneWeekCandles(ForexTrader trader, Instrument instrument, Range<LocalDateTime> timeRange) {
+        return getCandles(instrumentHistoryService::getOneWeekCandles, instrument, timeRange);
     }
 
-    private NavigableMap<LocalDateTime, CandlestickData> getCandles(ForexTrader trader, CandlestickGranularity granularity, Range<LocalDateTime> closed, Instrument pair) throws RequestException {
+    private NavigableMap<LocalDateTime, CandlestickData> getCandles(CandlesRequest candlesRequest, Instrument instrument, Range<LocalDateTime> timeRange) {
+        LocalDateTime exclusiveEnd = timeRange.upperEndpoint();
 
-        LocalDateTime exclusiveEnd = closed.upperEndpoint();
-
-        InstrumentCandlesRequest request = new InstrumentCandlesRequest(pair);
-        request.setPrice(of(BID, MID, ASK));
-        request.setGranularity(granularity);
-        request.setFrom(closed.lowerEndpoint());
-        request.setTo(exclusiveEnd);
-        request.setIncludeFirst(true);
-
-        if (granularity == D) {
-            request.setAlignmentTimezone(ZONE);
-            request.setDailyAlignment(END_OF_TRADING_DAY_HOUR);
-        } else if (granularity == W) {
-            request.setWeeklyAlignment(WEEKLY_ALIGNMENT);
-        }
-
-        InstrumentCandlesResponse response = getContext(trader).instrumentCandles(request);
-
-        NavigableMap<LocalDateTime, CandlestickData> data = new TreeMap<>();
-
-        response.getCandles().forEach(it -> {
-            LocalDateTime timestamp = it.getTime();
-            if (timestamp.equals(exclusiveEnd)) { // Force exclusive endpoint behavior
-                return;
-            }
-            CandlestickData c = it.getMid();
-
-            data.put(timestamp, c);
-        });
-        return data;
+        return new TreeMap<>(candlesRequest.request(instrument, timeRange).subMap(timeRange.lowerEndpoint(), exclusiveEnd));
     }
 
     private Account getAccount(ForexTrader trader) throws RequestException {

@@ -1,13 +1,12 @@
 package forex.live
 
+import com.google.common.collect.Range
 import forex.broker.Account
 import forex.broker.AccountAndTrades
 import forex.broker.AccountID
 import forex.broker.Broker
-import forex.broker.Candlestick
 import forex.broker.CandlestickData
 import forex.broker.Context
-import forex.broker.InstrumentCandlesResponse
 import forex.broker.LiveTraders
 import forex.broker.MarketOrderRequest
 import forex.broker.MarketOrderTransaction
@@ -21,35 +20,28 @@ import forex.broker.TakeProfitDetails
 import forex.broker.TradeCloseResponse
 import forex.broker.TradeSummary
 import forex.broker.TransactionID
-import com.google.common.collect.Range
 import forex.market.AccountSnapshot
 import forex.market.InstrumentDataRetriever
+import forex.market.InstrumentHistoryService
 import forex.market.MarketTime
 import forex.simulator.TestClock
+import forex.trader.ForexTrader
 import spock.lang.Specification
 import spock.lang.Unroll
-import forex.trader.ForexTrader
 
-import java.time.DayOfWeek
 import java.time.LocalDateTime
 import java.time.Month
-import java.time.ZoneId
 
-import static forex.broker.CandlePrice.ASK
-import static forex.broker.CandlePrice.BID
-import static forex.broker.CandlePrice.MID
-import static forex.broker.CandlestickGranularity.D
-import static forex.broker.CandlestickGranularity.H4
-import static forex.broker.CandlestickGranularity.W
+import static forex.market.Instrument.EURUSD
+import static forex.market.Instrument.USDEUR
 import static java.time.Month.APRIL
 import static java.time.Month.AUGUST
 import static java.time.Month.NOVEMBER
 import static java.time.Month.SEPTEMBER
-import static forex.market.Instrument.EURUSD
-import static forex.market.Instrument.USDEUR
 
 class BrokerSpec extends Specification {
 
+    def instrumentHistoryService = Mock(InstrumentHistoryService)
     def instrumentDataRetriever = Mock(InstrumentDataRetriever)
 
     @Unroll
@@ -58,7 +50,7 @@ class BrokerSpec extends Specification {
         def clock = Mock(MarketTime)
         clock.now() >> now
 
-        def broker = new Broker(clock, new LiveTraders([]), instrumentDataRetriever)
+        def broker = new Broker(clock, new LiveTraders([]), instrumentHistoryService, instrumentDataRetriever)
         def actual = broker.isClosed()
 
         expect:
@@ -90,7 +82,7 @@ class BrokerSpec extends Specification {
         trader.accountNumber >> '1234'
 
         boolean closed = !open
-        def broker = new Broker(Mock(MarketTime), new LiveTraders([trader]), instrumentDataRetriever) {
+        def broker = new Broker(Mock(MarketTime), new LiveTraders([trader]), instrumentHistoryService, instrumentDataRetriever) {
             @Override
             boolean isClosed() {
                 return closed
@@ -122,7 +114,7 @@ class BrokerSpec extends Specification {
         def clock = new TestClock(LocalDateTime.now())
 
         def traders = new LiveTraders([trader])
-        def broker = new Broker(clock, traders, instrumentDataRetriever)
+        def broker = new Broker(clock, traders, instrumentHistoryService, instrumentDataRetriever)
 
         when: 'an account snapshot is requested for a trader'
         def actual = broker.getAccountSnapshot(traders.traders[0])
@@ -164,7 +156,7 @@ class BrokerSpec extends Specification {
         def clock = Mock(MarketTime)
         def trader = new TestTrader(id, context, clock)
 
-        Broker oanda = new Broker(clock, new LiveTraders([trader]), instrumentDataRetriever)
+        Broker oanda = new Broker(clock, new LiveTraders([trader]), instrumentHistoryService, instrumentDataRetriever)
 
         when: 'a trader opens a position with a specific number of units'
         oanda.openPosition(trader, new OpenPositionRequest(EURUSD, 3, null, null, null))
@@ -195,7 +187,7 @@ class BrokerSpec extends Specification {
         def clock = Mock(MarketTime)
         def trader = new TestTrader(id, context, clock)
 
-        Broker oanda = new Broker(clock, new LiveTraders([trader]), instrumentDataRetriever)
+        Broker oanda = new Broker(clock, new LiveTraders([trader]), instrumentHistoryService, instrumentDataRetriever)
 
         when: 'a trader submits a close position request'
         oanda.closePosition(trader, position, null)
@@ -227,36 +219,18 @@ class BrokerSpec extends Specification {
         trader.context >> context
 
         when: 'one day candles are requested'
-        def actual = new Broker(Mock(MarketTime), new LiveTraders([trader]), instrumentDataRetriever)
-                .getOneWeekCandles(trader, instrument, Range.closed(
-                start, end))
+        def actual = new Broker(Mock(MarketTime), new LiveTraders([trader]), instrumentHistoryService, instrumentDataRetriever)
+                .getOneWeekCandles(trader, instrument, Range.closed(start, end))
 
         then: 'the request has the correct arguments'
-        1 * context.instrumentCandles({
-            it.granularity == W &&
-                    it.instrument == instrument &&
-                    it.price == [BID, MID, ASK] as Set &&
-                    it.from == start &&
-                    it.to == end &&
-                    it.includeFirst == true &&
-                    it.weeklyAlignment == DayOfWeek.FRIDAY
-        }) >> new InstrumentCandlesResponse(instrument, W, [
-                new Candlestick(LocalDateTime.of(2018, AUGUST, 24, 16, 0, 0),
-                        new CandlestickData(10L, 20L, 5L, 7L),
-                        new CandlestickData(20L, 30L, 15L, 17L),
-                        new CandlestickData(15L, 25L, 10L, 12L)
-                ),
-                new Candlestick(LocalDateTime.of(2018, AUGUST, 31, 16, 0, 0),
-                        new CandlestickData(11L, 21L, 6L, 8L),
-                        new CandlestickData(21L, 31L, 16L, 18L),
-                        new CandlestickData(16L, 26L, 11L, 13L)
-                ),
-                new Candlestick(LocalDateTime.of(2018, SEPTEMBER, 7, 16, 0, 0),
-                        new CandlestickData(12L, 22L, 7L, 9L),
-                        new CandlestickData(22L, 32L, 17L, 19L),
-                        new CandlestickData(17L, 27L, 12L, 14L)
-                )
-        ])
+        1 * instrumentHistoryService.getOneWeekCandles(instrument, Range.closed(start, end)) >> {
+            NavigableMap<LocalDateTime, CandlestickData> response = new TreeMap<>()
+            response.put(LocalDateTime.of(2018, AUGUST, 24, 16, 0, 0), new CandlestickData(15L, 25L, 10L, 12L))
+            response.put(LocalDateTime.of(2018, AUGUST, 31, 16, 0, 0), new CandlestickData(16L, 26L, 11L, 13L))
+            response.put(LocalDateTime.of(2018, SEPTEMBER, 7, 16, 0, 0), new CandlestickData(17L, 27L, 12L, 14L))
+
+            return response
+        }
 
         and: 'the response had an exclusive end'
         actual.keySet() == [
@@ -264,7 +238,7 @@ class BrokerSpec extends Specification {
                 LocalDateTime.of(2018, AUGUST, 31, 16, 0, 0)
         ] as Set
 
-        and: 'mid prices were used'
+        and: 'the values were correct'
         actual.values() as Set == [
                 new CandlestickData(15L, 25L, 10L, 12L),
                 new CandlestickData(16L, 26L, 11L, 13L)
@@ -296,37 +270,19 @@ class BrokerSpec extends Specification {
         trader.context >> context
 
         when: 'one day candles are requested'
-        def actual = new Broker(Mock(MarketTime), new LiveTraders([trader]), instrumentDataRetriever)
+        def actual = new Broker(Mock(MarketTime), new LiveTraders([trader]), instrumentHistoryService, instrumentDataRetriever)
                 .getOneDayCandles(trader, instrument, Range.closed(
                 start, end))
 
         then: 'the request has the correct arguments'
-        1 * context.instrumentCandles({
-            it.granularity == D &&
-                    it.instrument == instrument &&
-                    it.price == [BID, MID, ASK] as Set &&
-                    it.from == start &&
-                    it.to == end &&
-                    it.includeFirst == true &&
-                    it.alignmentTimezone == ZoneId.of("America/Chicago") &&
-                    it.dailyAlignment == 16 // 5 PM EST
-        }) >> new InstrumentCandlesResponse(instrument, D, [
-                new Candlestick(LocalDateTime.of(2018, SEPTEMBER, 5, 16, 0, 0),
-                        new CandlestickData(10L, 20L, 5L, 7L),
-                        new CandlestickData(20L, 30L, 15L, 17L),
-                        new CandlestickData(15L, 25L, 10L, 12L)
-                ),
-                new Candlestick(LocalDateTime.of(2018, SEPTEMBER, 6, 16, 0, 0),
-                        new CandlestickData(11L, 21L, 6L, 8L),
-                        new CandlestickData(21L, 31L, 16L, 18L),
-                        new CandlestickData(16L, 26L, 11L, 13L)
-                ),
-                new Candlestick(LocalDateTime.of(2018, SEPTEMBER, 7, 16, 0, 0),
-                        new CandlestickData(12L, 22L, 7L, 9L),
-                        new CandlestickData(22L, 32L, 17L, 19L),
-                        new CandlestickData(17L, 27L, 12L, 14L)
-                )
-        ])
+        1 * instrumentHistoryService.getOneDayCandles(instrument, Range.closed(start, end)) >> {
+            NavigableMap<LocalDateTime, CandlestickData> response = new TreeMap<>()
+            response.put(LocalDateTime.of(2018, SEPTEMBER, 5, 16, 0, 0), new CandlestickData(15L, 25L, 10L, 12L))
+            response.put(LocalDateTime.of(2018, SEPTEMBER, 6, 16, 0, 0), new CandlestickData(16L, 26L, 11L, 13L))
+            response.put(LocalDateTime.of(2018, SEPTEMBER, 7, 16, 0, 0), new CandlestickData(17L, 27L, 12L, 14L))
+
+            return response
+        }
 
         and: 'the response had an exclusive end'
         actual.keySet() == [
@@ -334,7 +290,7 @@ class BrokerSpec extends Specification {
                 LocalDateTime.of(2018, SEPTEMBER, 6, 16, 0, 0)
         ] as Set
 
-        and: 'mid prices were used'
+        and: 'values were correct'
         actual.values() as Set == [
                 new CandlestickData(15L, 25L, 10L, 12L),
                 new CandlestickData(16L, 26L, 11L, 13L)
@@ -365,35 +321,19 @@ class BrokerSpec extends Specification {
         trader.context >> context
 
         when: 'one day candles are requested'
-        def actual = new Broker(Mock(MarketTime), new LiveTraders([trader]), instrumentDataRetriever)
+        def actual = new Broker(Mock(MarketTime), new LiveTraders([trader]), instrumentHistoryService, instrumentDataRetriever)
                 .getFourHourCandles(trader, instrument, Range.closed(
                 start, end))
 
         then: 'the request has the correct arguments'
-        1 * context.instrumentCandles({
-            it.granularity == H4 &&
-                    it.instrument == instrument &&
-                    it.price == [BID, MID, ASK] as Set &&
-                    it.from == start &&
-                    it.to == end &&
-                    it.includeFirst == true
-        }) >> new InstrumentCandlesResponse(instrument, H4, [
-                new Candlestick(LocalDateTime.of(2018, SEPTEMBER, 5, 0, 0, 0),
-                        new CandlestickData(10L, 20L, 5L, 7L),
-                        new CandlestickData(20L, 30L, 15L, 17L),
-                        new CandlestickData(15L, 25L, 10L, 12L)
-                ),
-                new Candlestick(LocalDateTime.of(2018, SEPTEMBER, 5, 4, 0, 0),
-                        new CandlestickData(11L, 21L, 6L, 8L),
-                        new CandlestickData(21L, 31L, 16L, 18L),
-                        new CandlestickData(16L, 26L, 11L, 13L)
-                ),
-                new Candlestick(LocalDateTime.of(2018, SEPTEMBER, 5, 8, 0, 0),
-                        new CandlestickData(12L, 22L, 7L, 9L),
-                        new CandlestickData(22L, 32L, 17L, 19L),
-                        new CandlestickData(17L, 27L, 12L, 14L)
-                )
-        ])
+        1 * instrumentHistoryService.getFourHourCandles(instrument, Range.closed(start, end)) >> {
+            NavigableMap<LocalDateTime, CandlestickData> response = new TreeMap<>()
+            response.put(LocalDateTime.of(2018, SEPTEMBER, 5, 0, 0, 0), new CandlestickData(15L, 25L, 10L, 12L))
+            response.put(LocalDateTime.of(2018, SEPTEMBER, 5, 4, 0, 0), new CandlestickData(16L, 26L, 11L, 13L))
+            response.put(LocalDateTime.of(2018, SEPTEMBER, 5, 8, 0, 0), new CandlestickData(17L, 27L, 12L, 14L))
+
+            return response
+        }
 
         and: 'the response had an exclusive end'
         actual.keySet() == [
@@ -401,7 +341,7 @@ class BrokerSpec extends Specification {
                 LocalDateTime.of(2018, SEPTEMBER, 5, 4, 0, 0)
         ] as Set
 
-        and: 'mid prices were used'
+        and: 'values were correct'
         actual.values() as Set == [
                 new CandlestickData(15L, 25L, 10L, 12L),
                 new CandlestickData(16L, 26L, 11L, 13L)
@@ -421,7 +361,7 @@ class BrokerSpec extends Specification {
         def trader = Mock(ForexTrader)
         trader.accountNumber >> '1234'
 
-        def broker = new Broker(clock, new LiveTraders([trader]), instrumentDataRetriever)
+        def broker = new Broker(clock, new LiveTraders([trader]), instrumentHistoryService, instrumentDataRetriever)
 
         when: 'the broker is processing updates'
         broker.processUpdates()
