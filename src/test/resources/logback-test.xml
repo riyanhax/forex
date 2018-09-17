@@ -5,10 +5,8 @@
     <logger name="com" level="WARN"/>
     <logger name="org" level="WARN"/>
 
-    <logger name="broker" level="WARN"/>
-    <logger name="live" level="WARN"/>
-    <logger name="trader" level="WARN"/>
-    <logger name="simulator" level="INFO"/>
+    <logger name="forex" level="WARN"/>
+    <logger name="forex.simulator" level="INFO"/>
 
     <root level="WARN">
         <appender-ref ref="CONSOLE"/>
