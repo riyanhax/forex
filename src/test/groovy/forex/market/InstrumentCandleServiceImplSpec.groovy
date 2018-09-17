@@ -1,61 +1,33 @@
-package forex.test
+package forex.market
 
+import com.google.common.collect.ImmutableSet
 import forex.broker.CandlePrice
 import forex.broker.Candlestick
 import forex.broker.CandlestickData
 import forex.broker.Context
 import forex.broker.InstrumentCandlesResponse
-import com.google.common.collect.ImmutableSet
-import forex.market.InstrumentCandle
-import forex.market.InstrumentCandleRepository
-import forex.market.InstrumentCandleService
-import forex.market.InstrumentCandleServiceImpl
-import forex.market.InstrumentCandleType
-import forex.market.PersistenceConfig
+import forex.config.InstrumentCandleServiceImplSpecConfig
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.SpringBootConfiguration
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Import
 import spock.lang.Specification
 import spock.lang.Unroll
-import spock.mock.DetachedMockFactory
 
 import javax.transaction.Transactional
 import java.time.LocalDateTime
 
+import static com.google.common.collect.Range.closed
 import static forex.broker.CandlePrice.ASK
 import static forex.broker.CandlePrice.MID
 import static forex.broker.CandlestickGranularity.M1
 import static forex.broker.CandlestickGranularity.W
-import static com.google.common.collect.Range.closed
+import static forex.market.Instrument.EURUSD
 import static java.time.LocalDateTime.of as ldt
 import static java.time.Month.JANUARY
 import static java.time.Month.SEPTEMBER
-import static forex.market.Instrument.EURUSD
 
-// This shouldn't have to be in this package, but it causes IntegrationSpec to fail
-// when in the proper package, proabably because of component scanning picking up the
-// embedded configuration
-@SpringBootTest
+@SpringBootTest(classes = InstrumentCandleServiceImplSpecConfig)
 @Transactional
 class InstrumentCandleServiceImplSpec extends Specification {
-
-    @SpringBootConfiguration
-    @Import(PersistenceConfig.class)
-    static class SpecConfig {
-        private DetachedMockFactory factory = new DetachedMockFactory()
-
-        @Bean
-        Context context() {
-            factory.Mock(Context)
-        }
-
-        @Bean
-        InstrumentCandleService service(Context context, InstrumentCandleRepository repo) {
-            new InstrumentCandleServiceImpl(context, repo)
-        }
-    }
 
     @Autowired
     Context context

@@ -9,14 +9,15 @@ import forex.market.MarketConfig;
 import forex.market.MarketEngine;
 import forex.market.MarketTime;
 import forex.market.PersistenceConfig;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
 import forex.trader.ForexTrader;
 import forex.trader.Trader;
 import forex.trader.TraderConfig;
 import forex.trader.TradingStrategy;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -24,8 +25,8 @@ import java.util.List;
 
 @Configuration
 @EnableConfigurationProperties(SimulatorProperties.class)
-@ComponentScan(basePackageClasses = {SimulatorConfig.class, PersistenceConfig.class,
-        BrokerConfig.class, TraderConfig.class, MarketConfig.class})
+@Import({PersistenceConfig.class, BrokerConfig.class, TraderConfig.class, MarketConfig.class})
+@ComponentScan
 public class SimulatorConfig {
 
     @Bean

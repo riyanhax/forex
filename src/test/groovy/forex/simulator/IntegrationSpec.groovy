@@ -11,7 +11,7 @@ import spock.lang.Specification
 
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.NONE
 
-@SpringBootTest(webEnvironment = NONE, classes = SimulatorConfig.class)
+@SpringBootTest(webEnvironment = NONE, classes = SpecConfiguration.class)
 @ActiveProfiles("integration")
 @ContextConfiguration
 class IntegrationSpec extends Specification {
