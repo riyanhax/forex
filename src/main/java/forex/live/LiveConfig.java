@@ -3,10 +3,10 @@ package forex.live;
 import forex.broker.Context;
 import forex.broker.LiveTraders;
 import forex.live.oanda.OandaContext;
-import forex.market.DatabaseHistoryReader;
+import forex.market.DBHistoryDataService;
 import forex.market.InstrumentCandleRepository;
+import forex.market.InstrumentHistoryService;
 import forex.market.MarketTime;
-import forex.market.OneMinuteCandleReader;
 import forex.trader.ForexTrader;
 import forex.trader.Trader;
 import forex.trader.TraderConfiguration;
@@ -32,8 +32,8 @@ public class LiveConfig {
     }
 
     @Bean
-    OneMinuteCandleReader candleDataReader(InstrumentCandleRepository instrumentCandleRepo) {
-        return new DatabaseHistoryReader(instrumentCandleRepo);
+    InstrumentHistoryService instrumentHistoryService(MarketTime clock, InstrumentCandleRepository repo) {
+        return new DBHistoryDataService(clock, repo);
     }
 
     @Bean

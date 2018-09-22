@@ -1,5 +1,6 @@
 package forex.simulator
 
+import com.google.common.collect.Range
 import forex.broker.AccountID
 import forex.broker.Candlestick
 import forex.broker.CandlestickData
@@ -11,8 +12,6 @@ import forex.broker.Trade
 import forex.broker.TradeListRequest
 import forex.broker.TradeState
 import forex.broker.TradeSummary
-import com.google.common.collect.Range
-import forex.market.HistoryDataService
 import forex.market.Instrument
 import forex.market.InstrumentHistoryService
 import forex.market.MarketEngine
@@ -30,16 +29,15 @@ import static forex.broker.CandlestickGranularity.D
 import static forex.broker.CandlestickGranularity.M1
 import static forex.broker.CandlestickGranularity.W
 import static forex.broker.TradeStateFilter.CLOSED
-import static java.time.DayOfWeek.FRIDAY
-import static java.time.LocalDateTime.now
-import static java.time.Month.AUGUST
-import static java.time.Month.SEPTEMBER
-import static java.util.EnumSet.of
 import static forex.market.Instrument.EURUSD
 import static forex.market.Instrument.USDEUR
 import static forex.market.MarketTime.ZONE
-
+import static java.time.DayOfWeek.FRIDAY
+import static java.time.LocalDateTime.now
 import static java.time.LocalDateTime.of as ldt
+import static java.time.Month.AUGUST
+import static java.time.Month.SEPTEMBER
+import static java.util.EnumSet.of
 
 class SimulatorContextImplSpec extends Specification {
 

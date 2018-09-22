@@ -12,4 +12,8 @@ public interface InstrumentCandleRepository extends JpaRepository<InstrumentCand
     LocalDateTime findMaxTimestamp();
 
     Set<InstrumentCandle> findByIdInstrumentAndIdTimeBetweenOrderByIdTime(Instrument instrument, LocalDateTime start, LocalDateTime end);
+
+    @Query("SELECT MAX(ic.midHigh) as high, MIN(ic.midLow) as low FROM InstrumentCandle ic " +
+            "WHERE ic.id.time >= ?1 and ic.id.time < ?2")
+    HighLowProjection findHighLow(LocalDateTime inclusiveStart, LocalDateTime exclusiveEnd);
 }
