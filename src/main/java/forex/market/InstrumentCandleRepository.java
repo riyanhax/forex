@@ -2,6 +2,7 @@ package forex.market;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.Set;
@@ -13,7 +14,10 @@ public interface InstrumentCandleRepository extends JpaRepository<InstrumentCand
 
     Set<InstrumentCandle> findByIdInstrumentAndIdTimeBetweenOrderByIdTime(Instrument instrument, LocalDateTime start, LocalDateTime end);
 
-    @Query("SELECT MAX(ic.midHigh) as high, MIN(ic.midLow) as low FROM InstrumentCandle ic " +
-            "WHERE ic.id.time >= ?1 and ic.id.time < ?2")
-    HighLowProjection findHighLow(LocalDateTime inclusiveStart, LocalDateTime exclusiveEnd);
+    @Query("SELECT MIN(ic.id.time) as open, MAX(ic.midHigh) as high, MIN(ic.midLow) as low, MAX(ic.id.time) as close " +
+            "FROM InstrumentCandle ic " +
+            "WHERE ic.id.instrument = :instrument AND ic.id.time >= :inclusiveStart and ic.id.time < :exclusiveEnd")
+    OhlcProjection findOhlc(@Param("instrument") Instrument instrument,
+                            @Param("inclusiveStart") LocalDateTime inclusiveStart,
+                            @Param("exclusiveEnd") LocalDateTime exclusiveEnd);
 }

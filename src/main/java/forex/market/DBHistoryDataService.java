@@ -84,22 +84,25 @@ public class DBHistoryDataService implements InstrumentHistoryService {
                 maxTimeToUse = now;
             }
 
-            HighLowProjection highLow = repo.findHighLow(candle, maxTimeToUse);
+            OhlcProjection highLow = repo.findOhlc(instrument, candle, maxTimeToUse);
 
             InstrumentCandleType id = new InstrumentCandleType();
             id.setInstrument(instrument);
             id.setGranularity(M1);
-            id.setTime(candle);
+            id.setTime(highLow.getOpen());
 
             Optional<InstrumentCandle> start = repo.findById(id);
-            while (!start.isPresent() && id.getTime().isBefore(maxTimeToUse)) {
-                id.setTime(id.getTime().plusMinutes(1));
-                start = repo.findById(id);
+            if (!start.isPresent()) {
+                continue;
             }
             InstrumentCandle open = start.get();
 
-            id.setTime(maxTimeToUse.minusMinutes(1));
+            id.setTime(highLow.getClose());
+
             Optional<InstrumentCandle> end = repo.findById(id);
+            if (!end.isPresent()) {
+                continue;
+            }
             InstrumentCandle close = end.get();
 
             result.put(candle, new CandlestickData(open.getMidOpen(), highLow.getHigh(), highLow.getLow(), close.getMidClose()));
