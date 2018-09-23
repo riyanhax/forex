@@ -1,11 +1,11 @@
 package forex.live.oanda
 
-import forex.broker.MarketOrderTransaction
-import forex.broker.OrderCreateResponse
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.oanda.v20.order.OrderAdapter
 import com.oanda.v20.transaction.TransactionAdapter
+import forex.broker.MarketOrderTransaction
+import forex.broker.OrderCreateResponse
 import spock.lang.Specification
 import spock.lang.Unroll
 

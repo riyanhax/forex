@@ -1,19 +1,19 @@
 package forex.simulation;
 
-import forex.broker.CandlestickData;
-import forex.broker.LiveTraders;
 import com.google.common.base.Preconditions;
 import com.google.common.io.MoreFiles;
 import com.google.common.io.RecursiveDeleteOption;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
+import forex.broker.CandlestickData;
+import forex.broker.LiveTraders;
 import forex.simulator.ResultsProcessor;
 import forex.simulator.SimulatorContext;
 import forex.simulator.SimulatorProperties;
 import forex.simulator.TradeHistory;
 import forex.trader.ForexTrader;
 import forex.trader.TradingStrategy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;

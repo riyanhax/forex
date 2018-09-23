@@ -1,8 +1,7 @@
 package forex.market
 
-
-import spock.lang.Specification
 import forex.market.DataRetriever.RequestHandler
+import spock.lang.Specification
 
 import static java.util.concurrent.TimeUnit.SECONDS
 

@@ -4,7 +4,7 @@ public class TradeSpecifier {
     private final String id;
 
     public TradeSpecifier(TradeSummary tradeSummary) {
-        this(tradeSummary.getId());
+        this(tradeSummary.getTradeId());
     }
 
     public TradeSpecifier(String id) {

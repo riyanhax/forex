@@ -3,15 +3,6 @@ package forex.market
 import spock.lang.Specification
 import spock.lang.Unroll
 
-import static java.time.DayOfWeek.FRIDAY
-import static java.time.DayOfWeek.MONDAY
-import static java.time.LocalDateTime.of
-import static java.time.Month.AUGUST
-import static java.time.Month.DECEMBER
-import static java.time.Month.FEBRUARY
-import static java.time.Month.JANUARY
-import static java.time.Month.MARCH
-import static java.time.Month.SEPTEMBER
 import static CandleTimeFrame.FIFTEEN_MINUTE
 import static CandleTimeFrame.FIVE_MINUTE
 import static CandleTimeFrame.FOUR_HOURS
@@ -21,6 +12,15 @@ import static CandleTimeFrame.ONE_MINUTE
 import static CandleTimeFrame.ONE_MONTH
 import static CandleTimeFrame.ONE_WEEK
 import static CandleTimeFrame.THIRTY_MINUTE
+import static java.time.DayOfWeek.FRIDAY
+import static java.time.DayOfWeek.MONDAY
+import static java.time.LocalDateTime.of
+import static java.time.Month.AUGUST
+import static java.time.Month.DECEMBER
+import static java.time.Month.FEBRUARY
+import static java.time.Month.JANUARY
+import static java.time.Month.MARCH
+import static java.time.Month.SEPTEMBER
 
 class CandleTimeFrameSpec extends Specification {
 

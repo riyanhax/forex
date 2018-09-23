@@ -5,6 +5,10 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import forex.market.Instrument;
 
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,19 +19,49 @@ import static forex.broker.Quote.doubleFromPippetes;
 import static forex.broker.Quote.profitLossDisplay;
 import static forex.market.MarketTime.formatTimestamp;
 
+@Entity(name = "trade_summary")
 public class TradeSummary {
-    private final String id;
-    private final Instrument instrument;
-    private final long price;
-    private final LocalDateTime openTime;
-    private final int initialUnits;
-    private final int currentUnits;
-    private final long realizedProfitLoss;
-    private final long unrealizedProfitLoss;
-    private final LocalDateTime closeTime;
 
-    public TradeSummary(String id, Instrument instrument, long price, LocalDateTime openTime, int initialUnits, int currentUnits, long realizedProfitLoss, long unrealizedProfitLoss, LocalDateTime closeTime) {
-        this.id = id;
+    @Id
+    @GeneratedValue
+    private Integer id;
+
+    @Column(name = "trade_id", nullable = false)
+    private String tradeId;
+
+    @Column(name = "account_id", nullable = false)
+    private String accountId;
+
+    @Column(nullable = false)
+    private Instrument instrument;
+
+    @Column(nullable = false)
+    private long price;
+
+    @Column(name = "open_time", nullable = false)
+    private LocalDateTime openTime;
+
+    @Column(name = "initial_units", nullable = false)
+    private int initialUnits;
+
+    @Column(name = "current_units", nullable = false)
+    private int currentUnits;
+
+    @Column(name = "realized_profit_loss", nullable = false)
+    private long realizedProfitLoss;
+
+    @Column(name = "unrealized_profit_loss", nullable = false)
+    private long unrealizedProfitLoss;
+
+    @Column(name = "close_time")
+    private LocalDateTime closeTime;
+
+    public TradeSummary() {
+    }
+
+    public TradeSummary(String tradeId, String accountId, Instrument instrument, long price, LocalDateTime openTime, int initialUnits, int currentUnits, long realizedProfitLoss, long unrealizedProfitLoss, LocalDateTime closeTime) {
+        this.tradeId = tradeId;
+        this.accountId = accountId;
         this.instrument = instrument;
         this.price = price;
         this.openTime = openTime;
@@ -42,7 +76,7 @@ public class TradeSummary {
      * Create a summary from a detailed {@link Trade}.
      */
     public TradeSummary(Trade trade) {
-        this(trade.getId(), trade.getInstrument(), trade.getPrice(), trade.getOpenTime(), trade.getInitialUnits(),
+        this(trade.getTradeId(), trade.getAccountId(), trade.getInstrument(), trade.getPrice(), trade.getOpenTime(), trade.getInitialUnits(),
                 trade.getCurrentUnits(), trade.getRealizedProfitLoss(), trade.getUnrealizedProfitLoss(), trade.getCloseTime());
     }
 
@@ -78,8 +112,20 @@ public class TradeSummary {
         return closeTime;
     }
 
-    public String getId() {
+    public String getTradeId() {
+        return tradeId;
+    }
+
+    public String getAccountId() {
+        return accountId;
+    }
+
+    public Integer getId() {
         return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
     }
 
     public long getCurrentPrice() { // Assumes full trade closes
@@ -132,11 +178,11 @@ public class TradeSummary {
     }
 
     private TradeSummary stateChanged(CalculatedTradeState calculatedTradeState) {
-        checkState(id.equals(calculatedTradeState.getId()));
+        checkState(tradeId.equals(calculatedTradeState.getId()));
 
         long newUnrealizedProfitLoss = calculatedTradeState.getUnrealizedProfitLoss();
 
-        return new TradeSummary(id, instrument, price, openTime, initialUnits, currentUnits, realizedProfitLoss, newUnrealizedProfitLoss, closeTime);
+        return new TradeSummary(tradeId, accountId, instrument, price, openTime, initialUnits, currentUnits, realizedProfitLoss, newUnrealizedProfitLoss, closeTime);
     }
 
     static List<TradeSummary> incorporateState(List<TradeSummary> trades, AccountChangesState stateChanges) {
@@ -146,7 +192,7 @@ public class TradeSummary {
         }
 
         ImmutableMap<String, CalculatedTradeState> stateByTradeId = Maps.uniqueIndex(tradeStates, CalculatedTradeState::getId);
-        ImmutableMap<String, TradeSummary> tradesById = Maps.uniqueIndex(trades, TradeSummary::getId);
+        ImmutableMap<String, TradeSummary> tradesById = Maps.uniqueIndex(trades, TradeSummary::getTradeId);
 
         checkState(stateByTradeId.size() == tradesById.size(), "Trade and state count were different!");
 

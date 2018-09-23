@@ -2,10 +2,8 @@ package forex.trader;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Stopwatch;
-import forex.broker.Account;
 import forex.broker.AccountAndTrades;
-import forex.broker.AccountChangesRequest;
-import forex.broker.AccountChangesResponse;
+import forex.broker.AccountSummary;
 import forex.broker.Context;
 import forex.broker.ForexBroker;
 import forex.broker.OpenPositionRequest;
@@ -16,7 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.SortedSet;
@@ -32,19 +29,19 @@ public class Trader implements ForexTrader {
 
     private final String accountId;
     private final Context ctx;
+    private final TraderService traderService;
     private final TradingStrategy tradingStrategy;
     private final MarketTime clock;
 
-    private Account account;
+    private AccountSummary account;
     private SortedSet<TradeSummary> lastTenClosedTrades = closedTrades();
 
-    public Trader(String accountId, Context ctx, TradingStrategy tradingStrategy, MarketTime clock) {
+    public Trader(String accountId, Context ctx, TraderService traderService, TradingStrategy tradingStrategy, MarketTime clock) {
         this.accountId = accountId;
+        this.traderService = traderService;
         this.ctx = ctx;
         this.tradingStrategy = tradingStrategy;
         this.clock = clock;
-
-        initializeEverything();
     }
 
     @Override
@@ -94,56 +91,23 @@ public class Trader implements ForexTrader {
         }
     }
 
-    private void refreshDataSinceLastInterval() {
-        if (null == account) {
-            initializeEverything();
-        } else {
-            refreshAccount();
-        }
-    }
-
-    private void refreshAccount() {
-        String lastKnowTransactionID = account.getLastTransactionID();
-
-        AccountChangesRequest request = new AccountChangesRequest(account.getId(), lastKnowTransactionID);
-
-        AccountChangesResponse response;
-        try {
-            response = this.ctx.accountChanges(request);
-        } catch (RequestException e) {
-            LOG.error("Unable to check for account changes, assuming current state!", e);
-            return;
-        }
-
-        this.account = this.account.processChanges(response);
-
-        List<TradeSummary> tradesClosed = response.getAccountChanges().getTradesClosed();
-        if (!tradesClosed.isEmpty()) {
-            int toRemove = (lastTenClosedTrades.size() + tradesClosed.size()) - 10;
-            if (toRemove > 0) {
-                Iterator<TradeSummary> iter = lastTenClosedTrades.iterator();
-                for (int i = 0; i < toRemove; i++) {
-                    iter.next();
-                    iter.remove();
-                }
-            }
-            lastTenClosedTrades.addAll(tradesClosed);
-        }
-    }
-
-    private void initializeEverything() {
+    private AccountAndTrades refreshDataSinceLastInterval() {
         Stopwatch timer = Stopwatch.createStarted();
 
         try {
-            AccountAndTrades accountAndLastTenTrades = ctx.initializeAccount(this.accountId, 10);
+            AccountAndTrades accountAndLastTenTrades = traderService.accountAndTrades(this.accountId, 10);
             this.account = accountAndLastTenTrades.getAccount();
+            this.lastTenClosedTrades.clear();
             this.lastTenClosedTrades.addAll(accountAndLastTenTrades.getTrades().stream()
                     .map(TradeSummary::new).collect(toList()));
 
             LOG.info("Loaded account {} and {} closed trades in {}", accountId, lastTenClosedTrades.size(), timer);
+
+            return accountAndLastTenTrades;
         } catch (RequestException e) {
             LOG.error("Unable to retrieve the account and closed trades!", e);
         }
+        return null;
     }
 
     @Override
@@ -157,7 +121,7 @@ public class Trader implements ForexTrader {
     }
 
     @Override
-    public Optional<Account> getAccount() {
+    public Optional<AccountSummary> getAccount() {
         return Optional.ofNullable(account);
     }
 

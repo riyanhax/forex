@@ -10,6 +10,7 @@ import forex.market.MarketTime;
 import forex.trader.ForexTrader;
 import forex.trader.Trader;
 import forex.trader.TraderConfiguration;
+import forex.trader.TraderService;
 import forex.trader.TradingStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +38,7 @@ public class LiveConfig {
     }
 
     @Bean
-    LiveTraders traders(Context ctx, OandaProperties properties, MarketTime clock) throws Exception {
+    LiveTraders traders(Context ctx, TraderService traderService, OandaProperties properties, MarketTime clock) throws Exception {
 
         List<ForexTrader> traders = new ArrayList<>();
         for (TraderConfiguration it : properties.getTraders()) {
@@ -46,7 +47,7 @@ public class LiveConfig {
 
             LOG.info("Using trading strategy: {}", strategy);
 
-            traders.add(new Trader(account, ctx, strategy, clock));
+            traders.add(new Trader(account, ctx, traderService, strategy, clock));
         }
 
         return new LiveTraders(traders);

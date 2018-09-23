@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
+import static forex.broker.CandlestickData.inverse;
 import static forex.broker.CandlestickGranularity.M1;
 
 public class DBHistoryDataService implements InstrumentHistoryService {
@@ -66,6 +67,9 @@ public class DBHistoryDataService implements InstrumentHistoryService {
 
         TreeMap<LocalDateTime, CandlestickData> result = new TreeMap<>();
 
+        Instrument brokerInstrument = instrument.getBrokerInstrument();
+        boolean inverse = instrument.isInverse();
+
         LocalDateTime candle = timeFrame.calculateStart(between.lowerEndpoint());
         LocalDateTime nextCandle = timeFrame.nextCandle(candle);
 
@@ -84,15 +88,18 @@ public class DBHistoryDataService implements InstrumentHistoryService {
                 maxTimeToUse = now;
             }
 
-            OhlcProjection highLow = repo.findOhlc(instrument, candle, maxTimeToUse);
+            OhlcProjection highLow = repo.findOhlc(brokerInstrument, candle, maxTimeToUse);
 
             InstrumentCandleType id = new InstrumentCandleType();
-            id.setInstrument(instrument);
+            id.setInstrument(brokerInstrument);
             id.setGranularity(M1);
             id.setTime(highLow.getOpen());
 
             Optional<InstrumentCandle> start = repo.findById(id);
             if (!start.isPresent()) {
+                candle = nextCandle;
+                nextCandle = timeFrame.nextCandle(candle);
+
                 continue;
             }
             InstrumentCandle open = start.get();
@@ -101,11 +108,18 @@ public class DBHistoryDataService implements InstrumentHistoryService {
 
             Optional<InstrumentCandle> end = repo.findById(id);
             if (!end.isPresent()) {
+                candle = nextCandle;
+                nextCandle = timeFrame.nextCandle(candle);
+
                 continue;
             }
             InstrumentCandle close = end.get();
 
-            result.put(candle, new CandlestickData(open.getMidOpen(), highLow.getHigh(), highLow.getLow(), close.getMidClose()));
+            CandlestickData candlestickData = new CandlestickData(open.getMidOpen(), highLow.getHigh(), highLow.getLow(), close.getMidClose());
+            if (inverse) {
+                candlestickData = inverse(candlestickData);
+            }
+            result.put(candle, candlestickData);
 
             candle = nextCandle;
             nextCandle = timeFrame.nextCandle(candle);

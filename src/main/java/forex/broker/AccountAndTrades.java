@@ -6,15 +6,15 @@ import java.util.List;
 import java.util.Objects;
 
 public class AccountAndTrades {
-    private final Account account;
+    private final AccountSummary account;
     private final List<Trade> trades;
 
-    public AccountAndTrades(Account account, List<Trade> trades) {
+    public AccountAndTrades(AccountSummary account, List<Trade> trades) {
         this.account = account;
         this.trades = trades;
     }
 
-    public Account getAccount() {
+    public AccountSummary getAccount() {
         return account;
     }
 

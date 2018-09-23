@@ -1,7 +1,7 @@
 package forex.market;
 
-import forex.broker.RequestException;
 import com.google.common.collect.Range;
+import forex.broker.RequestException;
 
 import java.time.LocalDateTime;
 import java.util.List;

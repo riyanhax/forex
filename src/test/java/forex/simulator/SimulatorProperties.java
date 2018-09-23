@@ -1,8 +1,8 @@
 package forex.simulator;
 
+import forex.trader.TradingStrategies;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
-import forex.trader.TradingStrategies;
 
 import java.time.LocalDateTime;
 import java.util.List;

@@ -1,16 +1,16 @@
 package forex.live.oanda;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
+import com.oanda.v20.instrument.WeeklyAlignment;
+import com.oanda.v20.primitives.InstrumentName;
 import forex.broker.CandlePrice;
 import forex.broker.Candlestick;
 import forex.broker.CandlestickData;
 import forex.broker.CandlestickGranularity;
 import forex.broker.InstrumentCandlesRequest;
 import forex.broker.InstrumentCandlesResponse;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
-import com.oanda.v20.instrument.WeeklyAlignment;
-import com.oanda.v20.primitives.InstrumentName;
 import forex.market.Instrument;
 
 import java.time.DayOfWeek;
@@ -25,12 +25,12 @@ import static forex.broker.Quote.pippetesFromDouble;
 import static forex.live.oanda.CommonConverter.ISO_INSTANT_FORMATTER;
 import static forex.live.oanda.CommonConverter.parseToZone;
 import static forex.live.oanda.CommonConverter.verifyResponseInstrument;
+import static forex.market.MarketTime.ZONE;
 import static java.time.format.TextStyle.NARROW;
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
-import static forex.market.MarketTime.ZONE;
 
 class InstrumentConverter {
 

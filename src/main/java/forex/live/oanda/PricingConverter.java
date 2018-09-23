@@ -11,8 +11,8 @@ import java.util.List;
 import java.util.Set;
 
 import static forex.broker.Quote.pippetesFromDouble;
-import static java.util.stream.Collectors.toSet;
 import static forex.live.oanda.CommonConverter.verifyResponseInstrument;
+import static java.util.stream.Collectors.toSet;
 
 class PricingConverter {
 

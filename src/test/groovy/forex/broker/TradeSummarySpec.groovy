@@ -14,7 +14,7 @@ class TradeSummarySpec extends Specification {
     def 'should calculate current price based on realized P&L only when the trade is closed'() {
 
         def currentUnits = closeTime == null ? units : 0
-        def actual = new TradeSummary('309', USDEUR, 86233L, LocalDateTime.of(2018, Month.SEPTEMBER, 7, 7, 43, 13, 567036542),
+        def actual = new TradeSummary('309', '1', USDEUR, 86233L, LocalDateTime.of(2018, Month.SEPTEMBER, 7, 7, 43, 13, 567036542),
                 units, currentUnits, realizedPL, unrealizedPL, closeTime)
                 .currentPrice
 
@@ -35,7 +35,7 @@ class TradeSummarySpec extends Specification {
     def 'should calculate net asset value based on price and unrealized/realized P&L: @expected'() {
 
         def currentUnits = closeTime == null ? units : 0
-        def actual = new TradeSummary('309', USDEUR, 86233L, LocalDateTime.of(2018, Month.SEPTEMBER, 7, 7, 43, 13, 567036542),
+        def actual = new TradeSummary('309', '1', USDEUR, 86233L, LocalDateTime.of(2018, Month.SEPTEMBER, 7, 7, 43, 13, 567036542),
                 units, currentUnits, realizedPL, unrealizedPL, closeTime)
                 .netAssetValue
 

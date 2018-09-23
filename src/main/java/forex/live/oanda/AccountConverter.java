@@ -6,6 +6,7 @@ import forex.broker.AccountChangesRequest;
 import forex.broker.AccountChangesResponse;
 import forex.broker.AccountChangesState;
 import forex.broker.AccountGetResponse;
+import forex.broker.AccountSummary;
 import forex.broker.TradeSummary;
 
 import java.util.List;
@@ -33,9 +34,9 @@ class AccountConverter {
 
     }
 
-    static AccountChangesResponse convert(com.oanda.v20.account.AccountChangesResponse oandaResponse) {
+    static AccountChangesResponse convert(com.oanda.v20.account.AccountChangesResponse oandaResponse, String accountId) {
         String lastTransactionID = CommonConverter.convert(oandaResponse.getLastTransactionID());
-        return new AccountChangesResponse(lastTransactionID, convert(oandaResponse.getChanges()),
+        return new AccountChangesResponse(lastTransactionID, convert(oandaResponse.getChanges(), accountId),
                 convert(oandaResponse.getState()));
     }
 
@@ -45,25 +46,27 @@ class AccountConverter {
                 state.getTrades().stream().map(TradeConverter::convert).collect(toList()));
     }
 
-    private static AccountChanges convert(com.oanda.v20.account.AccountChanges oandaVersion) {
+    private static AccountChanges convert(com.oanda.v20.account.AccountChanges oandaVersion, String accountId) {
         List<TradeSummary> tradesClosed = oandaVersion.getTradesClosed().stream()
-                .map(TradeConverter::convert)
+                .map(it -> TradeConverter.convert(it, accountId))
                 .collect(toList());
 
         List<TradeSummary> tradesOpened = oandaVersion.getTradesOpened().stream()
-                .map(TradeConverter::convert)
+                .map(it -> TradeConverter.convert(it, accountId))
                 .collect(toList());
 
         return new AccountChanges(tradesClosed, tradesOpened);
     }
 
-    private static Account convert(com.oanda.v20.account.Account oandaAccount) {
-        return new Account.Builder(convert(oandaAccount.getId()))
+    private static AccountSummary convert(com.oanda.v20.account.Account oandaAccount) {
+        List<TradeSummary> trades = oandaAccount.getTrades().stream().map(it ->
+                TradeConverter.convert(it, oandaAccount.getId().toString())).collect(toList());
+
+        return new AccountSummary(new Account.Builder(convert(oandaAccount.getId()))
                 .withBalance(pippetesFromDouble(oandaAccount.getBalance().doubleValue()))
                 .withLastTransactionID(CommonConverter.convert(oandaAccount.getLastTransactionID()))
-                .withTrades(oandaAccount.getTrades().stream().map(TradeConverter::convert).collect(toList()))
                 .withProfitLoss(pippetesFromDouble(oandaAccount.getPl().doubleValue()))
-                .build();
+                .build(), trades);
     }
 
     private static String convert(com.oanda.v20.account.AccountID id) {

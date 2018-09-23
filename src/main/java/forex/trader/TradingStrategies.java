@@ -1,11 +1,11 @@
 package forex.trader;
 
+import com.google.common.collect.Range;
 import forex.broker.CandlestickData;
 import forex.broker.ForexBroker;
 import forex.broker.OpenPositionRequest;
 import forex.broker.RequestException;
 import forex.broker.TradeSummary;
-import com.google.common.collect.Range;
 import forex.market.Instrument;
 import forex.market.MarketTime;
 import org.slf4j.Logger;

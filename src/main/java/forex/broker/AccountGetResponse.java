@@ -5,13 +5,13 @@ import com.google.common.base.MoreObjects;
 import java.util.Objects;
 
 public class AccountGetResponse {
-    private Account account;
+    private AccountSummary account;
 
-    public AccountGetResponse(Account account) {
+    public AccountGetResponse(AccountSummary account) {
         this.account = account;
     }
 
-    public Account getAccount() {
+    public AccountSummary getAccount() {
         return account;
     }
 

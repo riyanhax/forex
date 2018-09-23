@@ -55,6 +55,6 @@ public class CalculatedTradeState {
     public static CalculatedTradeState from(TradeSummary openTrade) {
         Preconditions.checkArgument(openTrade.getRealizedProfitLoss() == 0L, "Should not calculate trade state for closed trades!");
 
-        return new CalculatedTradeState(openTrade.getId(), openTrade.getUnrealizedProfitLoss());
+        return new CalculatedTradeState(openTrade.getTradeId(), openTrade.getUnrealizedProfitLoss());
     }
 }

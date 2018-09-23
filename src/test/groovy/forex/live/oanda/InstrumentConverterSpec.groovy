@@ -1,21 +1,21 @@
 package forex.live.oanda
 
-import forex.broker.Candlestick
-import forex.broker.CandlestickData
-import forex.broker.InstrumentCandlesResponse
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.oanda.v20.order.OrderAdapter
 import com.oanda.v20.transaction.TransactionAdapter
+import forex.broker.Candlestick
+import forex.broker.CandlestickData
+import forex.broker.InstrumentCandlesResponse
 import spock.lang.Specification
 import spock.lang.Unroll
 
 import java.time.LocalDateTime
 
 import static forex.broker.CandlestickGranularity.W
-import static java.time.Month.AUGUST
 import static forex.market.Instrument.EURUSD
 import static forex.market.Instrument.USDEUR
+import static java.time.Month.AUGUST
 
 class InstrumentConverterSpec extends Specification {
 

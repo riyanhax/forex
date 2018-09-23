@@ -1,8 +1,8 @@
 package forex.market;
 
-import forex.broker.Account;
-import forex.broker.TradeSummary;
 import com.google.common.base.MoreObjects;
+import forex.broker.AccountSummary;
+import forex.broker.TradeSummary;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
@@ -11,15 +11,15 @@ import java.util.Objects;
 
 public class AccountSnapshot implements Comparable<AccountSnapshot> {
 
-    private final Account account;
+    private final AccountSummary account;
     private final LocalDateTime timestamp;
 
-    public AccountSnapshot(Account account, LocalDateTime timestamp) {
+    public AccountSnapshot(AccountSummary account, LocalDateTime timestamp) {
         this.account = account;
         this.timestamp = timestamp;
     }
 
-    public Account getAccount() {
+    public AccountSummary getAccount() {
         return account;
     }
 

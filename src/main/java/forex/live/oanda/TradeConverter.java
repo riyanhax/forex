@@ -1,5 +1,7 @@
 package forex.live.oanda;
 
+import com.oanda.v20.trade.TradeCloseRequest;
+import com.oanda.v20.trade.TradeSpecifier;
 import forex.broker.CalculatedTradeState;
 import forex.broker.MarketOrderTransaction;
 import forex.broker.Trade;
@@ -9,8 +11,6 @@ import forex.broker.TradeListResponse;
 import forex.broker.TradeState;
 import forex.broker.TradeStateFilter;
 import forex.broker.TradeSummary;
-import com.oanda.v20.trade.TradeCloseRequest;
-import com.oanda.v20.trade.TradeSpecifier;
 import forex.market.Instrument;
 
 import java.time.LocalDateTime;
@@ -54,13 +54,13 @@ class TradeConverter {
         return com.oanda.v20.trade.TradeStateFilter.valueOf(filter.name());
     }
 
-    static TradeListResponse convert(com.oanda.v20.trade.TradeListResponse oandaResponse) {
+    static TradeListResponse convert(com.oanda.v20.trade.TradeListResponse oandaResponse, String accountId) {
         return new TradeListResponse(
-                oandaResponse.getTrades().stream().map(TradeConverter::convert).collect(toList()),
+                oandaResponse.getTrades().stream().map(it -> convert(it, accountId)).collect(toList()),
                 CommonConverter.convert(oandaResponse.getLastTransactionID()));
     }
 
-    static Trade convert(com.oanda.v20.trade.Trade trade) {
+    static Trade convert(com.oanda.v20.trade.Trade trade, String accountId) {
 
         Instrument instrument = InstrumentConverter.convert(trade.getInstrument());
         long price = pippetesFromDouble(trade.getPrice().doubleValue());
@@ -75,7 +75,7 @@ class TradeConverter {
             }
         }
 
-        return new Trade(trade.getId().toString(), instrument,
+        return new Trade(trade.getId().toString(), accountId, instrument,
                 price,
                 trade.getOpenTime() == null ? null : CommonConverter.parseTimestamp(trade.getOpenTime().toString()),
                 TradeState.valueOf(trade.getState().name()),
@@ -90,7 +90,7 @@ class TradeConverter {
                 trade.getCloseTime() == null ? null : CommonConverter.parseTimestamp(trade.getCloseTime().toString()));
     }
 
-    static TradeSummary convert(com.oanda.v20.trade.TradeSummary tradeSummary) {
+    static TradeSummary convert(com.oanda.v20.trade.TradeSummary tradeSummary, String accountId) {
         Instrument instrument = InstrumentConverter.convert(tradeSummary.getInstrument());
         LocalDateTime openTime = tradeSummary.getOpenTime() == null ? null : CommonConverter.parseTimestamp(tradeSummary.getOpenTime().toString());
         LocalDateTime closeTime = tradeSummary.getCloseTime() == null ? null : CommonConverter.parseTimestamp(tradeSummary.getCloseTime().toString());
@@ -104,7 +104,7 @@ class TradeConverter {
             price = invert(price);
         }
 
-        return new TradeSummary(tradeSummary.getId().toString(), instrument, price, openTime, abs((int) initialUnits),
+        return new TradeSummary(tradeSummary.getId().toString(), accountId, instrument, price, openTime, abs((int) initialUnits),
                 abs((int) tradeSummary.getCurrentUnits().doubleValue()), realizedProfitLoss, unrealizedProfitLoss, closeTime);
     }
 

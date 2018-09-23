@@ -4,6 +4,12 @@ import com.google.common.base.MoreObjects;
 import forex.market.Instrument;
 
 import javax.annotation.Nullable;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Transient;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -12,32 +18,71 @@ import static forex.broker.Quote.doubleFromPippetes;
 import static forex.broker.Quote.profitLossDisplay;
 import static forex.market.MarketTime.formatTimestamp;
 
+@Entity(name = "trade")
 public class Trade {
 
-    private final String id;
-    private final Instrument instrument;
-    private final long price;
-    private final LocalDateTime openTime;
-    private final TradeState state;
-    private final int initialUnits;
-    private final int currentUnits;
-    private final long realizedProfitLoss;
-    private final long unrealizedProfitLoss;
-    private final long marginUsed;
-    private final long averageClosePrice;
-    private final List<String> closingTransactionIDs;
-    private final long financing;
-    private final LocalDateTime closeTime;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @Column(name = "trade_id", nullable = false)
+    private String tradeId;
+
+    @Column(name = "account_id", nullable = false)
+    private String accountId;
+
+    @Column(nullable = false)
+    private Instrument instrument;
+
+    @Column(nullable = false)
+    private long price;
+
+    @Column(name = "open_time", nullable = false)
+    private LocalDateTime openTime;
+
+    @Transient
+    private TradeState state;
+
+    @Column(name = "initial_units", nullable = false)
+    private int initialUnits;
+
+    @Column(name = "current_units", nullable = false)
+    private int currentUnits;
+
+    @Column(name = "realized_profit_loss", nullable = false)
+    private long realizedProfitLoss;
+
+    @Column(name = "unrealized_profit_loss", nullable = false)
+    private long unrealizedProfitLoss;
+
+    @Column(name = "close_time")
+    private LocalDateTime closeTime;
+
+    @Column(name = "margin_used", nullable = false)
+    private long marginUsed;
+
+    @Column(name = "average_close_price", nullable = false)
+    private long averageClosePrice;
+
+    @Transient
+    private List<String> closingTransactionIDs;
+
+    @Column(nullable = false)
+    private long financing;
 
     //    com.oanda.v20.trade.Trade setClientExtensions clientExtensions;
 //TakeProfitOrder takeProfitOrder
 //StopLossOrder stopLossOrder
     //TrailingStopLossOrder trailingStopLossOrder
 
-    public Trade(String id, Instrument instrument, long price, LocalDateTime openTime, TradeState state, int initialUnits,
+    public Trade() {
+    }
+
+    public Trade(String tradeId, String accountId, Instrument instrument, long price, LocalDateTime openTime, TradeState state, int initialUnits,
                  int currentUnits, long realizedProfitLoss, long unrealizedProfitLoss, long marginUsed, long averageClosePrice,
                  List<String> closingTransactionIDs, long financing, @Nullable LocalDateTime closeTime) {
-        this.id = id;
+        this.tradeId = tradeId;
+        this.accountId = accountId;
         this.instrument = instrument;
         this.price = price;
         this.openTime = openTime;
@@ -53,8 +98,26 @@ public class Trade {
         this.closeTime = closeTime;
     }
 
-    public String getId() {
+    public Trade(TradeSummary summary) {
+        this(summary.getTradeId(), summary.getAccountId(), summary.getInstrument(), summary.getPrice(), summary.getOpenTime(),
+                null, summary.getInitialUnits(), summary.getCurrentUnits(), summary.getRealizedProfitLoss(), summary.getUnrealizedProfitLoss(),
+                0L, 0L, null, 0L, summary.getCloseTime());
+    }
+
+    public Integer getId() {
         return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public String getTradeId() {
+        return tradeId;
+    }
+
+    public String getAccountId() {
+        return accountId;
     }
 
     public Instrument getInstrument() {
@@ -127,6 +190,8 @@ public class Trade {
                 averageClosePrice == trade.averageClosePrice &&
                 financing == trade.financing &&
                 Objects.equals(id, trade.id) &&
+                Objects.equals(tradeId, trade.tradeId) &&
+                Objects.equals(accountId, trade.accountId) &&
                 instrument == trade.instrument &&
                 Objects.equals(openTime, trade.openTime) &&
                 state == trade.state &&
@@ -136,13 +201,15 @@ public class Trade {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, instrument, price, openTime, state, initialUnits, currentUnits, realizedProfitLoss, unrealizedProfitLoss, marginUsed, averageClosePrice, closingTransactionIDs, financing, closeTime);
+        return Objects.hash(id, tradeId, accountId, instrument, price, openTime, state, initialUnits, currentUnits, realizedProfitLoss, unrealizedProfitLoss, marginUsed, averageClosePrice, closingTransactionIDs, financing, closeTime);
     }
 
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
                 .add("id", id)
+                .add("tradeId", tradeId)
+                .add("accountId", accountId)
                 .add("instrument", instrument)
                 .add("price", doubleFromPippetes(price))
                 .add("currentPrice", doubleFromPippetes(getCurrentPrice()))
@@ -159,5 +226,4 @@ public class Trade {
                 .add("closeTime", closeTime == null ? null : formatTimestamp(closeTime))
                 .toString();
     }
-
 }

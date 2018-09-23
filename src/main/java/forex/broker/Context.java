@@ -1,7 +1,5 @@
 package forex.broker;
 
-import com.oanda.v20.account.AccountID;
-
 import static forex.broker.TradeStateFilter.CLOSED;
 
 public interface Context {
@@ -23,7 +21,7 @@ public interface Context {
     TradeListResponse listTrade(TradeListRequest request) throws RequestException;
 
     default AccountAndTrades initializeAccount(String accountId, int numLastTrades) throws RequestException {
-        Account account = getAccount(accountId).getAccount();
+        AccountSummary account = getAccount(accountId).getAccount();
         TradeListResponse tradeListResponse = listTrade(new TradeListRequest(accountId, CLOSED, numLastTrades));
 
         return new AccountAndTrades(account, tradeListResponse.getTrades());

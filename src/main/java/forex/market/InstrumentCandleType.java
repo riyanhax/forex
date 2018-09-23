@@ -1,7 +1,7 @@
 package forex.market;
 
-import forex.broker.CandlestickGranularity;
 import com.google.common.base.MoreObjects;
+import forex.broker.CandlestickGranularity;
 
 import javax.persistence.Embeddable;
 import java.io.Serializable;

@@ -1,21 +1,21 @@
 package forex.live.oanda;
 
+import com.oanda.v20.account.AccountID;
+import com.oanda.v20.order.OrderRequest;
+import com.oanda.v20.transaction.Transaction;
 import forex.broker.MarketOrderRequest;
 import forex.broker.MarketOrderTransaction;
 import forex.broker.OrderCreateRequest;
 import forex.broker.OrderCreateResponse;
 import forex.broker.StopLossDetails;
 import forex.broker.TakeProfitDetails;
-import com.oanda.v20.account.AccountID;
-import com.oanda.v20.order.OrderRequest;
-import com.oanda.v20.transaction.Transaction;
 import forex.market.Instrument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static forex.broker.Quote.doubleFromPippetes;
 import static forex.broker.Quote.invert;
-import static com.google.common.base.Preconditions.checkArgument;
 import static forex.live.oanda.CommonConverter.parseTimestamp;
 import static forex.live.oanda.CommonConverter.verifyResponseInstrument;
 

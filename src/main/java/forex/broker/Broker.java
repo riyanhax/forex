@@ -3,7 +3,6 @@ package forex.broker;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Range;
-import com.oanda.v20.account.AccountID;
 import forex.market.AccountSnapshot;
 import forex.market.Instrument;
 import forex.market.InstrumentDataRetriever;
@@ -52,7 +51,7 @@ public class Broker implements ForexBroker {
     public AccountSnapshot getAccountSnapshot(ForexTrader trader) throws Exception {
         LocalDateTime now = clock.now();
 
-        Account account = getAccount(trader);
+        AccountSummary account = getAccount(trader);
 
         return new AccountSnapshot(account, now);
     }
@@ -195,8 +194,8 @@ public class Broker implements ForexBroker {
         return new TreeMap<>(candlesRequest.request(instrument, timeRange).subMap(timeRange.lowerEndpoint(), exclusiveEnd));
     }
 
-    private Account getAccount(ForexTrader trader) throws RequestException {
-        Optional<Account> account = tradersByAccountId.get(trader.getAccountNumber()).getAccount();
+    private AccountSummary getAccount(ForexTrader trader) throws RequestException {
+        Optional<AccountSummary> account = tradersByAccountId.get(trader.getAccountNumber()).getAccount();
         if (!account.isPresent()) {
             throw new RequestException("Unable to find the account for the trader!");
         }

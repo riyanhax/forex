@@ -1,8 +1,8 @@
 package forex.simulator;
 
+import com.google.common.base.MoreObjects;
 import forex.broker.CandlestickData;
 import forex.broker.TradeSummary;
-import com.google.common.base.MoreObjects;
 import forex.market.Instrument;
 
 import java.time.LocalDateTime;
@@ -40,7 +40,7 @@ public class TradeHistory {
     }
 
     public String getId() {
-        return trade.getId();
+        return trade.getTradeId();
     }
 
     public Instrument getInstrument() {

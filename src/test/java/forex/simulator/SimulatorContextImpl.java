@@ -10,6 +10,7 @@ import forex.broker.AccountChangesResponse;
 import forex.broker.AccountChangesState;
 import forex.broker.AccountContext;
 import forex.broker.AccountGetResponse;
+import forex.broker.AccountSummary;
 import forex.broker.BaseContext;
 import forex.broker.CalculatedTradeState;
 import forex.broker.Candlestick;
@@ -52,7 +53,6 @@ import forex.market.order.SellMarketOrder;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -64,6 +64,7 @@ import java.util.SortedSet;
 import static forex.broker.Quote.pippetesFromDouble;
 import static forex.broker.TradeStateFilter.CLOSED;
 import static forex.market.MarketTime.formatTimestamp;
+import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 
 class SimulatorContextImpl extends BaseContext implements OrderListener, SimulatorContext {
@@ -75,7 +76,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
     private final SequenceService sequenceService;
     private final TradeService tradeService;
 
-    private final Map<String, Account> mostRecentPortfolio = new HashMap<>();
+    private final Map<String, AccountSummary> mostRecentPortfolio = new HashMap<>();
     private final Map<String, String> accountIdsByOrderId = new HashMap<>();
     private final Map<String, TraderData> traderDataById = new HashMap<>();
     private final Map<String, MarketOrderRequest> stopLossTakeProfitsById = new HashMap<>();
@@ -92,7 +93,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
         marketEngine.processUpdates();
 
         boolean orderSubmitted = false;
-        for (Account account : mostRecentPortfolio.values()) {
+        for (AccountSummary account : mostRecentPortfolio.values()) {
             orderSubmitted |= handleStopLossTakeProfits(account);
         }
 
@@ -127,7 +128,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
                 filled.isSellOrder() && price < executionPrice, "The spread doesn't seem to be used correctly!");
 
         String accountID = accountIdsByOrderId.remove(filled.getId());
-        Account oldPortfolio = mostRecentPortfolio(accountID);
+        AccountSummary oldPortfolio = mostRecentPortfolio(accountID);
 
         ImmutableMap<Instrument, TradeSummary> positionsByInstrument = Maps.uniqueIndex(oldPortfolio.getTrades(),
                 TradeSummary::getInstrument);
@@ -136,7 +137,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
         LocalDateTime now = clock.now();
         Integer transactionId = sequenceService.nextAccountTransactionID(accountID);
 
-        Account account;
+        AccountSummary account;
 
         if (filled.isSellOrder()) {
             Objects.requireNonNull(existingPosition, "Go long on the inverse pair, instead of shorting the primary pair.");
@@ -146,7 +147,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
             long profitLoss = (price - opened) * filled.getUnits();
 
             TradeSummary closedTrade = new TradeSummary(
-                    existingPosition.getId(), existingPosition.getInstrument(), existingPosition.getPrice(), existingPosition.getOpenTime(),
+                    existingPosition.getTradeId(), existingPosition.getAccountId(), existingPosition.getInstrument(), existingPosition.getPrice(), existingPosition.getOpenTime(),
                     existingPosition.getCurrentUnits(), 0, profitLoss, 0L, now);
 
             NavigableMap<LocalDateTime, CandlestickData> candles;
@@ -180,7 +181,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
             Preconditions.checkArgument(!positionsByInstrument.containsKey(instrument.getOpposite()), "Shouldn't have more than one position open for a pair at a time!");
 
             TradeSummary filledPosition = positionValue(new TradeSummary(
-                    filled.getId(), instrument, price, now, filled.getUnits(), filled.getUnits(), 0L, 0L, null));
+                    filled.getId(), accountID, instrument, price, now, filled.getUnits(), filled.getUnits(), 0L, 0L, null));
 
             account = oldPortfolio.positionOpened(filledPosition, getLatestTransactionId(accountID));
             List<TradeSummary> openTrades = account.getTrades();
@@ -202,7 +203,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
     private AccountChangesResponse stagedAccountChanges(String accountID) {
 
         accountChangesById.computeIfAbsent(accountID, it -> {
-            Account account = mostRecentPortfolio(accountID);
+            AccountSummary account = mostRecentPortfolio(accountID);
             List<TradeSummary> openTrades = account.getTrades();
             AccountChangesState state = new AccountChangesState(account.getNetAssetValue(),
                     openTrades.stream().mapToLong(TradeSummary::getUnrealizedProfitLoss).sum(),
@@ -262,7 +263,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
 
             String accountID = request.getAccountID();
             TradeSummary position = mostRecentPortfolio(accountID).getTrades().iterator().next();
-            String positionId = position.getId();
+            String positionId = position.getTradeId();
 
             Preconditions.checkArgument(requestedCloseId.equals(positionId),
                     "Trade with id [%s] not found.  Found [%s]", requestedCloseId, positionId);
@@ -295,9 +296,9 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
                     .sorted(Comparator.comparing(TradeHistory::getOpenTime).reversed())
                     .limit(request.getCount())
                     .map(it ->
-                            new Trade(it.getId(), it.getInstrument(), it.getTrade().getPrice(), it.getOpenTime(), TradeState.CLOSED,
+                            new Trade(it.getId(), accountID, it.getInstrument(), it.getTrade().getPrice(), it.getOpenTime(), TradeState.CLOSED,
                                     it.getTrade().getInitialUnits(), 0, it.getRealizedProfitLoss(), 0L, 0L, it.getCandles().lastEntry().getValue().getO(),
-                                    Collections.emptyList(), 0L, it.getTrade().getCloseTime())
+                                    emptyList(), 0L, it.getTrade().getCloseTime())
                     )
                     .collect(toList());
 
@@ -315,7 +316,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
             if (latestTransactionId.equals(request.getSinceTransactionID())) {
                 TraderData traderData = getTraderData(accountID);
                 AccountSnapshot mostRecentSnapshot = traderData.getMostRecentPortfolio();
-                Account account = mostRecentSnapshot.getAccount();
+                AccountSummary account = mostRecentSnapshot.getAccount();
 
                 return AccountChangesResponse.empty(latestTransactionId,
                         new AccountChangesState(account.getNetAssetValue(),
@@ -340,13 +341,14 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
         return sequenceService.getLatestTransactionId(accountID).toString();
     }
 
-    private AccountSnapshot accountSnapshot(Account account) {
+    private AccountSnapshot accountSnapshot(AccountSummary account) {
         List<TradeSummary> newTradeValues = positionValues(account.getTrades());
 
         Account newAccount = new Account(account.getId(), account.getBalance(), account.getLastTransactionID(),
-                newTradeValues, account.getProfitLoss());
+                account.getProfitLoss());
+        AccountSummary summary = new AccountSummary(newAccount, newTradeValues);
 
-        return new AccountSnapshot(newAccount, clock.now());
+        return new AccountSnapshot(summary, clock.now());
     }
 
     private List<TradeSummary> positionValues(List<TradeSummary> positions) {
@@ -363,7 +365,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
         long currentPrice = adjustPriceForSpread(price, instrument, stance);
         long unrealizedProfitLoss = currentPrice - position.getPrice();
 
-        return new TradeSummary(position.getId(), instrument, position.getPrice(), position.getOpenTime(), position.getInitialUnits(),
+        return new TradeSummary(position.getTradeId(), position.getAccountId(), instrument, position.getPrice(), position.getOpenTime(), position.getInitialUnits(),
                 position.getCurrentUnits(), 0L, unrealizedProfitLoss, null);
     }
 
@@ -446,15 +448,15 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
         return tradeService.getClosedTradesForAccountID(id);
     }
 
-    private Account mostRecentPortfolio(String id) {
+    private AccountSummary mostRecentPortfolio(String id) {
 
         mostRecentPortfolio.computeIfAbsent(id, it -> {
             long balance = pippetesFromDouble(simulatorProperties.getAccountBalanceDollars());
 
-            return new Account.Builder(id)
+            return new AccountSummary(new Account.Builder(id)
                     .withBalance(balance)
                     .withLastTransactionID(getLatestTransactionId(id))
-                    .build();
+                    .build(), emptyList());
         });
 
         return mostRecentPortfolio.get(id);
@@ -504,7 +506,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
      * @param trader
      * @return true if an order was submitted
      */
-    private boolean handleStopLossTakeProfits(Account account) throws RequestException {
+    private boolean handleStopLossTakeProfits(AccountSummary account) throws RequestException {
         String id = account.getId();
         MarketOrderRequest openedPosition = stopLossTakeProfitsById.get(id);
 
@@ -525,7 +527,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
                     positionValue.getPrice() - takeProfitPrice;
 
             if (pipsProfit < -stopLoss || pipsProfit > takeProfit) {
-                trade().close(new TradeCloseRequest(account.getId(), new TradeSpecifier(positionValue.getId())));
+                trade().close(new TradeCloseRequest(account.getId(), new TradeSpecifier(positionValue.getTradeId())));
                 stopLossTakeProfitsById.remove(id);
                 return true;
             }
@@ -536,7 +538,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
     @Override
     public TraderData getTraderData(String accountNumber) {
         traderDataById.computeIfAbsent(accountNumber, it -> {
-            Account account = mostRecentPortfolio(accountNumber);
+            AccountSummary account = mostRecentPortfolio(accountNumber);
 
             TraderData traderData = new TraderData();
             traderData.addSnapshot(accountSnapshot(account));

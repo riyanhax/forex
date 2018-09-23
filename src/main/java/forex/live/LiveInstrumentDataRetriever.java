@@ -1,8 +1,8 @@
 package forex.live;
 
-import forex.broker.RequestException;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Range;
+import forex.broker.RequestException;
 import forex.market.DataRetriever;
 import forex.market.InstrumentCandle;
 import forex.market.InstrumentCandleService;
@@ -20,9 +20,9 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import static forex.broker.Context.MAXIMUM_CANDLES_PER_RETRIEVAL;
+import static forex.market.CandleTimeFrame.ONE_MINUTE;
 import static java.util.Collections.emptySortedSet;
 import static java.util.stream.Collectors.toList;
-import static forex.market.CandleTimeFrame.ONE_MINUTE;
 
 @Service
 public class LiveInstrumentDataRetriever implements InstrumentDataRetriever {

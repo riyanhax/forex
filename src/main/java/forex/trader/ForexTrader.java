@@ -1,6 +1,6 @@
 package forex.trader;
 
-import forex.broker.Account;
+import forex.broker.AccountSummary;
 import forex.broker.Context;
 import forex.broker.ForexBroker;
 import forex.broker.RequestException;
@@ -18,7 +18,7 @@ public interface ForexTrader {
 
     void processUpdates(ForexBroker broker) throws Exception;
 
-    Optional<Account> getAccount();
+    Optional<AccountSummary> getAccount();
 
     Context getContext();
 }

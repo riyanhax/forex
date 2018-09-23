@@ -79,7 +79,7 @@ public class OandaContext extends BaseContext {
 
         @Override
         public TradeListResponse list(TradeListRequest request) throws forex.broker.RequestException {
-            return processRequest(request, TradeConverter::convert, trade::list, TradeConverter::convert);
+            return processRequest(request, TradeConverter::convert, trade::list, it -> TradeConverter.convert(it, request.getAccountID()));
         }
     }
 
@@ -92,7 +92,7 @@ public class OandaContext extends BaseContext {
 
         @Override
         public AccountChangesResponse changes(AccountChangesRequest request) throws forex.broker.RequestException {
-            return processRequest(request, AccountConverter::convert, account::changes, AccountConverter::convert);
+            return processRequest(request, AccountConverter::convert, account::changes, it -> AccountConverter.convert(it, request.getAccountID()));
         }
 
         @Override

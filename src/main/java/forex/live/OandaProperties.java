@@ -1,8 +1,8 @@
 package forex.live;
 
+import forex.trader.TraderConfiguration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
-import forex.trader.TraderConfiguration;
 
 import java.util.List;
 

@@ -1,7 +1,7 @@
 package forex.market;
 
-import forex.broker.CandlestickData;
 import com.google.common.collect.Range;
+import forex.broker.CandlestickData;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

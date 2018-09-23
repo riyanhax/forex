@@ -1,6 +1,7 @@
 package forex.simulator
 
 import forex.broker.LiveTraders
+import org.junit.Ignore
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.annotation.Configuration
@@ -11,6 +12,7 @@ import spock.lang.Specification
 
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.NONE
 
+@Ignore
 @SpringBootTest(webEnvironment = NONE, classes = SpecConfiguration.class)
 @ActiveProfiles("integration")
 @ContextConfiguration

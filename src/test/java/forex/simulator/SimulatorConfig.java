@@ -13,6 +13,7 @@ import forex.market.PersistenceConfig;
 import forex.trader.ForexTrader;
 import forex.trader.Trader;
 import forex.trader.TraderConfig;
+import forex.trader.TraderService;
 import forex.trader.TradingStrategy;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -59,12 +60,12 @@ public class SimulatorConfig {
 
     @Bean
     LiveTraders traders(SimulatorProperties simulatorProperties, MarketTime clock,
-                        SimulatorContext context) {
+                        SimulatorContext context, TraderService traderService) {
 
         List<ForexTrader> traders = new ArrayList<>();
         simulatorProperties.getTradingStrategies().forEach(it -> {
             try {
-                traders.addAll(createInstances(it, simulatorProperties, context, clock));
+                traders.addAll(createInstances(it, simulatorProperties, context, traderService, clock));
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -81,10 +82,11 @@ public class SimulatorConfig {
     private Collection<ForexTrader> createInstances(TradingStrategy tradingStrategy,
                                                     SimulatorProperties simulatorProperties,
                                                     SimulatorContext context,
+                                                    TraderService traderService,
                                                     MarketTime clock) throws Exception {
         List<ForexTrader> traders = new ArrayList<>();
         for (int i = 0; i < simulatorProperties.getInstancesPerTraderType(); i++) {
-            traders.add(new Trader(tradingStrategy.toString() + "-" + i, context, tradingStrategy, clock));
+            traders.add(new Trader(tradingStrategy.toString() + "-" + i, context, traderService, tradingStrategy, clock));
         }
         return traders;
     }

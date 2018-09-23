@@ -1,12 +1,12 @@
 package forex.market;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Range;
 import forex.broker.CandlePrice;
 import forex.broker.Candlestick;
 import forex.broker.Context;
 import forex.broker.InstrumentCandlesRequest;
 import forex.broker.RequestException;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Range;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
