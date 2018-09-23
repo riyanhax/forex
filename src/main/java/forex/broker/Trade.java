@@ -25,7 +25,7 @@ public class Trade {
     private final long unrealizedProfitLoss;
     private final long marginUsed;
     private final long averageClosePrice;
-    private final List<TransactionID> closingTransactionIDs;
+    private final List<String> closingTransactionIDs;
     private final long financing;
     private final LocalDateTime closeTime;
 
@@ -36,7 +36,7 @@ public class Trade {
 
     public Trade(String id, Instrument instrument, long price, LocalDateTime openTime, TradeState state, int initialUnits,
                  int currentUnits, long realizedProfitLoss, long unrealizedProfitLoss, long marginUsed, long averageClosePrice,
-                 List<TransactionID> closingTransactionIDs, long financing, @Nullable LocalDateTime closeTime) {
+                 List<String> closingTransactionIDs, long financing, @Nullable LocalDateTime closeTime) {
         this.id = id;
         this.instrument = instrument;
         this.price = price;
@@ -101,7 +101,7 @@ public class Trade {
         return averageClosePrice;
     }
 
-    public List<TransactionID> getClosingTransactionIDs() {
+    public List<String> getClosingTransactionIDs() {
         return closingTransactionIDs;
     }
 

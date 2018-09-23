@@ -18,11 +18,11 @@ public class Account {
 
     private final String id;
     private final long balance;
-    private final TransactionID lastTransactionID;
+    private final String lastTransactionID;
     private final List<TradeSummary> trades;
     private final long profitLoss;
 
-    public Account(String id, long balance, TransactionID lastTransactionID, List<TradeSummary> trades, long profitLoss) {
+    public Account(String id, long balance, String lastTransactionID, List<TradeSummary> trades, long profitLoss) {
         this.id = id;
         this.balance = balance;
         this.lastTransactionID = lastTransactionID;
@@ -42,7 +42,7 @@ public class Account {
         return balance;
     }
 
-    public TransactionID getLastTransactionID() {
+    public String getLastTransactionID() {
         return lastTransactionID;
     }
 
@@ -87,7 +87,7 @@ public class Account {
                 .toString();
     }
 
-    public Account positionOpened(TradeSummary position, TransactionID latestTransactionID) {
+    public Account positionOpened(TradeSummary position, String latestTransactionID) {
         long newBalance = this.balance - position.getPurchaseValue();
 
         List<TradeSummary> newTrades = new ArrayList<>(this.trades);
@@ -101,7 +101,7 @@ public class Account {
                 .build();
     }
 
-    public Account positionClosed(TradeSummary position, TransactionID latestTransactionID) {
+    public Account positionClosed(TradeSummary position, String latestTransactionID) {
         long newBalance = this.balance + position.getNetAssetValue();
         long newProfitLoss = this.profitLoss + position.getRealizedProfitLoss();
 
@@ -153,7 +153,7 @@ public class Account {
     }
 
     public Account processChanges(AccountChangesResponse state) {
-        TransactionID mostRecentTransactionID = state.getLastTransactionID();
+        String mostRecentTransactionID = state.getLastTransactionID();
 
         boolean changesExist = !mostRecentTransactionID.equals(lastTransactionID);
 
@@ -185,8 +185,7 @@ public class Account {
     public static class Builder {
         private final String id;
         private long balance = 0L;
-        private long netAssetValue = 0L;
-        private TransactionID lastTransactionID;
+        private String lastTransactionID;
         private List<TradeSummary> trades = Collections.emptyList();
         private long profitLoss = 0L;
 
@@ -203,7 +202,7 @@ public class Account {
             return this;
         }
 
-        public Builder withLastTransactionID(TransactionID lastTransactionID) {
+        public Builder withLastTransactionID(String lastTransactionID) {
             this.lastTransactionID = lastTransactionID;
             return this;
         }

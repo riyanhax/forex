@@ -6,9 +6,9 @@ import java.util.Objects;
 
 public class AccountChangesRequest {
     private final String accountID;
-    private final TransactionID sinceTransactionID;
+    private final String sinceTransactionID;
 
-    public AccountChangesRequest(String accountID, TransactionID sinceTransactionID) {
+    public AccountChangesRequest(String accountID, String sinceTransactionID) {
         this.accountID = accountID;
         this.sinceTransactionID = sinceTransactionID;
     }
@@ -17,7 +17,7 @@ public class AccountChangesRequest {
         return accountID;
     }
 
-    public TransactionID getSinceTransactionID() {
+    public String getSinceTransactionID() {
         return sinceTransactionID;
     }
 

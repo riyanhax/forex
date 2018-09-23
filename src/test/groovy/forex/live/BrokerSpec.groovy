@@ -18,7 +18,6 @@ import forex.broker.StopLossDetails
 import forex.broker.TakeProfitDetails
 import forex.broker.TradeCloseResponse
 import forex.broker.TradeSummary
-import forex.broker.TransactionID
 import forex.market.AccountSnapshot
 import forex.market.InstrumentDataRetriever
 import forex.market.InstrumentHistoryService
@@ -102,7 +101,7 @@ class BrokerSpec extends Specification {
         def accountID = 'accountId'
         def expectedAccountData = new Account.Builder(accountID)
                 .withBalanceDollars(50)
-                .withLastTransactionID(new TransactionID('1234'))
+                .withLastTransactionID('1234')
                 .withProfitLoss(13L)
                 .build()
 
@@ -147,7 +146,7 @@ class BrokerSpec extends Specification {
         def context = Mock(Context)
         context.initializeAccount(id, _) >> new AccountAndTrades(new Account.Builder(id)
                 .withBalanceDollars(50)
-                .withLastTransactionID(new TransactionID('someId'))
+                .withLastTransactionID('someId')
                 .withProfitLoss(13L)
                 .build(), [])
         context.getPricing(_) >> new PricingGetResponse([new Price(EURUSD, 10010L, 10020L)])
@@ -175,7 +174,7 @@ class BrokerSpec extends Specification {
 
         def currentAccount = new Account.Builder(id)
                 .withBalanceDollars(50)
-                .withLastTransactionID(new TransactionID('3'))
+                .withLastTransactionID('3')
                 .withTrades([position])
                 .withProfitLoss(1L)
                 .build()
@@ -208,7 +207,7 @@ class BrokerSpec extends Specification {
         def accountID = 'accountId'
         def account = new Account.Builder(accountID)
                 .withBalanceDollars(50)
-                .withLastTransactionID(new TransactionID('1234'))
+                .withLastTransactionID('1234')
                 .withProfitLoss(13L)
                 .build()
 
@@ -259,7 +258,7 @@ class BrokerSpec extends Specification {
         def accountID = 'accountId'
         def account = new Account.Builder(accountID)
                 .withBalanceDollars(50)
-                .withLastTransactionID(new TransactionID('1234'))
+                .withLastTransactionID('1234')
                 .withProfitLoss(13L)
                 .build()
 
@@ -310,7 +309,7 @@ class BrokerSpec extends Specification {
         def accountID = 'accountId'
         def account = new Account.Builder(accountID)
                 .withBalanceDollars(50)
-                .withLastTransactionID(new TransactionID('1234'))
+                .withLastTransactionID('1234')
                 .withProfitLoss(13L)
                 .build()
 

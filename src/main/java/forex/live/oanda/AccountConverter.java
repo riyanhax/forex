@@ -7,7 +7,6 @@ import forex.broker.AccountChangesResponse;
 import forex.broker.AccountChangesState;
 import forex.broker.AccountGetResponse;
 import forex.broker.TradeSummary;
-import forex.broker.TransactionID;
 
 import java.util.List;
 
@@ -28,14 +27,14 @@ class AccountConverter {
         com.oanda.v20.account.AccountID accountID = new com.oanda.v20.account.AccountID(request.getAccountID());
 
         com.oanda.v20.account.AccountChangesRequest oandaRequest = new com.oanda.v20.account.AccountChangesRequest(accountID);
-        oandaRequest.setSinceTransactionID(new com.oanda.v20.transaction.TransactionID(request.getSinceTransactionID().getId()));
+        oandaRequest.setSinceTransactionID(new com.oanda.v20.transaction.TransactionID(request.getSinceTransactionID()));
 
         return oandaRequest;
 
     }
 
     static AccountChangesResponse convert(com.oanda.v20.account.AccountChangesResponse oandaResponse) {
-        TransactionID lastTransactionID = CommonConverter.convert(oandaResponse.getLastTransactionID());
+        String lastTransactionID = CommonConverter.convert(oandaResponse.getLastTransactionID());
         return new AccountChangesResponse(lastTransactionID, convert(oandaResponse.getChanges()),
                 convert(oandaResponse.getState()));
     }

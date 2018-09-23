@@ -38,7 +38,6 @@ import forex.broker.TradeListResponse;
 import forex.broker.TradeSpecifier;
 import forex.broker.TradeState;
 import forex.broker.TradeSummary;
-import forex.broker.TransactionID;
 import forex.market.AccountSnapshot;
 import forex.market.CandleTimeFrame;
 import forex.market.Instrument;
@@ -311,7 +310,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
         public AccountChangesResponse changes(AccountChangesRequest request) throws RequestException {
 
             String accountID = request.getAccountID();
-            TransactionID latestTransactionId = getLatestTransactionId(accountID);
+            String latestTransactionId = getLatestTransactionId(accountID);
 
             if (latestTransactionId.equals(request.getSinceTransactionID())) {
                 TraderData traderData = getTraderData(accountID);
@@ -337,8 +336,8 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
         }
     }
 
-    private TransactionID getLatestTransactionId(String accountID) {
-        return sequenceService.getLatestTransactionId(accountID);
+    private String getLatestTransactionId(String accountID) {
+        return sequenceService.getLatestTransactionId(accountID).toString();
     }
 
     private AccountSnapshot accountSnapshot(Account account) {

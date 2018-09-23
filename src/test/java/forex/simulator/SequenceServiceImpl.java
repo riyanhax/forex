@@ -1,6 +1,5 @@
 package forex.simulator;
 
-import forex.broker.TransactionID;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -27,9 +26,9 @@ class SequenceServiceImpl implements SequenceService {
     }
 
     @Override
-    public TransactionID getLatestTransactionId(String accountID) {
+    public Integer getLatestTransactionId(String accountID) {
         latestTransactionById.computeIfAbsent(accountID, it -> nextTransactionId());
 
-        return new TransactionID(latestTransactionById.get(accountID).toString());
+        return latestTransactionById.get(accountID);
     }
 }

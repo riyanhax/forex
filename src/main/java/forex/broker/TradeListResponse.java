@@ -9,9 +9,9 @@ import java.util.Optional;
 public class TradeListResponse {
 
     private final List<Trade> trades;
-    private final TransactionID lastTransactionID;
+    private final String lastTransactionID;
 
-    public TradeListResponse(List<Trade> trades, TransactionID lastTransactionID) {
+    public TradeListResponse(List<Trade> trades, String lastTransactionID) {
         this.trades = trades;
         this.lastTransactionID = lastTransactionID;
     }
@@ -20,7 +20,7 @@ public class TradeListResponse {
         return trades;
     }
 
-    public Optional<TransactionID> getLastTransactionID() {
+    public Optional<String> getLastTransactionID() {
         return Optional.ofNullable(lastTransactionID);
     }
 

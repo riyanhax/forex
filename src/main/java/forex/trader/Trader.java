@@ -1,5 +1,7 @@
 package forex.trader;
 
+import com.google.common.base.MoreObjects;
+import com.google.common.base.Stopwatch;
 import forex.broker.Account;
 import forex.broker.AccountAndTrades;
 import forex.broker.AccountChangesRequest;
@@ -9,9 +11,6 @@ import forex.broker.ForexBroker;
 import forex.broker.OpenPositionRequest;
 import forex.broker.RequestException;
 import forex.broker.TradeSummary;
-import forex.broker.TransactionID;
-import com.google.common.base.MoreObjects;
-import com.google.common.base.Stopwatch;
 import forex.market.MarketTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -104,7 +103,7 @@ public class Trader implements ForexTrader {
     }
 
     private void refreshAccount() {
-        TransactionID lastKnowTransactionID = account.getLastTransactionID();
+        String lastKnowTransactionID = account.getLastTransactionID();
 
         AccountChangesRequest request = new AccountChangesRequest(account.getId(), lastKnowTransactionID);
 

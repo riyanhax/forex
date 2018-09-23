@@ -215,8 +215,11 @@ class SimulatorContextImplSpec extends Specification {
 
         def clock = Mock(MarketTime)
         def tradeService = Mock(TradeService)
-        def context = new SimulatorContextImpl(clock, Mock(InstrumentHistoryService), Mock(SequenceService), tradeService,
+        def sequenceService = Mock(SequenceService)
+        def context = new SimulatorContextImpl(clock, Mock(InstrumentHistoryService), sequenceService, tradeService,
                 Mock(MarketEngine), new SimulatorProperties())
+
+        sequenceService.getLatestTransactionId(_) >> 1
 
         when: 'the trade request is made'
         def actual = context.trade().list(request).trades

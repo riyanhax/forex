@@ -5,11 +5,11 @@ import com.google.common.base.MoreObjects;
 import java.util.Objects;
 
 public class AccountChangesResponse {
-    private final TransactionID lastTransactionID;
+    private final String lastTransactionID;
     private final AccountChanges accountChanges;
     private final AccountChangesState accountChangesState;
 
-    public AccountChangesResponse(TransactionID lastTransactionID,
+    public AccountChangesResponse(String lastTransactionID,
                                   AccountChanges accountChanges,
                                   AccountChangesState accountChangesState) {
         this.lastTransactionID = lastTransactionID;
@@ -17,7 +17,7 @@ public class AccountChangesResponse {
         this.accountChangesState = accountChangesState;
     }
 
-    public TransactionID getLastTransactionID() {
+    public String getLastTransactionID() {
         return lastTransactionID;
     }
 
@@ -56,16 +56,16 @@ public class AccountChangesResponse {
     public AccountChangesResponse tradeOpened(Integer transactionId, TradeSummary filledPosition, AccountChangesState state) {
         AccountChanges changes = accountChanges.tradeOpened(filledPosition);
 
-        return new AccountChangesResponse(new TransactionID(transactionId.toString()), changes, state);
+        return new AccountChangesResponse(transactionId.toString(), changes, state);
     }
 
     public AccountChangesResponse tradeClosed(Integer transactionId, TradeSummary filledPosition, AccountChangesState state) {
         AccountChanges changes = accountChanges.tradeClosed(filledPosition);
 
-        return new AccountChangesResponse(new TransactionID(transactionId.toString()), changes, state);
+        return new AccountChangesResponse(transactionId.toString(), changes, state);
     }
 
-    public static AccountChangesResponse empty(TransactionID latestTransactionId, AccountChangesState accountChangesState) {
+    public static AccountChangesResponse empty(String latestTransactionId, AccountChangesState accountChangesState) {
         return new AccountChangesResponse(latestTransactionId, AccountChanges.empty(), accountChangesState);
     }
 }

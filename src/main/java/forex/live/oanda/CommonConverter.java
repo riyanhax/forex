@@ -1,6 +1,5 @@
 package forex.live.oanda;
 
-import forex.broker.TransactionID;
 import com.google.common.base.Preconditions;
 import com.oanda.v20.primitives.InstrumentName;
 import forex.market.Instrument;
@@ -34,8 +33,8 @@ class CommonConverter {
         }
     }
 
-    static TransactionID convert(com.oanda.v20.transaction.TransactionID oandaVersion) {
-        return new TransactionID(oandaVersion.toString());
+    static String convert(com.oanda.v20.transaction.TransactionID oandaVersion) {
+        return oandaVersion.toString();
     }
 
     static Instrument convert(InstrumentName instrument) {

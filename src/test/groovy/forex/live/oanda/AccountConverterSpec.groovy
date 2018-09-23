@@ -11,7 +11,6 @@ import forex.broker.AccountChangesState
 import forex.broker.AccountGetResponse
 import forex.broker.CalculatedTradeState
 import forex.broker.TradeSummary
-import forex.broker.TransactionID
 import spock.lang.Specification
 
 import java.time.LocalDateTime
@@ -32,7 +31,7 @@ class AccountConverterSpec extends Specification {
 
         def expected = new AccountGetResponse(new Account.Builder("101-001-1775714-008")
                 .withBalance(5001930L)
-                .withLastTransactionID(new TransactionID('293'))
+                .withLastTransactionID('293')
                 .withTrades([new TradeSummary('291', EURUSD, 116085L, LocalDateTime.of(2018, SEPTEMBER, 7, 6, 27, 48, 889977095), 2, 2, 0L, 110L, null)])
                 .withProfitLoss(1890L)
                 .build())
@@ -52,7 +51,7 @@ class AccountConverterSpec extends Specification {
                 new CalculatedTradeState("997", -10L)
         ]
 
-        def expected = new AccountChangesResponse(new TransactionID("999"), new AccountChanges([
+        def expected = new AccountChangesResponse("999", new AccountChanges([
                 new TradeSummary('993', USDEUR, 86402L, LocalDateTime.of(2018, SEPTEMBER, 7, 10, 49, 6,
                         159247625), 1, 0, -20L, 0L, LocalDateTime.of(2018, SEPTEMBER, 7, 10, 50, 30, 782081491))
         ], [

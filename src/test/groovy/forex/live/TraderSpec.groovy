@@ -9,7 +9,6 @@ import forex.broker.AccountChangesState
 import forex.broker.Context
 import forex.broker.ForexBroker
 import forex.broker.RequestException
-import forex.broker.TransactionID
 import forex.market.MarketTime
 import forex.trader.Trader
 import spock.lang.Specification
@@ -50,7 +49,7 @@ class TraderSpec extends Specification {
         and: 'the second succeeded'
         1 * ctx.initializeAccount(accountID, _) >> new AccountAndTrades(new Account.Builder(accountID)
                 .withBalanceDollars(50)
-                .withLastTransactionID(new TransactionID('1234'))
+                .withLastTransactionID('1234')
                 .build(), [])
     }
 
@@ -59,7 +58,7 @@ class TraderSpec extends Specification {
 
         def currentAccount = new Account.Builder(accountID)
                 .withBalanceDollars(50)
-                .withLastTransactionID(new TransactionID('3'))
+                .withLastTransactionID('3')
                 .withTrades([])
                 .withProfitLoss(1L)
                 .build()
@@ -84,8 +83,8 @@ class TraderSpec extends Specification {
 
         where:
         description                      | changes                                                                                                                  | expected
-        'no changes'                     | new AccountChangesResponse(new TransactionID('3'), new AccountChanges([], []), new AccountChangesState(5000000, 0L, [])) | false
-        'updated NAV and unrealized P&L' | new AccountChangesResponse(new TransactionID('3'), new AccountChanges([], []), new AccountChangesState(5000167, 0L, [])) | true
+        'no changes'                     | new AccountChangesResponse('3', new AccountChanges([], []), new AccountChangesState(5000000, 0L, [])) | false
+        'updated NAV and unrealized P&L' | new AccountChangesResponse('3', new AccountChanges([], []), new AccountChangesState(5000167, 0L, [])) | true
     }
 
 }
