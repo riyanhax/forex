@@ -3,7 +3,6 @@ package forex.live
 import com.google.common.collect.Range
 import forex.broker.Account
 import forex.broker.AccountAndTrades
-import forex.broker.AccountID
 import forex.broker.Broker
 import forex.broker.CandlestickData
 import forex.broker.Context
@@ -100,7 +99,7 @@ class BrokerSpec extends Specification {
     }
 
     def 'should return account snapshot data associated to the current time'() {
-        def accountID = new AccountID('accountId')
+        def accountID = 'accountId'
         def expectedAccountData = new Account.Builder(accountID)
                 .withBalanceDollars(50)
                 .withLastTransactionID(new TransactionID('1234'))
@@ -108,7 +107,7 @@ class BrokerSpec extends Specification {
                 .build()
 
         def trader = Mock(ForexTrader)
-        trader.accountNumber >> expectedAccountData.id.id
+        trader.accountNumber >> expectedAccountData.id
         trader.account >> Optional.of(expectedAccountData)
 
         def clock = new TestClock(LocalDateTime.now())
@@ -146,7 +145,7 @@ class BrokerSpec extends Specification {
     def 'should use the specified units from the request'() {
         def id = '1'
         def context = Mock(Context)
-        context.initializeAccount(id, _) >> new AccountAndTrades(new Account.Builder(new AccountID(id))
+        context.initializeAccount(id, _) >> new AccountAndTrades(new Account.Builder(id)
                 .withBalanceDollars(50)
                 .withLastTransactionID(new TransactionID('someId'))
                 .withProfitLoss(13L)
@@ -174,7 +173,7 @@ class BrokerSpec extends Specification {
         def position = new TradeSummary('309', USDEUR, 86239L, LocalDateTime.of(2018, SEPTEMBER, 7, 7, 43, 13, 567036542),
                 3, 3, 6L, 0L, LocalDateTime.of(2018, SEPTEMBER, 7, 07, 45, 11, 338759441))
 
-        def currentAccount = new Account.Builder(new AccountID(id))
+        def currentAccount = new Account.Builder(id)
                 .withBalanceDollars(50)
                 .withLastTransactionID(new TransactionID('3'))
                 .withTrades([position])
@@ -206,7 +205,7 @@ class BrokerSpec extends Specification {
         def end = LocalDateTime.of(2018, SEPTEMBER, 7, 16, 0, 0)
 
         def context = Mock(Context)
-        def accountID = new AccountID('accountId')
+        def accountID = 'accountId'
         def account = new Account.Builder(accountID)
                 .withBalanceDollars(50)
                 .withLastTransactionID(new TransactionID('1234'))
@@ -214,7 +213,7 @@ class BrokerSpec extends Specification {
                 .build()
 
         def trader = Mock(ForexTrader)
-        trader.accountNumber >> accountID.id
+        trader.accountNumber >> accountID
         trader.account >> Optional.of(account)
         trader.context >> context
 
@@ -257,7 +256,7 @@ class BrokerSpec extends Specification {
         def end = LocalDateTime.of(2018, SEPTEMBER, 7, 16, 0, 0)
 
         def context = Mock(Context)
-        def accountID = new AccountID('accountId')
+        def accountID = 'accountId'
         def account = new Account.Builder(accountID)
                 .withBalanceDollars(50)
                 .withLastTransactionID(new TransactionID('1234'))
@@ -265,7 +264,7 @@ class BrokerSpec extends Specification {
                 .build()
 
         def trader = Mock(ForexTrader)
-        trader.accountNumber >> accountID.id
+        trader.accountNumber >> accountID
         trader.account >> Optional.of(account)
         trader.context >> context
 
@@ -308,7 +307,7 @@ class BrokerSpec extends Specification {
         def end = LocalDateTime.of(2018, SEPTEMBER, 5, 8, 0, 0)
 
         def context = Mock(Context)
-        def accountID = new AccountID('accountId')
+        def accountID = 'accountId'
         def account = new Account.Builder(accountID)
                 .withBalanceDollars(50)
                 .withLastTransactionID(new TransactionID('1234'))
@@ -316,7 +315,7 @@ class BrokerSpec extends Specification {
                 .build()
 
         def trader = Mock(ForexTrader)
-        trader.accountNumber >> accountID.id
+        trader.accountNumber >> accountID
         trader.account >> Optional.of(account)
         trader.context >> context
 

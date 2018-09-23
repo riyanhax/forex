@@ -5,15 +5,15 @@ import com.google.common.base.MoreObjects;
 import java.util.Objects;
 
 public class AccountChangesRequest {
-    private final AccountID accountID;
+    private final String accountID;
     private final TransactionID sinceTransactionID;
 
-    public AccountChangesRequest(AccountID accountID, TransactionID sinceTransactionID) {
+    public AccountChangesRequest(String accountID, TransactionID sinceTransactionID) {
         this.accountID = accountID;
         this.sinceTransactionID = sinceTransactionID;
     }
 
-    public AccountID getAccountID() {
+    public String getAccountID() {
         return accountID;
     }
 

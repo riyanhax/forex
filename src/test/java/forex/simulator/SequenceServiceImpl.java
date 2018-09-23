@@ -1,6 +1,5 @@
 package forex.simulator;
 
-import forex.broker.AccountID;
 import forex.broker.TransactionID;
 import org.springframework.stereotype.Service;
 
@@ -12,7 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 class SequenceServiceImpl implements SequenceService {
 
     private final AtomicInteger transactionSequence = new AtomicInteger(1);
-    private final Map<AccountID, Integer> latestTransactionById = new HashMap<>();
+    private final Map<String, Integer> latestTransactionById = new HashMap<>();
 
     @Override
     public Integer nextTransactionId() {
@@ -20,7 +19,7 @@ class SequenceServiceImpl implements SequenceService {
     }
 
     @Override
-    public Integer nextAccountTransactionID(AccountID accountID) {
+    public Integer nextAccountTransactionID(String accountID) {
         Integer transactionId = nextTransactionId();
         latestTransactionById.put(accountID, transactionId);
 
@@ -28,7 +27,7 @@ class SequenceServiceImpl implements SequenceService {
     }
 
     @Override
-    public TransactionID getLatestTransactionId(AccountID accountID) {
+    public TransactionID getLatestTransactionId(String accountID) {
         latestTransactionById.computeIfAbsent(accountID, it -> nextTransactionId());
 
         return new TransactionID(latestTransactionById.get(accountID).toString());

@@ -6,7 +6,6 @@ import forex.broker.AccountChangesRequest;
 import forex.broker.AccountChangesResponse;
 import forex.broker.AccountChangesState;
 import forex.broker.AccountGetResponse;
-import forex.broker.AccountID;
 import forex.broker.TradeSummary;
 import forex.broker.TransactionID;
 
@@ -17,8 +16,8 @@ import static java.util.stream.Collectors.toList;
 
 class AccountConverter {
 
-    static com.oanda.v20.account.AccountID convert(AccountID accountID) {
-        return new com.oanda.v20.account.AccountID(accountID.getId());
+    static com.oanda.v20.account.AccountID convert(String accountID) {
+        return new com.oanda.v20.account.AccountID(accountID);
     }
 
     static AccountGetResponse convert(com.oanda.v20.account.AccountGetResponse oandaResponse) {
@@ -26,7 +25,7 @@ class AccountConverter {
     }
 
     static com.oanda.v20.account.AccountChangesRequest convert(AccountChangesRequest request) {
-        com.oanda.v20.account.AccountID accountID = new com.oanda.v20.account.AccountID(request.getAccountID().getId());
+        com.oanda.v20.account.AccountID accountID = new com.oanda.v20.account.AccountID(request.getAccountID());
 
         com.oanda.v20.account.AccountChangesRequest oandaRequest = new com.oanda.v20.account.AccountChangesRequest(accountID);
         oandaRequest.setSinceTransactionID(new com.oanda.v20.transaction.TransactionID(request.getSinceTransactionID().getId()));
@@ -68,8 +67,8 @@ class AccountConverter {
                 .build();
     }
 
-    private static AccountID convert(com.oanda.v20.account.AccountID id) {
-        return new AccountID(id.toString());
+    private static String convert(com.oanda.v20.account.AccountID id) {
+        return id.toString();
     }
 
 }

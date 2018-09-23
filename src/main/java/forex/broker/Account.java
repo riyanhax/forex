@@ -16,13 +16,13 @@ import static forex.broker.Quote.profitLossDisplay;
 public class Account {
     private static final Logger LOG = LoggerFactory.getLogger(Account.class);
 
-    private final AccountID id;
+    private final String id;
     private final long balance;
     private final TransactionID lastTransactionID;
     private final List<TradeSummary> trades;
     private final long profitLoss;
 
-    public Account(AccountID id, long balance, TransactionID lastTransactionID, List<TradeSummary> trades, long profitLoss) {
+    public Account(String id, long balance, TransactionID lastTransactionID, List<TradeSummary> trades, long profitLoss) {
         this.id = id;
         this.balance = balance;
         this.lastTransactionID = lastTransactionID;
@@ -30,7 +30,7 @@ public class Account {
         this.profitLoss = profitLoss;
     }
 
-    public AccountID getId() {
+    public String getId() {
         return id;
     }
 
@@ -183,14 +183,14 @@ public class Account {
     }
 
     public static class Builder {
-        private final AccountID id;
+        private final String id;
         private long balance = 0L;
         private long netAssetValue = 0L;
         private TransactionID lastTransactionID;
         private List<TradeSummary> trades = Collections.emptyList();
         private long profitLoss = 0L;
 
-        public Builder(AccountID id) {
+        public Builder(String id) {
             this.id = id;
         }
 

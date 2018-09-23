@@ -13,7 +13,7 @@ import static forex.market.Instrument.USDEUR
 
 class AccountSpec extends Specification {
 
-    static final accountID = new AccountID('1234')
+    static final accountID = '1234'
     static final newTransactionID = new TransactionID('2')
 
     def 'should modify correctly for opened positions'() {

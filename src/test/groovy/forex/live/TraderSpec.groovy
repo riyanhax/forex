@@ -6,24 +6,23 @@ import forex.broker.AccountChanges
 import forex.broker.AccountChangesRequest
 import forex.broker.AccountChangesResponse
 import forex.broker.AccountChangesState
-import forex.broker.AccountID
 import forex.broker.Context
 import forex.broker.ForexBroker
 import forex.broker.RequestException
 import forex.broker.TransactionID
 import forex.market.MarketTime
+import forex.trader.Trader
 import spock.lang.Specification
 import spock.lang.Unroll
-import forex.trader.Trader
 
 import java.time.LocalDateTime
 
-import static java.time.Month.SEPTEMBER
 import static forex.trader.TradingStrategies.OPEN_RANDOM_POSITION
+import static java.time.Month.SEPTEMBER
 
 class TraderSpec extends Specification {
 
-    static final AccountID accountID = new AccountID('1234')
+    static final String accountID = '1234'
 
     def 'should handle a request exception on refresh safely'() {
 
@@ -33,7 +32,7 @@ class TraderSpec extends Specification {
         clock.now() >> LocalDateTime.of(2018, SEPTEMBER, 11, 12, 0)
 
         when: 'the account is unavailable for data initialization during construction'
-        Trader trader = new Trader(accountID.id, ctx, OPEN_RANDOM_POSITION, clock)
+        Trader trader = new Trader(accountID, ctx, OPEN_RANDOM_POSITION, clock)
         assert !trader.account.isPresent()
 
         and: 'updates are processed later'
@@ -46,10 +45,10 @@ class TraderSpec extends Specification {
         trader.account.isPresent()
 
         and: 'the first initialize failed'
-        1 * ctx.initializeAccount(accountID.id, _) >> { throw new RequestException('Something bad happened') }
+        1 * ctx.initializeAccount(accountID, _) >> { throw new RequestException('Something bad happened') }
 
         and: 'the second succeeded'
-        1 * ctx.initializeAccount(accountID.id, _) >> new AccountAndTrades(new Account.Builder(accountID)
+        1 * ctx.initializeAccount(accountID, _) >> new AccountAndTrades(new Account.Builder(accountID)
                 .withBalanceDollars(50)
                 .withLastTransactionID(new TransactionID('1234'))
                 .build(), [])
@@ -66,7 +65,7 @@ class TraderSpec extends Specification {
                 .build()
 
         def context = Mock(Context)
-        context.initializeAccount(accountID.id, _) >> new AccountAndTrades(currentAccount, [])
+        context.initializeAccount(accountID, _) >> new AccountAndTrades(currentAccount, [])
 
         def clock = Mock(MarketTime)
         clock.now() >> LocalDateTime.of(2018, SEPTEMBER, 11, 12, 0)

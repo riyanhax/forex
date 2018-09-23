@@ -1,25 +1,24 @@
 package forex.live.oanda
 
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
+import com.oanda.v20.order.OrderAdapter
+import com.oanda.v20.transaction.TransactionAdapter
 import forex.broker.Account
 import forex.broker.AccountChanges
 import forex.broker.AccountChangesResponse
 import forex.broker.AccountChangesState
 import forex.broker.AccountGetResponse
-import forex.broker.AccountID
 import forex.broker.CalculatedTradeState
 import forex.broker.TradeSummary
 import forex.broker.TransactionID
-import com.google.gson.Gson
-import com.google.gson.GsonBuilder
-import com.oanda.v20.order.OrderAdapter
-import com.oanda.v20.transaction.TransactionAdapter
 import spock.lang.Specification
 
 import java.time.LocalDateTime
 
-import static java.time.Month.SEPTEMBER
 import static forex.market.Instrument.EURUSD
 import static forex.market.Instrument.USDEUR
+import static java.time.Month.SEPTEMBER
 
 class AccountConverterSpec extends Specification {
 
@@ -31,7 +30,7 @@ class AccountConverterSpec extends Specification {
 
     def 'should convert account get response correctly'() {
 
-        def expected = new AccountGetResponse(new Account.Builder(new AccountID("101-001-1775714-008"))
+        def expected = new AccountGetResponse(new Account.Builder("101-001-1775714-008")
                 .withBalance(5001930L)
                 .withLastTransactionID(new TransactionID('293'))
                 .withTrades([new TradeSummary('291', EURUSD, 116085L, LocalDateTime.of(2018, SEPTEMBER, 7, 6, 27, 48, 889977095), 2, 2, 0L, 110L, null)])

@@ -13,7 +13,7 @@ public abstract class BaseContext implements Context {
     }
 
     @Override
-    public AccountGetResponse getAccount(AccountID accountID) throws RequestException {
+    public AccountGetResponse getAccount(String accountID) throws RequestException {
         return account().get(accountID);
     }
 

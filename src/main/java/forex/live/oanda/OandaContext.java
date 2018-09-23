@@ -1,10 +1,11 @@
 package forex.live.oanda;
 
+import com.oanda.v20.ExecuteException;
+import com.oanda.v20.RequestException;
 import forex.broker.AccountChangesRequest;
 import forex.broker.AccountChangesResponse;
 import forex.broker.AccountContext;
 import forex.broker.AccountGetResponse;
-import forex.broker.AccountID;
 import forex.broker.BaseContext;
 import forex.broker.Context;
 import forex.broker.InstrumentCandlesRequest;
@@ -21,8 +22,6 @@ import forex.broker.TradeCloseResponse;
 import forex.broker.TradeContext;
 import forex.broker.TradeListRequest;
 import forex.broker.TradeListResponse;
-import com.oanda.v20.ExecuteException;
-import com.oanda.v20.RequestException;
 
 import java.util.function.Function;
 
@@ -97,7 +96,7 @@ public class OandaContext extends BaseContext {
         }
 
         @Override
-        public AccountGetResponse get(AccountID accountID) throws forex.broker.RequestException {
+        public AccountGetResponse get(String accountID) throws forex.broker.RequestException {
             return processRequest(accountID, AccountConverter::convert, account::get, AccountConverter::convert);
         }
     }

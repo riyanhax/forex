@@ -24,7 +24,7 @@ class TradeConverter {
 
     static TradeCloseRequest convert(forex.broker.TradeCloseRequest request) {
         return new com.oanda.v20.trade.TradeCloseRequest(
-                new com.oanda.v20.account.AccountID(request.getAccountID().getId()),
+                new com.oanda.v20.account.AccountID(request.getAccountID()),
                 new TradeSpecifier(request.getTradeSpecifier().getId()));
     }
 
@@ -43,7 +43,7 @@ class TradeConverter {
 
     static com.oanda.v20.trade.TradeListRequest convert(TradeListRequest request) {
         com.oanda.v20.trade.TradeListRequest oandaRequest = new com.oanda.v20.trade.TradeListRequest(
-                new com.oanda.v20.account.AccountID(request.getAccountID().getId()));
+                new com.oanda.v20.account.AccountID(request.getAccountID()));
         oandaRequest.setState(convert(request.getFilter()));
         oandaRequest.setCount(request.getCount());
 

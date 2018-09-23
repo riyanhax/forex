@@ -1,7 +1,6 @@
 package forex.simulator
 
 import com.google.common.collect.Range
-import forex.broker.AccountID
 import forex.broker.Candlestick
 import forex.broker.CandlestickData
 import forex.broker.InstrumentCandlesRequest
@@ -226,7 +225,7 @@ class SimulatorContextImplSpec extends Specification {
         actual == expected
 
         and: 'closed trades were retrieved'
-        1 * tradeService.getClosedTradesForAccountID(request.getAccountID().id) >> {
+        1 * tradeService.getClosedTradesForAccountID(request.getAccountID()) >> {
             def result = new TreeSet<>(new Comparator<TradeHistory>() {
                 @Override
                 int compare(TradeHistory o1, TradeHistory o2) {
@@ -238,15 +237,15 @@ class SimulatorContextImplSpec extends Specification {
         }
 
         where:
-        request                                              | expected                                                                                                                                         | closedTrades
-        new TradeListRequest(new AccountID('1'), CLOSED, 1)  | [new Trade('101', EURUSD, 116028, now.minusHours(1), TradeState.CLOSED, 2, 0, 25L, 0L, 0L, 116040L, [], 0L, now)]                                | tradeHistories
+        request                               | expected                                                                                                                                         | closedTrades
+        new TradeListRequest('1', CLOSED, 1)  | [new Trade('101', EURUSD, 116028, now.minusHours(1), TradeState.CLOSED, 2, 0, 25L, 0L, 0L, 116040L, [], 0L, now)]                                | tradeHistories
 
-        new TradeListRequest(new AccountID('1'), CLOSED, 2)  | [new Trade('101', EURUSD, 116028, now.minusHours(1), TradeState.CLOSED, 2, 0, 25L, 0L, 0L, 116040L, [], 0L, now),
-                                                                new Trade('100', EURUSD, 116058, now.minusHours(2), TradeState.CLOSED, 2, 0, -15L, 0L, 0L, 116050L, [], 0L, now.minusHours(1).minusMinutes(2))] | tradeHistories
+        new TradeListRequest('1', CLOSED, 2)  | [new Trade('101', EURUSD, 116028, now.minusHours(1), TradeState.CLOSED, 2, 0, 25L, 0L, 0L, 116040L, [], 0L, now),
+                                                 new Trade('100', EURUSD, 116058, now.minusHours(2), TradeState.CLOSED, 2, 0, -15L, 0L, 0L, 116050L, [], 0L, now.minusHours(1).minusMinutes(2))] | tradeHistories
 
-        new TradeListRequest(new AccountID('1'), CLOSED, 50) | [new Trade('101', EURUSD, 116028, now.minusHours(1), TradeState.CLOSED, 2, 0, 25L, 0L, 0L, 116040L, [], 0L, now),
-                                                                new Trade('100', EURUSD, 116058, now.minusHours(2), TradeState.CLOSED, 2, 0, -15L, 0L, 0L, 116050L, [], 0L, now.minusHours(1).minusMinutes(2)),
-                                                                new Trade('99', EURUSD, 116058, now.minusHours(3), TradeState.CLOSED, 2, 0, -15L, 0L, 0L, 116050L, [], 0L, now.minusHours(2).minusMinutes(3))]  | tradeHistories
+        new TradeListRequest('1', CLOSED, 50) | [new Trade('101', EURUSD, 116028, now.minusHours(1), TradeState.CLOSED, 2, 0, 25L, 0L, 0L, 116040L, [], 0L, now),
+                                                 new Trade('100', EURUSD, 116058, now.minusHours(2), TradeState.CLOSED, 2, 0, -15L, 0L, 0L, 116050L, [], 0L, now.minusHours(1).minusMinutes(2)),
+                                                 new Trade('99', EURUSD, 116058, now.minusHours(3), TradeState.CLOSED, 2, 0, -15L, 0L, 0L, 116050L, [], 0L, now.minusHours(2).minusMinutes(3))]  | tradeHistories
     }
 
     static NavigableMap<LocalDateTime, CandlestickData> candles(Map<LocalDateTime, CandlestickData> map) {
@@ -269,7 +268,7 @@ class SimulatorContextImplSpec extends Specification {
         when: 'the trade request is made'
         def thrown = null
         try {
-            context.trade().list(new TradeListRequest(new AccountID('1'), CLOSED, count)).trades
+            context.trade().list(new TradeListRequest('1', CLOSED, count)).trades
         } catch (Exception e) {
             thrown = e
         }
@@ -293,7 +292,7 @@ class SimulatorContextImplSpec extends Specification {
                 Mock(TradeService), marketEngine, new SimulatorProperties(pippeteSpread: 20L))
 
         when: 'the price request is made'
-        def response = context.pricing().get(new PricingGetRequest(new AccountID('1'), instruments as Set))
+        def response = context.pricing().get(new PricingGetRequest('1', instruments as Set))
         def actual = response.prices
 
         then: 'the correct prices were returned for all instruments'

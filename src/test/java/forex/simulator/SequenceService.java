@@ -1,12 +1,11 @@
 package forex.simulator;
 
-import forex.broker.AccountID;
 import forex.broker.TransactionID;
 
 interface SequenceService {
     Integer nextTransactionId();
 
-    Integer nextAccountTransactionID(AccountID accountID);
+    Integer nextAccountTransactionID(String accountID);
 
-    TransactionID getLatestTransactionId(AccountID accountID);
+    TransactionID getLatestTransactionId(String accountID);
 }

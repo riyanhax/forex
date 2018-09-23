@@ -2,10 +2,10 @@ package forex.broker;
 
 public class OrderCreateRequest {
 
-    private final AccountID accountID;
+    private final String accountID;
     private MarketOrderRequest order;
 
-    public OrderCreateRequest(AccountID accountID) {
+    public OrderCreateRequest(String accountID) {
         this.accountID = accountID;
     }
 
@@ -14,7 +14,7 @@ public class OrderCreateRequest {
         return this;
     }
 
-    public AccountID getAccountID() {
+    public String getAccountID() {
         return accountID;
     }
 

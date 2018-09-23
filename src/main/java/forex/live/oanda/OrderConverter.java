@@ -25,7 +25,7 @@ class OrderConverter {
 
     static com.oanda.v20.order.OrderCreateRequest convert(OrderCreateRequest request) {
         com.oanda.v20.order.OrderCreateRequest oandaRequest = new com.oanda.v20.order.OrderCreateRequest(
-                new AccountID(request.getAccountID().getId()));
+                new AccountID(request.getAccountID()));
         oandaRequest.setOrder(convert(request.getOrder()));
 
         return oandaRequest;

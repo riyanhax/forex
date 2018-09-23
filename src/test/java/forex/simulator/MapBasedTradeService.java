@@ -1,6 +1,5 @@
 package forex.simulator;
 
-import forex.broker.AccountID;
 import com.google.common.collect.ImmutableSortedSet;
 import org.springframework.stereotype.Service;
 
@@ -18,11 +17,11 @@ class MapBasedTradeService implements TradeService {
     private final Map<String, SortedSet<TradeHistory>> closedTrades = new HashMap<>();
 
     @Override
-    public SortedSet<TradeHistory> tradeClosed(AccountID accountID, TradeHistory closedTrade) {
-        SortedSet<TradeHistory> closedTradesForAccount = closedTrades.get(accountID.getId());
+    public SortedSet<TradeHistory> tradeClosed(String accountID, TradeHistory closedTrade) {
+        SortedSet<TradeHistory> closedTradesForAccount = closedTrades.get(accountID);
         closedTradesForAccount.add(closedTrade);
 
-        closedTrades.put(accountID.getId(), closedTradesForAccount);
+        closedTrades.put(accountID, closedTradesForAccount);
 
         return ImmutableSortedSet.copyOf(comparator(), closedTradesForAccount);
     }

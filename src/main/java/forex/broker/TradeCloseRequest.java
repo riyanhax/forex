@@ -1,16 +1,16 @@
 package forex.broker;
 
 public class TradeCloseRequest {
-    private final AccountID accountID;
+    private final String accountID;
     private final TradeSpecifier tradeSpecifier;
     private int units;
 
-    public TradeCloseRequest(AccountID accountID, TradeSpecifier tradeSpecifier) {
+    public TradeCloseRequest(String accountID, TradeSpecifier tradeSpecifier) {
         this.accountID = accountID;
         this.tradeSpecifier = tradeSpecifier;
     }
 
-    public AccountID getAccountID() {
+    public String getAccountID() {
         return accountID;
     }
 

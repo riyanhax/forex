@@ -3,6 +3,7 @@ package forex.broker;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Range;
+import com.oanda.v20.account.AccountID;
 import forex.market.AccountSnapshot;
 import forex.market.Instrument;
 import forex.market.InstrumentDataRetriever;
@@ -58,7 +59,7 @@ public class Broker implements ForexBroker {
 
     @Override
     public Quote getQuote(ForexTrader trader, Instrument pair) throws Exception {
-        AccountID accountId = new AccountID(trader.getAccountNumber());
+        String accountId = trader.getAccountNumber();
 
         PricingGetRequest request = new PricingGetRequest(accountId, singleton(pair));
         PricingGetResponse resp = getContext(trader).getPricing(request);
@@ -100,7 +101,7 @@ public class Broker implements ForexBroker {
                 request.getStopLoss().orElse(null),
                 request.getTakeProfit().orElse(null));
 
-        OrderCreateRequest orderCreateRequest = new OrderCreateRequest(new AccountID(trader.getAccountNumber()));
+        OrderCreateRequest orderCreateRequest = new OrderCreateRequest(trader.getAccountNumber());
         orderCreateRequest.setOrder(marketOrderRequest);
 
         OrderCreateResponse orderCreateResponse = getContext(trader).createOrder(orderCreateRequest);
