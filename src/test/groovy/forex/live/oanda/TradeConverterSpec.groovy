@@ -1,5 +1,6 @@
 package forex.live.oanda
 
+import com.google.common.collect.ImmutableSet
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.oanda.v20.order.OrderAdapter
@@ -8,6 +9,7 @@ import com.oanda.v20.transaction.TransactionAdapter
 import forex.broker.MarketOrderTransaction
 import forex.broker.Trade
 import forex.broker.TradeCloseResponse
+import forex.broker.TradeListRequest
 import forex.broker.TradeListResponse
 import forex.broker.TradeState
 import spock.lang.Specification
@@ -93,5 +95,50 @@ class TradeConverterSpec extends Specification {
         CLOSED               | TradeStateFilter.CLOSED
         CLOSE_WHEN_TRADEABLE | TradeStateFilter.CLOSE_WHEN_TRADEABLE
         ALL                  | TradeStateFilter.ALL
+    }
+
+    @Unroll
+    def 'should convert trade list request to oanda version correctly'() {
+
+        def actual = gson.toJson(TradeConverter.convert(request))
+
+        expect:
+        actual == expected
+
+        where:
+        request                                                             | expected
+        new TradeListRequest('1234', CLOSED, 2)                             | '''{
+  "pathParams": {
+    "accountID": "1234"
+  },
+  "queryParams": {
+    "count": 2,
+    "state": "CLOSED"
+  }
+}'''
+
+        new TradeListRequest('1234', OPEN, 3)                               | '''{
+  "pathParams": {
+    "accountID": "1234"
+  },
+  "queryParams": {
+    "count": 3,
+    "state": "OPEN"
+  }
+}'''
+
+        new TradeListRequest('1234', CLOSED, ImmutableSet.of('102', '104')) | '''{
+  "pathParams": {
+    "accountID": "1234"
+  },
+  "queryParams": {
+    "count": 50,
+    "ids": [
+      "102",
+      "104"
+    ],
+    "state": "CLOSED"
+  }
+}'''
     }
 }

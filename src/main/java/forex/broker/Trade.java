@@ -16,7 +16,10 @@ import java.util.Objects;
 
 import static forex.broker.Quote.doubleFromPippetes;
 import static forex.broker.Quote.profitLossDisplay;
+import static forex.broker.TradeState.CLOSED;
+import static forex.broker.TradeState.OPEN;
 import static forex.market.MarketTime.formatTimestamp;
+import static java.util.Collections.emptyList;
 
 @Entity(name = "trade")
 public class Trade {
@@ -100,8 +103,8 @@ public class Trade {
 
     public Trade(TradeSummary summary) {
         this(summary.getTradeId(), summary.getAccountId(), summary.getInstrument(), summary.getPrice(), summary.getOpenTime(),
-                null, summary.getInitialUnits(), summary.getCurrentUnits(), summary.getRealizedProfitLoss(), summary.getUnrealizedProfitLoss(),
-                0L, 0L, null, 0L, summary.getCloseTime());
+                summary.getCloseTime() == null ? OPEN : CLOSED, summary.getInitialUnits(), summary.getCurrentUnits(), summary.getRealizedProfitLoss(), summary.getUnrealizedProfitLoss(),
+                0L, 0L, emptyList(), 0L, summary.getCloseTime());
     }
 
     public Integer getId() {

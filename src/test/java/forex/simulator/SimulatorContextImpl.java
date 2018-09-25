@@ -38,6 +38,7 @@ import forex.broker.TradeListRequest;
 import forex.broker.TradeListResponse;
 import forex.broker.TradeSpecifier;
 import forex.broker.TradeState;
+import forex.broker.TradeStateFilter;
 import forex.broker.TradeSummary;
 import forex.market.AccountSnapshot;
 import forex.market.CandleTimeFrame;
@@ -59,10 +60,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
+import java.util.Set;
 import java.util.SortedSet;
+import java.util.TreeSet;
 
 import static forex.broker.Quote.pippetesFromDouble;
-import static forex.broker.TradeStateFilter.CLOSED;
 import static forex.market.MarketTime.formatTimestamp;
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
@@ -76,7 +78,6 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
     private final SequenceService sequenceService;
     private final TradeService tradeService;
 
-    private final Map<String, AccountSummary> mostRecentPortfolio = new HashMap<>();
     private final Map<String, String> accountIdsByOrderId = new HashMap<>();
     private final Map<String, TraderData> traderDataById = new HashMap<>();
     private final Map<String, MarketOrderRequest> stopLossTakeProfitsById = new HashMap<>();
@@ -93,7 +94,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
         marketEngine.processUpdates();
 
         boolean orderSubmitted = false;
-        for (AccountSummary account : mostRecentPortfolio.values()) {
+        for (AccountSummary account : tradeService.accounts()) {
             orderSubmitted |= handleStopLossTakeProfits(account);
         }
 
@@ -108,8 +109,8 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
         // Process any submitted orders
         marketEngine.processUpdates();
 
-        mostRecentPortfolio.forEach((id, account) -> {
-            getTraderData(id).addSnapshot(accountSnapshot(account));
+        tradeService.accounts().forEach(account -> {
+            getTraderData(account.getId()).addSnapshot(accountSnapshot(account));
         });
     }
 
@@ -197,7 +198,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
 
         }
 
-        mostRecentPortfolio.put(accountID, account);
+        tradeService.update(account);
     }
 
     private AccountChangesResponse stagedAccountChanges(String accountID) {
@@ -286,23 +287,47 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
                 throw new RequestException("Invalid request: A maximum of 500 trades can be retrieved");
             }
 
-            Preconditions.checkArgument(request.getFilter() == CLOSED, "Only closed trades are supported at this time!");
-
             String accountID = request.getAccountID();
 
-            // TradeHistory should be using Trade and not TradeSummary
-            List<Trade> closed = closedTradesForAccountId(accountID)
-                    .stream()
-                    .sorted(Comparator.comparing(TradeHistory::getOpenTime).reversed())
-                    .limit(request.getCount())
-                    .map(it ->
-                            new Trade(it.getId(), accountID, it.getInstrument(), it.getTrade().getPrice(), it.getOpenTime(), TradeState.CLOSED,
-                                    it.getTrade().getInitialUnits(), 0, it.getRealizedProfitLoss(), 0L, 0L, it.getCandles().lastEntry().getValue().getO(),
-                                    emptyList(), 0L, it.getTrade().getCloseTime())
-                    )
-                    .collect(toList());
+            SortedSet<Trade> trades = new TreeSet<>(Comparator.comparing(Trade::getOpenTime).reversed());
 
-            return new TradeListResponse(closed, closed.isEmpty() ? null : getLatestTransactionId(accountID));
+            TradeStateFilter filter = request.getFilter();
+            if (filter == TradeStateFilter.CLOSE_WHEN_TRADEABLE) {
+                throw new UnsupportedOperationException("Unsupported filter: " + filter);
+            }
+
+            if (filter == TradeStateFilter.CLOSED || filter == null) {
+
+                // TradeHistory should be using Trade and not TradeSummary
+                trades.addAll(closedTradesForAccountId(accountID)
+                        .stream()
+                        .map(it ->
+                                new Trade(it.getId(), accountID, it.getInstrument(), it.getTrade().getPrice(), it.getOpenTime(), TradeState.CLOSED,
+                                        it.getTrade().getInitialUnits(), 0, it.getRealizedProfitLoss(), 0L, 0L, it.getCandles().lastEntry().getValue().getO(),
+                                        emptyList(), 0L, it.getTrade().getCloseTime())
+                        )
+                        .collect(toList()));
+            }
+
+            if (filter == TradeStateFilter.OPEN || filter == null) {
+                trades.addAll(tradeService.getOpenTradesForAccountID(accountID)
+                        .stream()
+                        .map(Trade::new)
+                        .collect(toList()));
+            }
+
+            List<Trade> result = new ArrayList<>(trades);
+
+            Set<String> tradeIds = request.getTradeIds();
+            if (!tradeIds.isEmpty()) {
+                result.removeIf(it -> !tradeIds.contains(it.getTradeId()));
+            }
+
+            if (request.getCount() > 0) {
+                result = result.subList(0, Math.min(request.getCount(), result.size()));
+            }
+
+            return new TradeListResponse(result, result.isEmpty() ? null : getLatestTransactionId(accountID));
         }
     }
 
@@ -449,8 +474,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
     }
 
     private AccountSummary mostRecentPortfolio(String id) {
-
-        mostRecentPortfolio.computeIfAbsent(id, it -> {
+        return tradeService.getAccount(id, it -> {
             long balance = pippetesFromDouble(simulatorProperties.getAccountBalanceDollars());
 
             return new AccountSummary(new Account.Builder(id)
@@ -458,8 +482,6 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
                     .withLastTransactionID(getLatestTransactionId(id))
                     .build(), emptyList());
         });
-
-        return mostRecentPortfolio.get(id);
     }
 
     @Override

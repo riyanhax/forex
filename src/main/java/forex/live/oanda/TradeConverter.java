@@ -47,6 +47,10 @@ class TradeConverter {
         oandaRequest.setState(convert(request.getFilter()));
         oandaRequest.setCount(request.getCount());
 
+        if (!request.getTradeIds().isEmpty()) {
+            oandaRequest.setIds(request.getTradeIds());
+        }
+
         return oandaRequest;
     }
 

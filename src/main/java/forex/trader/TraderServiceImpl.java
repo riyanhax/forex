@@ -10,7 +10,6 @@ import forex.broker.RequestException;
 import forex.broker.Trade;
 import forex.broker.TradeListRequest;
 import forex.broker.TradeListResponse;
-import forex.broker.TradeStateFilter;
 import forex.broker.TradeSummary;
 import forex.market.AccountRepository;
 import forex.market.TradeRepository;
@@ -25,6 +24,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static forex.broker.TradeStateFilter.CLOSED;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
@@ -61,8 +61,7 @@ class TraderServiceImpl implements TraderService {
         List<TradeSummary> tradesClosed = response.getAccountChanges().getTradesClosed();
         if (!tradesClosed.isEmpty()) {
             Set<String> tradeIds = tradesClosed.stream().map(TradeSummary::getTradeId).collect(toSet());
-            // TODO: Add simulator context support for specifying ids
-            TradeListRequest tradeListRequest = new TradeListRequest(currentState.getId(), TradeStateFilter.CLOSED, tradesClosed.size() + 2);
+            TradeListRequest tradeListRequest = new TradeListRequest(currentState.getId(), CLOSED, tradeIds);
             TradeListResponse tradeListResponse = context.listTrade(tradeListRequest);
 
             tradeListResponse.getTrades().stream()

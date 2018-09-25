@@ -28,6 +28,7 @@ import static forex.broker.CandlestickGranularity.D
 import static forex.broker.CandlestickGranularity.M1
 import static forex.broker.CandlestickGranularity.W
 import static forex.broker.TradeStateFilter.CLOSED
+import static forex.broker.TradeStateFilter.OPEN
 import static forex.market.Instrument.EURUSD
 import static forex.market.Instrument.USDEUR
 import static forex.market.MarketTime.ZONE
@@ -211,11 +212,36 @@ class SimulatorContextImplSpec extends Specification {
                           new TradeHistory(new TradeSummary('100', accountID, EURUSD, 116058, now.minusHours(2), 2, 0, -15L, 0L, now.minusHours(1).minusMinutes(2)), candles([(now.minusHours(1).minusMinutes(2)): new CandlestickData(116050L, 116070L, 116040L, 116040L)])),
                           new TradeHistory(new TradeSummary('101', accountID, EURUSD, 116028, now.minusHours(1), 2, 0, 25L, 0L, now), candles([(now): new CandlestickData(116040L, 116060L, 116030L, 116030L)]))]
 
+    @Shared
+    def openTrades = [new TradeSummary('102', accountID, EURUSD, 116058, now.minusMinutes(55), 2, 2, 0L, -15L, null),
+                      new TradeSummary('103', accountID, USDEUR, 90057, now.minusMinutes(33), 2, 2, 0L, -70L, null)]
+
     @Unroll
     def 'should return the correct trades based on filter in descending time'() {
 
         def clock = Mock(MarketTime)
         def tradeService = Mock(TradeService)
+        tradeService.getClosedTradesForAccountID(request.getAccountID()) >> {
+            def result = new TreeSet<>(new Comparator<TradeHistory>() {
+                @Override
+                int compare(TradeHistory o1, TradeHistory o2) {
+                    return o1.getOpenTime().compareTo(o2.getOpenTime())
+                }
+            })
+            result.addAll(closedTrades)
+            return result
+        }
+        tradeService.getOpenTradesForAccountID(request.getAccountID()) >> {
+            def result = new TreeSet<>(new Comparator<TradeSummary>() {
+                @Override
+                int compare(TradeSummary o1, TradeSummary o2) {
+                    return o1.getOpenTime().compareTo(o2.getOpenTime())
+                }
+            })
+            result.addAll(openTrades)
+            return result
+        }
+
         def sequenceService = Mock(SequenceService)
         def context = new SimulatorContextImpl(clock, Mock(InstrumentHistoryService), sequenceService, tradeService,
                 Mock(MarketEngine), new SimulatorProperties())
@@ -228,28 +254,34 @@ class SimulatorContextImplSpec extends Specification {
         then:
         actual == expected
 
-        and: 'closed trades were retrieved'
-        1 * tradeService.getClosedTradesForAccountID(request.getAccountID()) >> {
-            def result = new TreeSet<>(new Comparator<TradeHistory>() {
-                @Override
-                int compare(TradeHistory o1, TradeHistory o2) {
-                    return o1.getOpenTime().compareTo(o2.getOpenTime())
-                }
-            })
-            result.addAll(closedTrades)
-            return result
-        }
-
         where:
-        request                               | expected                                                                                                                                                    | closedTrades
-        new TradeListRequest('1', CLOSED, 1)  | [new Trade('101', accountID, EURUSD, 116028, now.minusHours(1), TradeState.CLOSED, 2, 0, 25L, 0L, 0L, 116040L, [], 0L, now)]                                | tradeHistories
+        request                                           | expected                                                                                                                                                    | closedTrades   | openTrades
+        new TradeListRequest('1', CLOSED, 1)              | [new Trade('101', accountID, EURUSD, 116028, now.minusHours(1), TradeState.CLOSED, 2, 0, 25L, 0L, 0L, 116040L, [], 0L, now)]                                | tradeHistories | openTrades
 
-        new TradeListRequest('1', CLOSED, 2)  | [new Trade('101', accountID, EURUSD, 116028, now.minusHours(1), TradeState.CLOSED, 2, 0, 25L, 0L, 0L, 116040L, [], 0L, now),
-                                                 new Trade('100', accountID, EURUSD, 116058, now.minusHours(2), TradeState.CLOSED, 2, 0, -15L, 0L, 0L, 116050L, [], 0L, now.minusHours(1).minusMinutes(2))] | tradeHistories
+        new TradeListRequest('1', CLOSED, 2)              | [new Trade('101', accountID, EURUSD, 116028, now.minusHours(1), TradeState.CLOSED, 2, 0, 25L, 0L, 0L, 116040L, [], 0L, now),
+                                                             new Trade('100', accountID, EURUSD, 116058, now.minusHours(2), TradeState.CLOSED, 2, 0, -15L, 0L, 0L, 116050L, [], 0L, now.minusHours(1).minusMinutes(2))] | tradeHistories | openTrades
 
-        new TradeListRequest('1', CLOSED, 50) | [new Trade('101', accountID, EURUSD, 116028, now.minusHours(1), TradeState.CLOSED, 2, 0, 25L, 0L, 0L, 116040L, [], 0L, now),
-                                                 new Trade('100', accountID, EURUSD, 116058, now.minusHours(2), TradeState.CLOSED, 2, 0, -15L, 0L, 0L, 116050L, [], 0L, now.minusHours(1).minusMinutes(2)),
-                                                 new Trade('99', accountID, EURUSD, 116058, now.minusHours(3), TradeState.CLOSED, 2, 0, -15L, 0L, 0L, 116050L, [], 0L, now.minusHours(2).minusMinutes(3))]  | tradeHistories
+        new TradeListRequest('1', CLOSED, 50)             | [new Trade('101', accountID, EURUSD, 116028, now.minusHours(1), TradeState.CLOSED, 2, 0, 25L, 0L, 0L, 116040L, [], 0L, now),
+                                                             new Trade('100', accountID, EURUSD, 116058, now.minusHours(2), TradeState.CLOSED, 2, 0, -15L, 0L, 0L, 116050L, [], 0L, now.minusHours(1).minusMinutes(2)),
+                                                             new Trade('99', accountID, EURUSD, 116058, now.minusHours(3), TradeState.CLOSED, 2, 0, -15L, 0L, 0L, 116050L, [], 0L, now.minusHours(2).minusMinutes(3))]  | tradeHistories | openTrades
+
+        new TradeListRequest('1', OPEN, 1)                | [new Trade('103', accountID, USDEUR, 90057, now.minusMinutes(33), TradeState.OPEN, 2, 2, 0L, -70L, 0L, 0L, [], 0L, null)]                                   | tradeHistories | openTrades
+
+        new TradeListRequest('1', OPEN, 2)                | [new Trade('103', accountID, USDEUR, 90057, now.minusMinutes(33), TradeState.OPEN, 2, 2, 0L, -70L, 0L, 0L, [], 0L, null),
+                                                             new Trade('102', accountID, EURUSD, 116058, now.minusMinutes(55), TradeState.OPEN, 2, 2, 0L, -15L, 0L, 0L, [], 0L, null)]                                  | tradeHistories | openTrades
+
+        new TradeListRequest('1', OPEN, 50)               | [new Trade('103', accountID, USDEUR, 90057, now.minusMinutes(33), TradeState.OPEN, 2, 2, 0L, -70L, 0L, 0L, [], 0L, null),
+                                                             new Trade('102', accountID, EURUSD, 116058, now.minusMinutes(55), TradeState.OPEN, 2, 2, 0L, -15L, 0L, 0L, [], 0L, null)]                                  | tradeHistories | openTrades
+
+        new TradeListRequest('1', OPEN, ['102', '103'])   | [new Trade('103', accountID, USDEUR, 90057, now.minusMinutes(33), TradeState.OPEN, 2, 2, 0L, -70L, 0L, 0L, [], 0L, null),
+                                                             new Trade('102', accountID, EURUSD, 116058, now.minusMinutes(55), TradeState.OPEN, 2, 2, 0L, -15L, 0L, 0L, [], 0L, null)]                                  | tradeHistories | openTrades
+
+        new TradeListRequest('1', CLOSED, ['102', '103']) | []                                                                                                                                                          | tradeHistories | openTrades
+
+        new TradeListRequest('1', OPEN, ['100', '101'])   | []                                                                                                                                                          | tradeHistories | openTrades
+
+        new TradeListRequest('1', CLOSED, ['100', '101']) | [new Trade('101', accountID, EURUSD, 116028, now.minusHours(1), TradeState.CLOSED, 2, 0, 25L, 0L, 0L, 116040L, [], 0L, now),
+                                                             new Trade('100', accountID, EURUSD, 116058, now.minusHours(2), TradeState.CLOSED, 2, 0, -15L, 0L, 0L, 116050L, [], 0L, now.minusHours(1).minusMinutes(2))] | tradeHistories | openTrades
     }
 
     static NavigableMap<LocalDateTime, CandlestickData> candles(Map<LocalDateTime, CandlestickData> map) {
