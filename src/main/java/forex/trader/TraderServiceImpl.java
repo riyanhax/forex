@@ -13,6 +13,8 @@ import forex.broker.TradeListResponse;
 import forex.broker.TradeSummary;
 import forex.market.AccountRepository;
 import forex.market.TradeRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -32,6 +34,7 @@ import static java.util.stream.Collectors.toSet;
 @Transactional
 class TraderServiceImpl implements TraderService {
 
+    private static final Logger LOG = LoggerFactory.getLogger(TraderServiceImpl.class);
     private final Context context;
     private final AccountRepository accountRepository;
     private final TradeRepository tradeRepository;
@@ -104,7 +107,15 @@ class TraderServiceImpl implements TraderService {
     public AccountAndTrades accountAndTrades(String accountId, int numberClosedTrades) throws RequestException {
         Optional<Account> accountOpt = accountRepository.findById(accountId);
         if (accountOpt.isPresent()) {
-            refreshAccount(new AccountChangesRequest(accountOpt.get().getId(), accountOpt.get().getLastTransactionID()));
+            try {
+                refreshAccount(new AccountChangesRequest(accountOpt.get().getId(), accountOpt.get().getLastTransactionID()));
+            } catch (RequestException e) {
+                if ("The transaction ID range specified is invalid".equals(e.getMessage())) {
+                    LOG.info("No changes since last transaction id.");
+                } else {
+                    throw e;
+                }
+            }
         } else {
             initializeAccount(accountId, numberClosedTrades);
         }

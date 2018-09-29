@@ -5,6 +5,8 @@ import com.oanda.v20.order.OrderRequest;
 import com.oanda.v20.transaction.Transaction;
 import forex.broker.MarketOrderRequest;
 import forex.broker.MarketOrderTransaction;
+import forex.broker.OrderCancelReason;
+import forex.broker.OrderCancelTransaction;
 import forex.broker.OrderCreateRequest;
 import forex.broker.OrderCreateResponse;
 import forex.broker.StopLossDetails;
@@ -42,8 +44,16 @@ class OrderConverter {
         } else {
             LOG.error("Didn't receive a market order create transaction!");
         }
+        OrderCancelTransaction cancelTransaction = oandaResponse.getOrderCancelTransaction() == null ? null :
+                convert(oandaResponse.getOrderCancelTransaction());
 
-        return new OrderCreateResponse(requestedInstrument, orderCreateTransaction);
+        return new OrderCreateResponse(requestedInstrument, orderCreateTransaction, cancelTransaction);
+    }
+
+    private static OrderCancelTransaction convert(com.oanda.v20.transaction.OrderCancelTransaction oandaVersion) {
+        return new OrderCancelTransaction(oandaVersion.getOrderID().toString(), OrderCancelReason.valueOf(oandaVersion.getReason().name()),
+                oandaVersion.getId().toString(), oandaVersion.getRequestID().toString(), parseTimestamp(oandaVersion.getTime().toString())
+        );
     }
 
     static MarketOrderTransaction convert(Instrument requestedInstrument, com.oanda.v20.transaction.MarketOrderTransaction marketOrderTransaction) {

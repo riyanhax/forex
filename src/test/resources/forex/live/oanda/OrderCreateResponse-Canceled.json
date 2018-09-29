@@ -1,0 +1,40 @@
+{
+  "orderCreateTransaction": {
+    "type": "MARKET_ORDER",
+    "instrument": "EUR_USD",
+    "units": "-1",
+    "timeInForce": "FOK",
+    "positionFill": "DEFAULT",
+    "takeProfitOnFill": {
+      "price": "1.15372",
+      "timeInForce": "GTC"
+    },
+    "stopLossOnFill": {
+      "price": "1.16272",
+      "timeInForce": "GTC"
+    },
+    "reason": "CLIENT_ORDER",
+    "id": "1075",
+    "accountID": "101-001-1775714-001",
+    "userID": 1775714,
+    "batchID": "1075",
+    "requestID": "60495087698774865",
+    "time": "2018-09-29T19:56:03.566789846Z"
+  },
+  "orderCancelTransaction": {
+    "type": "ORDER_CANCEL",
+    "orderID": "1075",
+    "reason": "MARKET_HALTED",
+    "id": "1076",
+    "accountID": "101-001-1775714-001",
+    "userID": 1775714,
+    "batchID": "1075",
+    "requestID": "60495087698774865",
+    "time": "2018-09-29T19:56:03.566789846Z"
+  },
+  "relatedTransactionIDs": [
+    "1075",
+    "1076"
+  ],
+  "lastTransactionID": "1076"
+}

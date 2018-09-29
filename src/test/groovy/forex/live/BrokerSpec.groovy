@@ -166,7 +166,7 @@ class BrokerSpec extends Specification {
         1 * context.createOrder({
             it.order.units == 3
         }) >> new OrderCreateResponse(EURUSD, new MarketOrderTransaction('6367',
-                LocalDateTime.of(2016, Month.JUNE, 22, 13, 41, 29, 264030555), EURUSD, 3))
+                LocalDateTime.of(2016, Month.JUNE, 22, 13, 41, 29, 264030555), EURUSD, 3), null)
     }
 
     def 'should create the correct close position request'() {

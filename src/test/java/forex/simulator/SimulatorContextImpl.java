@@ -253,7 +253,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
             MarketOrderTransaction orderCreateTransaction = new MarketOrderTransaction(submitted.getId(),
                     submitted.getSubmissionDate(), submitted.getInstrument(), submitted.getUnits());
 
-            return new OrderCreateResponse(marketOrder.getInstrument(), orderCreateTransaction);
+            return new OrderCreateResponse(marketOrder.getInstrument(), orderCreateTransaction, null);
         }
     }
 
