@@ -1,6 +1,5 @@
 package forex.broker;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Range;
 import forex.market.AccountSnapshot;
@@ -22,7 +21,6 @@ import java.util.NavigableMap;
 import java.util.Optional;
 import java.util.TreeMap;
 
-import static forex.broker.Quote.invert;
 import static java.util.Collections.singleton;
 
 @Service
@@ -38,13 +36,15 @@ public class Broker implements ForexBroker {
     private final MarketTime clock;
     private final InstrumentHistoryService instrumentHistoryService;
     private final InstrumentDataRetriever instrumentDataRetriever;
+    private final OrderService orderService;
 
     public Broker(MarketTime clock, LiveTraders traders, InstrumentHistoryService instrumentHistoryService,
-                  InstrumentDataRetriever instrumentDataRetriever) {
+                  InstrumentDataRetriever instrumentDataRetriever, OrderService orderService) {
         this.clock = clock;
         this.tradersByAccountId = Maps.uniqueIndex(traders.getTraders(), ForexTrader::getAccountNumber);
         this.instrumentHistoryService = instrumentHistoryService;
         this.instrumentDataRetriever = instrumentDataRetriever;
+        this.orderService = orderService;
     }
 
     @Override
@@ -89,54 +89,10 @@ public class Broker implements ForexBroker {
 
     @Override
     public void openPosition(ForexTrader trader, OpenPositionRequest request) throws Exception {
-        Preconditions.checkArgument(request.getUnits() > 0,
-                "Can only request positive units! Open a long position on the inverse for short stances!");
-
         Instrument pair = request.getPair();
-
         Quote quote = getQuote(trader, pair);
 
-        MarketOrderRequest marketOrderRequest = createMarketOrderRequest(quote, pair, request.getUnits(),
-                request.getStopLoss().orElse(null),
-                request.getTakeProfit().orElse(null));
-
-        OrderCreateRequest orderCreateRequest = new OrderCreateRequest(trader.getAccountNumber());
-        orderCreateRequest.setOrder(marketOrderRequest);
-
-        OrderCreateResponse orderCreateResponse = getContext(trader).createOrder(orderCreateRequest);
-        LOG.info(orderCreateResponse.toString());
-    }
-
-    static MarketOrderRequest createMarketOrderRequest(Quote quote, Instrument instrument, int units, @Nullable Long stopLoss, @Nullable Long takeProfit) {
-        // Inverse instruments base stop-losses and take-profits from the ask, since they "buy" when closing the position
-        boolean inverse = instrument.isInverse();
-        long basePrice = inverse ? quote.getAsk() : quote.getBid();
-
-        MarketOrderRequest marketOrderRequest = new MarketOrderRequest();
-        marketOrderRequest.setInstrument(instrument);
-        marketOrderRequest.setUnits(units);
-
-        if (stopLoss != null) {
-            // Can't seem to get the prices right for inverse positions without converting back and forth
-            long price = inverse ? invert(invert(basePrice) + stopLoss)
-                    : basePrice - stopLoss;
-
-            StopLossDetails sl = new StopLossDetails();
-            sl.setPrice(price);
-            marketOrderRequest.setStopLossOnFill(sl);
-        }
-
-        if (takeProfit != null) {
-            // Can't seem to get the prices right for inverse positions without converting back and forth
-            long price = inverse ? invert(invert(basePrice) - takeProfit)
-                    : basePrice + takeProfit;
-
-            TakeProfitDetails tp = new TakeProfitDetails();
-            tp.setPrice(price);
-            marketOrderRequest.setTakeProfitOnFill(tp);
-        }
-
-        return marketOrderRequest;
+        orderService.openPosition(trader, request, quote);
     }
 
     @Override

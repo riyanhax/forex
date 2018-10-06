@@ -36,8 +36,10 @@ class AccountConverter {
 
     static AccountChangesResponse convert(com.oanda.v20.account.AccountChangesResponse oandaResponse, String accountId) {
         String lastTransactionID = CommonConverter.convert(oandaResponse.getLastTransactionID());
+
         return new AccountChangesResponse(lastTransactionID, convert(oandaResponse.getChanges(), accountId),
-                convert(oandaResponse.getState()));
+                convert(oandaResponse.getState())
+        );
     }
 
     private static AccountChangesState convert(com.oanda.v20.account.AccountChangesState state) {
@@ -47,6 +49,15 @@ class AccountConverter {
     }
 
     private static AccountChanges convert(com.oanda.v20.account.AccountChanges oandaVersion, String accountId) {
+
+        List<String> filledOrders = oandaVersion.getOrdersFilled().stream()
+                .map(it -> it.getId().toString())
+                .collect(toList());
+
+        List<String> canceledOrders = oandaVersion.getOrdersCancelled().stream()
+                .map(it -> it.getId().toString())
+                .collect(toList());
+
         List<TradeSummary> tradesClosed = oandaVersion.getTradesClosed().stream()
                 .map(it -> TradeConverter.convert(it, accountId))
                 .collect(toList());
@@ -55,7 +66,7 @@ class AccountConverter {
                 .map(it -> TradeConverter.convert(it, accountId))
                 .collect(toList());
 
-        return new AccountChanges(tradesClosed, tradesOpened);
+        return new AccountChanges(filledOrders, canceledOrders, tradesClosed, tradesOpened);
     }
 
     private static AccountSummary convert(com.oanda.v20.account.Account oandaAccount) {

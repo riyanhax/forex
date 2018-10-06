@@ -8,6 +8,8 @@ import forex.broker.AccountChangesState
 import forex.broker.Context
 import forex.broker.RequestException
 import forex.market.AccountRepository
+import forex.market.MarketTime
+import forex.market.OrderRepository
 import forex.market.TradeRepository
 import spock.lang.Specification
 import spock.lang.Unroll
@@ -35,7 +37,9 @@ class TraderServiceImplSpec extends Specification {
         tradeRepository.findByAccountIdAndCloseTimeIsNull(accountID) >> []
         tradeRepository.findByAccountIdAndCloseTimeIsNotNullOrderByCloseTimeDesc(accountID, _) >> []
 
-        TraderServiceImpl traderService = new TraderServiceImpl(context, accountRepository, tradeRepository)
+        def orderRepository = Mock(OrderRepository)
+
+        TraderServiceImpl traderService = new TraderServiceImpl(context, Mock(MarketTime), accountRepository, tradeRepository, orderRepository)
 
         when: 'the updates are processed'
         traderService.accountAndTrades(accountID, 10)
@@ -48,9 +52,9 @@ class TraderServiceImplSpec extends Specification {
         (expected ? 1 : 0) * accountRepository.save(_ as Account)
 
         where:
-        description                      | changes                                                                                               | expected
-        'no changes'                     | new AccountChangesResponse('3', new AccountChanges([], []), new AccountChangesState(5000000, 0L, [])) | false
-        'updated NAV and unrealized P&L' | new AccountChangesResponse('3', new AccountChanges([], []), new AccountChangesState(5000167, 0L, [])) | true
+        description                      | changes                                                                                                                             | expected
+        'no changes'                     | new AccountChangesResponse('3', new AccountChanges([], [], [], []), new AccountChangesState(5000000, 0L, [])) | false
+        'updated NAV and unrealized P&L' | new AccountChangesResponse('3', new AccountChanges([], [], [], []), new AccountChangesState(5000167, 0L, [])) | true
     }
 
     def 'should ignore expects exceptions occurring during account refresh'() {
@@ -71,7 +75,9 @@ class TraderServiceImplSpec extends Specification {
         tradeRepository.findByAccountIdAndCloseTimeIsNull(accountID) >> []
         tradeRepository.findByAccountIdAndCloseTimeIsNotNullOrderByCloseTimeDesc(accountID, _) >> []
 
-        TraderServiceImpl traderService = new TraderServiceImpl(context, accountRepository, tradeRepository)
+        def orderRepository = Mock(OrderRepository)
+
+        TraderServiceImpl traderService = new TraderServiceImpl(context, Mock(MarketTime), accountRepository, tradeRepository, orderRepository)
 
         when: 'the updates are processed'
         def accountAndTrades = traderService.accountAndTrades(accountID, 10)
@@ -104,7 +110,9 @@ class TraderServiceImplSpec extends Specification {
         tradeRepository.findByAccountIdAndCloseTimeIsNull(accountID) >> []
         tradeRepository.findByAccountIdAndCloseTimeIsNotNullOrderByCloseTimeDesc(accountID, _) >> []
 
-        TraderServiceImpl traderService = new TraderServiceImpl(context, accountRepository, tradeRepository)
+        def orderRepository = Mock(OrderRepository)
+
+        TraderServiceImpl traderService = new TraderServiceImpl(context, Mock(MarketTime), accountRepository, tradeRepository, orderRepository)
 
         when: 'the updates are processed'
         def accountAndTrades = traderService.accountAndTrades(accountID, 10)

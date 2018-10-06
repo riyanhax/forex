@@ -250,10 +250,10 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
             accountIdsByOrderId.put(submitted.getId(), accountID);
             stopLossTakeProfitsById.put(accountID, marketOrder);
 
-            MarketOrderTransaction orderCreateTransaction = new MarketOrderTransaction(submitted.getId(),
+            MarketOrderTransaction orderCreateTransaction = new MarketOrderTransaction(submitted.getId(), accountID,
                     submitted.getSubmissionDate(), submitted.getInstrument(), submitted.getUnits());
 
-            return new OrderCreateResponse(marketOrder.getInstrument(), orderCreateTransaction, null);
+            return new OrderCreateResponse(marketOrder.getInstrument(), orderCreateTransaction, null, null);
         }
     }
 
@@ -274,8 +274,8 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
             accountIdsByOrderId.put(submitted.getId(), accountID);
             stopLossTakeProfitsById.remove(accountID);
 
-            MarketOrderTransaction orderCreateTransaction = new MarketOrderTransaction(submitted.getId(), submitted.getSubmissionDate(),
-                    submitted.getInstrument(), submitted.getUnits());
+            MarketOrderTransaction orderCreateTransaction = new MarketOrderTransaction(submitted.getId(), accountID,
+                    submitted.getSubmissionDate(), submitted.getInstrument(), submitted.getUnits());
 
             return new TradeCloseResponse(orderCreateTransaction);
         }

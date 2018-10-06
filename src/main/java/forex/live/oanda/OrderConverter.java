@@ -9,6 +9,7 @@ import forex.broker.OrderCancelReason;
 import forex.broker.OrderCancelTransaction;
 import forex.broker.OrderCreateRequest;
 import forex.broker.OrderCreateResponse;
+import forex.broker.OrderFillTransaction;
 import forex.broker.StopLossDetails;
 import forex.broker.TakeProfitDetails;
 import forex.market.Instrument;
@@ -44,10 +45,17 @@ class OrderConverter {
         } else {
             LOG.error("Didn't receive a market order create transaction!");
         }
+        OrderFillTransaction fillTransaction = oandaResponse.getOrderFillTransaction() == null ? null :
+                convert(oandaResponse.getOrderFillTransaction());
         OrderCancelTransaction cancelTransaction = oandaResponse.getOrderCancelTransaction() == null ? null :
                 convert(oandaResponse.getOrderCancelTransaction());
 
-        return new OrderCreateResponse(requestedInstrument, orderCreateTransaction, cancelTransaction);
+        return new OrderCreateResponse(requestedInstrument, orderCreateTransaction, fillTransaction, cancelTransaction);
+    }
+
+    private static OrderFillTransaction convert(com.oanda.v20.transaction.OrderFillTransaction oandaVersion) {
+        return new OrderFillTransaction(oandaVersion.getOrderID().toString(),
+                oandaVersion.getId().toString(), parseTimestamp(oandaVersion.getTime().toString()));
     }
 
     private static OrderCancelTransaction convert(com.oanda.v20.transaction.OrderCancelTransaction oandaVersion) {
@@ -68,6 +76,7 @@ class OrderConverter {
         checkArgument(units > 0, "Shouldn't have negative units at this point, why wasn't a short order converted to an inverse long?");
 
         return new MarketOrderTransaction(marketOrderTransaction.getId().toString(),
+                marketOrderTransaction.getAccountID().toString(),
                 parseTimestamp(marketOrderTransaction.getTime().toString()),
                 requestedInstrument, units);
     }

@@ -2,18 +2,13 @@ package forex.live
 
 import com.google.common.collect.Range
 import forex.broker.Account
-import forex.broker.AccountAndTrades
 import forex.broker.AccountSummary
 import forex.broker.Broker
 import forex.broker.CandlestickData
 import forex.broker.Context
 import forex.broker.LiveTraders
 import forex.broker.MarketOrderRequest
-import forex.broker.MarketOrderTransaction
-import forex.broker.OpenPositionRequest
-import forex.broker.OrderCreateResponse
-import forex.broker.Price
-import forex.broker.PricingGetResponse
+import forex.broker.OrderService
 import forex.broker.Quote
 import forex.broker.StopLossDetails
 import forex.broker.TakeProfitDetails
@@ -30,8 +25,8 @@ import spock.lang.Specification
 import spock.lang.Unroll
 
 import java.time.LocalDateTime
-import java.time.Month
 
+import static forex.broker.OrderService.createMarketOrderRequest
 import static forex.market.Instrument.EURUSD
 import static forex.market.Instrument.USDEUR
 import static java.time.Month.APRIL
@@ -43,6 +38,7 @@ class BrokerSpec extends Specification {
 
     def instrumentHistoryService = Mock(InstrumentHistoryService)
     def instrumentDataRetriever = Mock(InstrumentDataRetriever)
+    def orderService = Mock(OrderService)
 
     @Unroll
     def 'should evaluate isClosed correctly: #description'() {
@@ -50,7 +46,7 @@ class BrokerSpec extends Specification {
         def clock = Mock(MarketTime)
         clock.now() >> now
 
-        def broker = new Broker(clock, new LiveTraders([]), instrumentHistoryService, instrumentDataRetriever)
+        def broker = new Broker(clock, new LiveTraders([]), instrumentHistoryService, instrumentDataRetriever, orderService)
         def actual = broker.isClosed()
 
         expect:
@@ -82,7 +78,7 @@ class BrokerSpec extends Specification {
         trader.accountNumber >> '1234'
 
         boolean closed = !open
-        def broker = new Broker(Mock(MarketTime), new LiveTraders([trader]), instrumentHistoryService, instrumentDataRetriever) {
+        def broker = new Broker(Mock(MarketTime), new LiveTraders([trader]), instrumentHistoryService, instrumentDataRetriever, orderService) {
             @Override
             boolean isClosed() {
                 return closed
@@ -114,7 +110,7 @@ class BrokerSpec extends Specification {
         def clock = new TestClock(LocalDateTime.now())
 
         def traders = new LiveTraders([trader])
-        def broker = new Broker(clock, traders, instrumentHistoryService, instrumentDataRetriever)
+        def broker = new Broker(clock, traders, instrumentHistoryService, instrumentDataRetriever, orderService)
 
         when: 'an account snapshot is requested for a trader'
         def actual = broker.getAccountSnapshot(traders.traders[0])
@@ -130,7 +126,7 @@ class BrokerSpec extends Specification {
         quote.ask >> ask
         quote.bid >> bid
 
-        def actual = Broker.createMarketOrderRequest(quote, instrument, 2, 300L, 600L)
+        def actual = createMarketOrderRequest(quote, instrument, 2, 300L, 600L)
 
         expect:
         actual == new MarketOrderRequest(instrument: instrument, units: 2,
@@ -141,32 +137,6 @@ class BrokerSpec extends Specification {
         instrument | bid     | ask     | expectedStopLoss | expectedTakeProfit
         EURUSD     | 123060L | 123106L | 122760L          | 123660
         USDEUR     | 81235L  | 81265L  | 81067L           | 81663L
-    }
-
-    def 'should use the specified units from the request'() {
-        def id = '1'
-        def traderService = Mock(TraderService)
-        traderService.accountAndTrades(id, _) >> new AccountAndTrades(new AccountSummary(new Account.Builder(id)
-                .withBalanceDollars(50)
-                .withLastTransactionID('someId')
-                .withProfitLoss(13L)
-                .build(), []), [])
-        def context = Mock(Context)
-        context.getPricing(_) >> new PricingGetResponse([new Price(EURUSD, 10010L, 10020L)])
-
-        def clock = Mock(MarketTime)
-        def trader = new TestTrader(id, context, traderService, clock)
-
-        Broker oanda = new Broker(clock, new LiveTraders([trader]), instrumentHistoryService, instrumentDataRetriever)
-
-        when: 'a trader opens a position with a specific number of units'
-        oanda.openPosition(trader, new OpenPositionRequest(EURUSD, 3, null, null, null))
-
-        then: 'the position is opened with the requested number of units'
-        1 * context.createOrder({
-            it.order.units == 3
-        }) >> new OrderCreateResponse(EURUSD, new MarketOrderTransaction('6367',
-                LocalDateTime.of(2016, Month.JUNE, 22, 13, 41, 29, 264030555), EURUSD, 3), null)
     }
 
     def 'should create the correct close position request'() {
@@ -191,7 +161,7 @@ class BrokerSpec extends Specification {
             }
         }
 
-        Broker oanda = new Broker(clock, new LiveTraders([trader]), instrumentHistoryService, instrumentDataRetriever)
+        Broker oanda = new Broker(clock, new LiveTraders([trader]), instrumentHistoryService, instrumentDataRetriever, orderService)
 
         when: 'a trader submits a close position request'
         oanda.closePosition(trader, position, null)
@@ -223,7 +193,7 @@ class BrokerSpec extends Specification {
         trader.context >> context
 
         when: 'one day candles are requested'
-        def actual = new Broker(Mock(MarketTime), new LiveTraders([trader]), instrumentHistoryService, instrumentDataRetriever)
+        def actual = new Broker(Mock(MarketTime), new LiveTraders([trader]), instrumentHistoryService, instrumentDataRetriever, orderService)
                 .getOneWeekCandles(trader, instrument, Range.closed(start, end))
 
         then: 'the request has the correct arguments'
@@ -274,7 +244,7 @@ class BrokerSpec extends Specification {
         trader.context >> context
 
         when: 'one day candles are requested'
-        def actual = new Broker(Mock(MarketTime), new LiveTraders([trader]), instrumentHistoryService, instrumentDataRetriever)
+        def actual = new Broker(Mock(MarketTime), new LiveTraders([trader]), instrumentHistoryService, instrumentDataRetriever, orderService)
                 .getOneDayCandles(trader, instrument, Range.closed(
                 start, end))
 
@@ -325,7 +295,7 @@ class BrokerSpec extends Specification {
         trader.context >> context
 
         when: 'one day candles are requested'
-        def actual = new Broker(Mock(MarketTime), new LiveTraders([trader]), instrumentHistoryService, instrumentDataRetriever)
+        def actual = new Broker(Mock(MarketTime), new LiveTraders([trader]), instrumentHistoryService, instrumentDataRetriever, orderService)
                 .getFourHourCandles(trader, instrument, Range.closed(
                 start, end))
 
@@ -365,7 +335,7 @@ class BrokerSpec extends Specification {
         def trader = Mock(ForexTrader)
         trader.accountNumber >> '1234'
 
-        def broker = new Broker(clock, new LiveTraders([trader]), instrumentHistoryService, instrumentDataRetriever)
+        def broker = new Broker(clock, new LiveTraders([trader]), instrumentHistoryService, instrumentDataRetriever, orderService)
 
         when: 'the broker is processing updates'
         broker.processUpdates()

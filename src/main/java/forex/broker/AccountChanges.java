@@ -10,12 +10,25 @@ import static java.util.Collections.emptyList;
 
 public class AccountChanges {
 
+    private final List<String> filledOrders;
+    private final List<String> canceledOrders;
     private final List<TradeSummary> tradesClosed;
     private final List<TradeSummary> tradesOpened;
 
-    public AccountChanges(List<TradeSummary> tradesClosed, List<TradeSummary> tradesOpened) {
+    public AccountChanges(List<String> filledOrders, List<String> canceledOrders,
+                          List<TradeSummary> tradesClosed, List<TradeSummary> tradesOpened) {
+        this.filledOrders = filledOrders;
+        this.canceledOrders = canceledOrders;
         this.tradesClosed = tradesClosed;
         this.tradesOpened = tradesOpened;
+    }
+
+    public List<String> getFilledOrders() {
+        return filledOrders;
+    }
+
+    public List<String> getCanceledOrders() {
+        return canceledOrders;
     }
 
     public List<TradeSummary> getTradesClosed() {
@@ -31,18 +44,22 @@ public class AccountChanges {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         AccountChanges that = (AccountChanges) o;
-        return Objects.equals(tradesClosed, that.tradesClosed) &&
+        return Objects.equals(filledOrders, that.filledOrders) &&
+                Objects.equals(canceledOrders, that.canceledOrders) &&
+                Objects.equals(tradesClosed, that.tradesClosed) &&
                 Objects.equals(tradesOpened, that.tradesOpened);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(tradesClosed, tradesOpened);
+        return Objects.hash(filledOrders, canceledOrders, tradesClosed, tradesOpened);
     }
 
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
+                .add("filledOrders", filledOrders)
+                .add("canceledOrders", canceledOrders)
                 .add("tradesClosed", tradesClosed)
                 .add("tradesOpened", tradesOpened)
                 .toString();
@@ -52,17 +69,17 @@ public class AccountChanges {
         List<TradeSummary> newTradesOpened = new ArrayList<>(tradesOpened);
         newTradesOpened.add(filledPosition);
 
-        return new AccountChanges(tradesClosed, newTradesOpened);
+        return new AccountChanges(filledOrders, canceledOrders, tradesClosed, newTradesOpened);
     }
 
     AccountChanges tradeClosed(TradeSummary filledPosition) {
         List<TradeSummary> newTradesClosed = new ArrayList<>(tradesClosed);
         newTradesClosed.add(filledPosition);
 
-        return new AccountChanges(newTradesClosed, tradesOpened);
+        return new AccountChanges(filledOrders, canceledOrders, newTradesClosed, tradesOpened);
     }
 
     static AccountChanges empty() {
-        return new AccountChanges(emptyList(), emptyList());
+        return new AccountChanges(emptyList(), emptyList(), emptyList(), emptyList());
     }
 }

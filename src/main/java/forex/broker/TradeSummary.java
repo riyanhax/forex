@@ -5,10 +5,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import forex.market.Instrument;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,45 +15,17 @@ import static forex.broker.Quote.doubleFromPippetes;
 import static forex.broker.Quote.profitLossDisplay;
 import static forex.market.MarketTime.formatTimestamp;
 
-@Entity(name = "trade_summary")
 public class TradeSummary {
-
-    @Id
-    @GeneratedValue
-    private Integer id;
-
-    @Column(name = "trade_id", nullable = false)
-    private String tradeId;
-
-    @Column(name = "account_id", nullable = false)
-    private String accountId;
-
-    @Column(nullable = false)
-    private Instrument instrument;
-
-    @Column(nullable = false)
-    private long price;
-
-    @Column(name = "open_time", nullable = false)
-    private LocalDateTime openTime;
-
-    @Column(name = "initial_units", nullable = false)
-    private int initialUnits;
-
-    @Column(name = "current_units", nullable = false)
-    private int currentUnits;
-
-    @Column(name = "realized_profit_loss", nullable = false)
-    private long realizedProfitLoss;
-
-    @Column(name = "unrealized_profit_loss", nullable = false)
-    private long unrealizedProfitLoss;
-
-    @Column(name = "close_time")
-    private LocalDateTime closeTime;
-
-    public TradeSummary() {
-    }
+    private final String tradeId;
+    private final String accountId;
+    private final Instrument instrument;
+    private final long price;
+    private final LocalDateTime openTime;
+    private final int initialUnits;
+    private final int currentUnits;
+    private final long realizedProfitLoss;
+    private final long unrealizedProfitLoss;
+    private final LocalDateTime closeTime;
 
     public TradeSummary(String tradeId, String accountId, Instrument instrument, long price, LocalDateTime openTime, int initialUnits, int currentUnits, long realizedProfitLoss, long unrealizedProfitLoss, LocalDateTime closeTime) {
         this.tradeId = tradeId;
@@ -120,14 +88,6 @@ public class TradeSummary {
         return accountId;
     }
 
-    public Integer getId() {
-        return id;
-    }
-
-    public void setId(Integer id) {
-        this.id = id;
-    }
-
     public long getCurrentPrice() { // Assumes full trade closes
         return price + ((closeTime == null ? unrealizedProfitLoss : realizedProfitLoss) / initialUnits);
     }
@@ -150,7 +110,7 @@ public class TradeSummary {
                 currentUnits == that.currentUnits &&
                 realizedProfitLoss == that.realizedProfitLoss &&
                 unrealizedProfitLoss == that.unrealizedProfitLoss &&
-                Objects.equals(id, that.id) &&
+                Objects.equals(tradeId, that.tradeId) &&
                 instrument == that.instrument &&
                 Objects.equals(openTime, that.openTime) &&
                 Objects.equals(closeTime, that.closeTime);
@@ -158,13 +118,13 @@ public class TradeSummary {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, instrument, price, openTime, initialUnits, currentUnits, realizedProfitLoss, unrealizedProfitLoss, closeTime);
+        return Objects.hash(tradeId, instrument, price, openTime, initialUnits, currentUnits, realizedProfitLoss, unrealizedProfitLoss, closeTime);
     }
 
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
-                .add("id", id)
+                .add("tradeId", tradeId)
                 .add("instrument", instrument)
                 .add("price", doubleFromPippetes(price))
                 .add("currentPrice", doubleFromPippetes(getCurrentPrice()))

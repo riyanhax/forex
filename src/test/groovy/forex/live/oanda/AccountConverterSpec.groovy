@@ -53,7 +53,9 @@ class AccountConverterSpec extends Specification {
         ]
 
         def accountID = '1'
-        def expected = new AccountChangesResponse("999", new AccountChanges([
+        def filledOrders = ['994', '996']
+        def canceledOrders = []
+        def expected = new AccountChangesResponse("999", new AccountChanges(filledOrders, canceledOrders, [
                 new TradeSummary('993', accountID, USDEUR, 86402L, LocalDateTime.of(2018, SEPTEMBER, 7, 10, 49, 6,
                         159247625), 1, 0, -20L, 0L, LocalDateTime.of(2018, SEPTEMBER, 7, 10, 50, 30, 782081491))
         ], [

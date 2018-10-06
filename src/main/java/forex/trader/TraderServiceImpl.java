@@ -2,16 +2,20 @@ package forex.trader;
 
 import forex.broker.Account;
 import forex.broker.AccountAndTrades;
+import forex.broker.AccountChanges;
 import forex.broker.AccountChangesRequest;
 import forex.broker.AccountChangesResponse;
 import forex.broker.AccountSummary;
 import forex.broker.Context;
+import forex.broker.MarketOrderTransaction;
 import forex.broker.RequestException;
 import forex.broker.Trade;
 import forex.broker.TradeListRequest;
 import forex.broker.TradeListResponse;
 import forex.broker.TradeSummary;
 import forex.market.AccountRepository;
+import forex.market.MarketTime;
+import forex.market.OrderRepository;
 import forex.market.TradeRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,32 +40,66 @@ class TraderServiceImpl implements TraderService {
 
     private static final Logger LOG = LoggerFactory.getLogger(TraderServiceImpl.class);
     private final Context context;
+    private final MarketTime clock;
     private final AccountRepository accountRepository;
     private final TradeRepository tradeRepository;
+    private final OrderRepository orderRepository;
 
     @Autowired
-    TraderServiceImpl(Context context, AccountRepository accountRepository, TradeRepository tradeRepository) {
+    TraderServiceImpl(Context context,
+                      MarketTime clock,
+                      AccountRepository accountRepository,
+                      TradeRepository tradeRepository,
+                      OrderRepository orderRepository) {
         this.context = context;
+        this.clock = clock;
         this.accountRepository = accountRepository;
         this.tradeRepository = tradeRepository;
+        this.orderRepository = orderRepository;
     }
 
     private void refreshAccount(AccountChangesRequest request) throws RequestException {
 
         AccountChangesResponse response = context.accountChanges(request);
 
-        AccountSummary currentState = getAccountSummary(request.getAccountID());
+        String accountID = request.getAccountID();
+        AccountSummary currentState = getAccountSummary(accountID);
         AccountSummary newState = currentState.processChanges(response);
 
         if (!currentState.equals(newState)) {
             accountRepository.save(newState.getAccount());
         }
 
+        AccountChanges accountChanges = response.getAccountChanges();
+        accountChanges.getFilledOrders().forEach(it -> {
+            MarketOrderTransaction order = orderRepository.findOneByOrderIdAndAccountId(it, accountID);
+            if (order == null) {
+                LOG.error("Unable to find order for id {} and account {}", it, accountID);
+                return;
+            }
+
+            // This should really be from the underlying order
+            order.setFilledTime(clock.now());
+            orderRepository.save(order);
+        });
+
+        accountChanges.getCanceledOrders().forEach(it -> {
+            MarketOrderTransaction order = orderRepository.findOneByOrderIdAndAccountId(it, accountID);
+            if (order == null) {
+                LOG.error("Unable to find order for id {} and account {}", it, accountID);
+                return;
+            }
+
+            // This should really be from the underlying order
+            order.setCanceledTime(clock.now());
+            orderRepository.save(order);
+        });
+
         List<Trade> tradesToMerge = new ArrayList<>();
-        response.getAccountChanges().getTradesOpened().forEach(it ->
+        accountChanges.getTradesOpened().forEach(it ->
                 tradesToMerge.add(new Trade(it)));
 
-        List<TradeSummary> tradesClosed = response.getAccountChanges().getTradesClosed();
+        List<TradeSummary> tradesClosed = accountChanges.getTradesClosed();
         if (!tradesClosed.isEmpty()) {
             Set<String> tradeIds = tradesClosed.stream().map(TradeSummary::getTradeId).collect(toSet());
             TradeListRequest tradeListRequest = new TradeListRequest(currentState.getId(), CLOSED, tradeIds);

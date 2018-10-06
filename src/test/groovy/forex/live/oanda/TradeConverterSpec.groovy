@@ -47,9 +47,11 @@ class TradeConverterSpec extends Specification {
         where:
         instrument | responseFile                    | expected
         EURUSD     | 'TradeCloseResponse-Long.json'  | new TradeCloseResponse(new MarketOrderTransaction('1006',
+                '101-001-1775714-001',
                 LocalDateTime.of(2018, Month.SEPTEMBER, 7, 10, 56, 46, 371386767), EURUSD, 7))
 
         USDEUR     | 'TradeCloseResponse-Short.json' | new TradeCloseResponse(new MarketOrderTransaction('1006',
+                '101-001-1775714-001',
                 LocalDateTime.of(2018, Month.SEPTEMBER, 7, 10, 56, 46, 371386767), USDEUR, 7))
     }
 
