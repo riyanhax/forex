@@ -109,15 +109,15 @@ public class Broker implements ForexBroker {
     @Override
     public void processUpdates() {
 
+        if (isClosed()) {
+            LOG.info("Market is closed.");
+            return;
+        }
+
         try {
             instrumentDataRetriever.retrieveClosedCandles();
         } catch (RequestException e) {
             LOG.error("Unable to retrieve closed candles!", e);
-        }
-
-        if (isClosed()) {
-            LOG.info("Market is closed.");
-            return;
         }
 
         for (ForexTrader trader : tradersByAccountId.values()) {
