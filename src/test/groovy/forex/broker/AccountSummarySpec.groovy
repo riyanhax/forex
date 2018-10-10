@@ -123,24 +123,24 @@ class AccountSummarySpec extends Specification {
         actual == expected
 
         where:
-        description                      | changes                                                                                                                                            | expected
-        'no changes'                     | new AccountChangesResponse('3', new AccountChanges([], [], [], []), new AccountChangesState(5000165, 55L, []))                                     | new AccountSummary(new Account(accountID, 4913822L, '3', 1L), [
+        description                      | changes                                                                                                                                                                                    | expected
+        'no changes'                     | new AccountChangesResponse('3', new AccountChanges(Orders.empty(), Orders.empty(), Orders.empty(), [], []), new AccountChangesState(5000165, 55L, []))                                     | new AccountSummary(new Account(accountID, 4913822L, '3', 1L), [
                 new TradeSummary('309', accountID, USDEUR, 86288L, LocalDateTime.of(2018, SEPTEMBER, 7, 7, 43, 13, 567036542), 1, 1, 0L, 55L, null)
         ])
 
-        'updated NAV and unrealized P&L' | new AccountChangesResponse('3', new AccountChanges([], [], [], []), new AccountChangesState(5000167, 57L, [new CalculatedTradeState('309', 57L)])) | new AccountSummary(new Account(accountID, 4913822L, '3', 1L), [
+        'updated NAV and unrealized P&L' | new AccountChangesResponse('3', new AccountChanges(Orders.empty(), Orders.empty(), Orders.empty(), [], []), new AccountChangesState(5000167, 57L, [new CalculatedTradeState('309', 57L)])) | new AccountSummary(new Account(accountID, 4913822L, '3', 1L), [
                 new TradeSummary('309', accountID, USDEUR, 86288L, LocalDateTime.of(2018, SEPTEMBER, 7, 7, 43, 13, 567036542), 1, 1, 0L, 57L, null)
         ])
 
-        'closed trade'                   | new AccountChangesResponse('4', new AccountChanges([], [], [
+        'closed trade'                   | new AccountChangesResponse('4', new AccountChanges(Orders.empty(), Orders.empty(), Orders.empty(), [
                 new TradeSummary('309', accountID, USDEUR, 86288L, LocalDateTime.of(2018, SEPTEMBER, 7, 7, 43, 13, 567036542), 1, 0, 63L, 0L, LocalDateTime.of(2018, SEPTEMBER, 7, 7, 45, 11, 338759441)
                 )
-        ], []), new AccountChangesState(5000173, 0L, []))                                                                                                                                     | new AccountSummary(new Account(accountID, 5000173L, '4', 64L), [])
+        ], []), new AccountChangesState(5000173, 0L, []))                                                                                                                                                                             | new AccountSummary(new Account(accountID, 5000173L, '4', 64L), [])
 
-        'open trade'                     | new AccountChangesResponse('4', new AccountChanges([], [], [], [
+        'open trade'                     | new AccountChangesResponse('4', new AccountChanges(Orders.empty(), Orders.empty(), Orders.empty(), [], [
                 new TradeSummary('303', accountID, EURUSD, 116029L, LocalDateTime.of(2018, SEPTEMBER, 7, 7, 31, 9, 524922739), 2, 2, 0L, 150L, null)
 
-        ]), new AccountChangesState(5000150, 150L, [new CalculatedTradeState('303', 150L)]))                                                                                                  | new AccountSummary(new Account(accountID, 4767942, '4', 1L), [
+        ]), new AccountChangesState(5000150, 150L, [new CalculatedTradeState('303', 150L)]))                                                                                                                                          | new AccountSummary(new Account(accountID, 4767942, '4', 1L), [
                 new TradeSummary('303', accountID, EURUSD, 116029L, LocalDateTime.of(2018, SEPTEMBER, 7, 7, 31, 9, 524922739), 2, 2, 0L, 150L, null)
         ])
     }

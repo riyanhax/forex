@@ -7,7 +7,10 @@ import forex.broker.AccountChangesResponse;
 import forex.broker.AccountChangesState;
 import forex.broker.AccountGetResponse;
 import forex.broker.AccountSummary;
+import forex.broker.Orders;
 import forex.broker.TradeSummary;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -15,6 +18,8 @@ import static forex.broker.Quote.pippetesFromDouble;
 import static java.util.stream.Collectors.toList;
 
 class AccountConverter {
+
+    private static final Logger LOG = LoggerFactory.getLogger(AccountConverter.class);
 
     static com.oanda.v20.account.AccountID convert(String accountID) {
         return new com.oanda.v20.account.AccountID(accountID);
@@ -50,13 +55,9 @@ class AccountConverter {
 
     private static AccountChanges convert(com.oanda.v20.account.AccountChanges oandaVersion, String accountId) {
 
-        List<String> filledOrders = oandaVersion.getOrdersFilled().stream()
-                .map(it -> it.getId().toString())
-                .collect(toList());
-
-        List<String> canceledOrders = oandaVersion.getOrdersCancelled().stream()
-                .map(it -> it.getId().toString())
-                .collect(toList());
+        Orders createdOrders = OrderConverter.convert(oandaVersion.getOrdersCreated());
+        Orders filledOrders = OrderConverter.convert(oandaVersion.getOrdersFilled());
+        Orders canceledOrders = OrderConverter.convert(oandaVersion.getOrdersCancelled());
 
         List<TradeSummary> tradesClosed = oandaVersion.getTradesClosed().stream()
                 .map(it -> TradeConverter.convert(it, accountId))
@@ -66,7 +67,7 @@ class AccountConverter {
                 .map(it -> TradeConverter.convert(it, accountId))
                 .collect(toList());
 
-        return new AccountChanges(filledOrders, canceledOrders, tradesClosed, tradesOpened);
+        return new AccountChanges(createdOrders, filledOrders, canceledOrders, tradesClosed, tradesOpened);
     }
 
     private static AccountSummary convert(com.oanda.v20.account.Account oandaAccount) {

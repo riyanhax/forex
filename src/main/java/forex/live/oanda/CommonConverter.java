@@ -1,6 +1,7 @@
 package forex.live.oanda;
 
 import com.google.common.base.Preconditions;
+import com.oanda.v20.primitives.DateTime;
 import com.oanda.v20.primitives.InstrumentName;
 import forex.market.Instrument;
 import forex.market.MarketTime;
@@ -16,7 +17,10 @@ class CommonConverter {
 
     static final DateTimeFormatter ISO_INSTANT_FORMATTER = DateTimeFormatter.ISO_INSTANT;
 
-    // Common
+    static LocalDateTime parseTimestamp(DateTime timestamp) {
+        return timestamp == null ? null : parseTimestamp(timestamp.toString());
+    }
+
     static LocalDateTime parseTimestamp(String timestamp) {
         return timestamp == null ? null : parse(timestamp, ISO_INSTANT_FORMATTER.withZone(MarketTime.ZONE));
     }

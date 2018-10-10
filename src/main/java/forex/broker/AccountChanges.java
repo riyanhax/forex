@@ -10,24 +10,30 @@ import static java.util.Collections.emptyList;
 
 public class AccountChanges {
 
-    private final List<String> filledOrders;
-    private final List<String> canceledOrders;
+    private final Orders createdOrders;
+    private final Orders filledOrders;
+    private final Orders canceledOrders;
     private final List<TradeSummary> tradesClosed;
     private final List<TradeSummary> tradesOpened;
 
-    public AccountChanges(List<String> filledOrders, List<String> canceledOrders,
+    public AccountChanges(Orders createdOrders, Orders filledOrders, Orders canceledOrders,
                           List<TradeSummary> tradesClosed, List<TradeSummary> tradesOpened) {
+        this.createdOrders = createdOrders;
         this.filledOrders = filledOrders;
         this.canceledOrders = canceledOrders;
         this.tradesClosed = tradesClosed;
         this.tradesOpened = tradesOpened;
     }
 
-    public List<String> getFilledOrders() {
+    public Orders getCreatedOrders() {
+        return createdOrders;
+    }
+
+    public Orders getFilledOrders() {
         return filledOrders;
     }
 
-    public List<String> getCanceledOrders() {
+    public Orders getCanceledOrders() {
         return canceledOrders;
     }
 
@@ -44,7 +50,8 @@ public class AccountChanges {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         AccountChanges that = (AccountChanges) o;
-        return Objects.equals(filledOrders, that.filledOrders) &&
+        return Objects.equals(createdOrders, that.createdOrders) &&
+                Objects.equals(filledOrders, that.filledOrders) &&
                 Objects.equals(canceledOrders, that.canceledOrders) &&
                 Objects.equals(tradesClosed, that.tradesClosed) &&
                 Objects.equals(tradesOpened, that.tradesOpened);
@@ -52,12 +59,13 @@ public class AccountChanges {
 
     @Override
     public int hashCode() {
-        return Objects.hash(filledOrders, canceledOrders, tradesClosed, tradesOpened);
+        return Objects.hash(createdOrders, filledOrders, canceledOrders, tradesClosed, tradesOpened);
     }
 
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
+                .add("createdOrders", createdOrders)
                 .add("filledOrders", filledOrders)
                 .add("canceledOrders", canceledOrders)
                 .add("tradesClosed", tradesClosed)
@@ -69,17 +77,17 @@ public class AccountChanges {
         List<TradeSummary> newTradesOpened = new ArrayList<>(tradesOpened);
         newTradesOpened.add(filledPosition);
 
-        return new AccountChanges(filledOrders, canceledOrders, tradesClosed, newTradesOpened);
+        return new AccountChanges(createdOrders, filledOrders, canceledOrders, tradesClosed, newTradesOpened);
     }
 
     AccountChanges tradeClosed(TradeSummary filledPosition) {
         List<TradeSummary> newTradesClosed = new ArrayList<>(tradesClosed);
         newTradesClosed.add(filledPosition);
 
-        return new AccountChanges(filledOrders, canceledOrders, newTradesClosed, tradesOpened);
+        return new AccountChanges(createdOrders, filledOrders, canceledOrders, newTradesClosed, tradesOpened);
     }
 
     static AccountChanges empty() {
-        return new AccountChanges(emptyList(), emptyList(), emptyList(), emptyList());
+        return new AccountChanges(Orders.empty(), Orders.empty(), Orders.empty(), emptyList(), emptyList());
     }
 }

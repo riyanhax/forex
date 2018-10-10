@@ -1,8 +1,11 @@
 package forex.live.oanda;
 
 import com.oanda.v20.account.AccountID;
+import com.oanda.v20.order.Order;
 import com.oanda.v20.order.OrderRequest;
+import com.oanda.v20.order.OrderType;
 import com.oanda.v20.transaction.Transaction;
+import forex.broker.MarketOrder;
 import forex.broker.MarketOrderRequest;
 import forex.broker.MarketOrderTransaction;
 import forex.broker.OrderCancelReason;
@@ -10,17 +13,27 @@ import forex.broker.OrderCancelTransaction;
 import forex.broker.OrderCreateRequest;
 import forex.broker.OrderCreateResponse;
 import forex.broker.OrderFillTransaction;
+import forex.broker.Orders;
 import forex.broker.StopLossDetails;
+import forex.broker.StopLossOrder;
 import forex.broker.TakeProfitDetails;
+import forex.broker.TakeProfitOrder;
 import forex.market.Instrument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import static com.google.common.base.Preconditions.checkArgument;
 import static forex.broker.Quote.doubleFromPippetes;
 import static forex.broker.Quote.invert;
+import static forex.broker.Quote.pippetesFromDouble;
 import static forex.live.oanda.CommonConverter.parseTimestamp;
 import static forex.live.oanda.CommonConverter.verifyResponseInstrument;
+import static java.util.stream.Collectors.groupingBy;
 
 class OrderConverter {
 
@@ -127,5 +140,65 @@ class OrderConverter {
         oandaVersion.setPrice(doubleFromPippetes(price));
 
         return oandaVersion;
+    }
+
+    static Orders convert(List<Order> oandaVersion) {
+
+        List<MarketOrder> marketOrders = new ArrayList<>();
+        List<TakeProfitOrder> takeProfits = new ArrayList<>();
+        List<StopLossOrder> stopLosses = new ArrayList<>();
+
+        Map<OrderType, List<Order>> ordersCreated = oandaVersion.stream().collect(groupingBy(Order::getType));
+        ordersCreated.forEach((type, orders) -> {
+            if (type == OrderType.MARKET) {
+                orders.stream()
+                        .map(it -> convert((com.oanda.v20.order.MarketOrder) it))
+                        .forEach(marketOrders::add);
+            } else if (type == OrderType.TAKE_PROFIT) {
+                orders.stream()
+                        .map(it -> convert((com.oanda.v20.order.TakeProfitOrder) it))
+                        .forEach(takeProfits::add);
+            } else if (type == OrderType.STOP_LOSS) {
+                orders.stream()
+                        .map(it -> convert((com.oanda.v20.order.StopLossOrder) it))
+                        .forEach(stopLosses::add);
+            } else {
+                LOG.error("Unsupported order type: {}", type);
+            }
+        });
+
+        return new Orders(marketOrders, takeProfits, stopLosses);
+    }
+
+    private static MarketOrder convert(com.oanda.v20.order.MarketOrder oandaVersion) {
+        LocalDateTime createTime = parseTimestamp(oandaVersion.getCreateTime());
+        LocalDateTime canceledTime = parseTimestamp(oandaVersion.getCancelledTime());
+        LocalDateTime filledTime = parseTimestamp(oandaVersion.getFilledTime());
+        Instrument instrument = CommonConverter.convert(oandaVersion.getInstrument());
+        int units = (int) oandaVersion.getUnits().doubleValue();
+        if (units < 0) {
+            instrument = instrument.getOpposite();
+            units *= -1;
+        }
+
+        return new MarketOrder(oandaVersion.getId().toString(), createTime, canceledTime, filledTime, instrument, units);
+    }
+
+    private static TakeProfitOrder convert(com.oanda.v20.order.TakeProfitOrder oandaVersion) {
+        LocalDateTime createTime = parseTimestamp(oandaVersion.getCreateTime());
+        LocalDateTime canceledTime = parseTimestamp(oandaVersion.getCancelledTime());
+        LocalDateTime filledTime = parseTimestamp(oandaVersion.getFilledTime());
+        long price = pippetesFromDouble(oandaVersion.getPrice().doubleValue());
+
+        return new TakeProfitOrder(oandaVersion.getId().toString(), createTime, canceledTime, filledTime, price);
+    }
+
+    private static StopLossOrder convert(com.oanda.v20.order.StopLossOrder oandaVersion) {
+        LocalDateTime createTime = parseTimestamp(oandaVersion.getCreateTime());
+        LocalDateTime canceledTime = parseTimestamp(oandaVersion.getCancelledTime());
+        LocalDateTime filledTime = parseTimestamp(oandaVersion.getFilledTime());
+        long price = pippetesFromDouble(oandaVersion.getPrice().doubleValue());
+
+        return new StopLossOrder(oandaVersion.getId().toString(), createTime, canceledTime, filledTime, price);
     }
 }

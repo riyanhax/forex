@@ -71,27 +71,41 @@ class TraderServiceImpl implements TraderService {
         }
 
         AccountChanges accountChanges = response.getAccountChanges();
-        accountChanges.getFilledOrders().forEach(it -> {
-            MarketOrderTransaction order = orderRepository.findOneByOrderIdAndAccountId(it, accountID);
-            if (order == null) {
-                LOG.error("Unable to find order for id {} and account {}", it, accountID);
+
+        // TODO: Save stop loss and take profit orders
+        accountChanges.getCreatedOrders().getMarketOrders().forEach(it -> {
+            MarketOrderTransaction order = orderRepository.findOneByOrderIdAndAccountId(it.getOrderId(), accountID);
+            if (order != null) {
+                LOG.info("Order for id {} and account {} already exists!", it, accountID);
                 return;
             }
 
-            // This should really be from the underlying order
-            order.setFilledTime(clock.now());
+            // TODO: Should be persisting order, not the transaction
+            order = new MarketOrderTransaction(it.getOrderId(), accountID, it.getCreateTime(), it.getInstrument(), it.getUnits());
             orderRepository.save(order);
         });
 
-        accountChanges.getCanceledOrders().forEach(it -> {
-            MarketOrderTransaction order = orderRepository.findOneByOrderIdAndAccountId(it, accountID);
+        accountChanges.getFilledOrders().all().forEach(it -> {
+            MarketOrderTransaction order = orderRepository.findOneByOrderIdAndAccountId(it.getOrderId(), accountID);
+            // Save order if it doesn't exist already
             if (order == null) {
                 LOG.error("Unable to find order for id {} and account {}", it, accountID);
                 return;
             }
 
-            // This should really be from the underlying order
-            order.setCanceledTime(clock.now());
+            order.setFilledTime(it.getFilledTime());
+            orderRepository.save(order);
+        });
+
+        accountChanges.getCanceledOrders().all().forEach(it -> {
+            MarketOrderTransaction order = orderRepository.findOneByOrderIdAndAccountId(it.getOrderId(), accountID);
+            // Save order if it doesn't exist already
+            if (order == null) {
+                LOG.error("Unable to find order for id {} and account {}", it, accountID);
+                return;
+            }
+
+            order.setCanceledTime(it.getCanceledTime());
             orderRepository.save(order);
         });
 
@@ -145,15 +159,7 @@ class TraderServiceImpl implements TraderService {
     public AccountAndTrades accountAndTrades(String accountId, int numberClosedTrades) throws RequestException {
         Optional<Account> accountOpt = accountRepository.findById(accountId);
         if (accountOpt.isPresent()) {
-            try {
-                refreshAccount(new AccountChangesRequest(accountOpt.get().getId(), accountOpt.get().getLastTransactionID()));
-            } catch (RequestException e) {
-                if ("The transaction ID range specified is invalid".equals(e.getMessage())) {
-                    LOG.info("No changes since last transaction id.");
-                } else {
-                    throw e;
-                }
-            }
+            refreshAccount(new AccountChangesRequest(accountOpt.get().getId(), accountOpt.get().getLastTransactionID()));
         } else {
             initializeAccount(accountId, numberClosedTrades);
         }

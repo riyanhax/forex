@@ -11,6 +11,10 @@ import forex.broker.AccountChangesState
 import forex.broker.AccountGetResponse
 import forex.broker.AccountSummary
 import forex.broker.CalculatedTradeState
+import forex.broker.MarketOrder
+import forex.broker.Orders
+import forex.broker.StopLossOrder
+import forex.broker.TakeProfitOrder
 import forex.broker.TradeSummary
 import spock.lang.Specification
 
@@ -52,10 +56,23 @@ class AccountConverterSpec extends Specification {
                 new CalculatedTradeState("997", -10L)
         ]
 
+        def expectedOrdersCreated = new Orders(
+                [],
+                [new TakeProfitOrder('998', LocalDateTime.of(2018, SEPTEMBER, 7, 10, 50, 43, 289257), null, null, 115627L)],
+                [new StopLossOrder('999', LocalDateTime.of(2018, SEPTEMBER, 7, 10, 50, 43, 289257), null, null, 115887L)]
+        )
+
+        def expectedOrdersFilled = new Orders(
+                [new MarketOrder('994', LocalDateTime.of(2018, SEPTEMBER, 7, 10, 50, 30, 782081491), null, LocalDateTime.of(2018, SEPTEMBER, 7, 10, 50, 30, 782081491), EURUSD, 1),
+                 new MarketOrder('996', LocalDateTime.of(2018, SEPTEMBER, 7, 10, 50, 43, 289257), null, LocalDateTime.of(2018, SEPTEMBER, 7, 10, 50, 43, 289257), USDEUR, 1)
+                ], [], []
+        )
+
+        def expectedOrdersCanceled = Orders.empty()
+
         def accountID = '1'
-        def filledOrders = ['994', '996']
-        def canceledOrders = []
-        def expected = new AccountChangesResponse("999", new AccountChanges(filledOrders, canceledOrders, [
+        def expected = new AccountChangesResponse("999", new AccountChanges(
+                expectedOrdersCreated, expectedOrdersFilled, expectedOrdersCanceled, [
                 new TradeSummary('993', accountID, USDEUR, 86402L, LocalDateTime.of(2018, SEPTEMBER, 7, 10, 49, 6,
                         159247625), 1, 0, -20L, 0L, LocalDateTime.of(2018, SEPTEMBER, 7, 10, 50, 30, 782081491))
         ], [
