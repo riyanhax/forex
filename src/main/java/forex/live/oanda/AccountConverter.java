@@ -55,9 +55,9 @@ class AccountConverter {
 
     private static AccountChanges convert(com.oanda.v20.account.AccountChanges oandaVersion, String accountId) {
 
-        Orders createdOrders = OrderConverter.convert(oandaVersion.getOrdersCreated());
-        Orders filledOrders = OrderConverter.convert(oandaVersion.getOrdersFilled());
-        Orders canceledOrders = OrderConverter.convert(oandaVersion.getOrdersCancelled());
+        Orders createdOrders = OrderConverter.convert(oandaVersion.getOrdersCreated(), accountId);
+        Orders filledOrders = OrderConverter.convert(oandaVersion.getOrdersFilled(), accountId);
+        Orders canceledOrders = OrderConverter.convert(oandaVersion.getOrdersCancelled(), accountId);
 
         List<TradeSummary> tradesClosed = oandaVersion.getTradesClosed().stream()
                 .map(it -> TradeConverter.convert(it, accountId))

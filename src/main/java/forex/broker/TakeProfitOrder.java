@@ -2,21 +2,32 @@ package forex.broker;
 
 import com.google.common.base.MoreObjects.ToStringHelper;
 
+import javax.persistence.Column;
+import javax.persistence.Entity;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
+@Entity(name = "account_take_profit_order")
 public class TakeProfitOrder extends Order {
 
-    private final long price;
+    @Column(nullable = false)
+    private long price;
 
-    public TakeProfitOrder(String orderId, LocalDateTime createTime, LocalDateTime canceledTime, LocalDateTime filledTime, long price) {
-        super(orderId, createTime, canceledTime, filledTime);
+    public TakeProfitOrder() {
+    }
+
+    public TakeProfitOrder(String orderId, String accountId, LocalDateTime createTime, LocalDateTime canceledTime, LocalDateTime filledTime, long price) {
+        super(orderId, accountId, createTime, canceledTime, filledTime);
 
         this.price = price;
     }
 
     public long getPrice() {
         return price;
+    }
+
+    public void setPrice(long price) {
+        this.price = price;
     }
 
     @Override

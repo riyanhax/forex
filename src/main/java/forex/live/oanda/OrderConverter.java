@@ -142,7 +142,7 @@ class OrderConverter {
         return oandaVersion;
     }
 
-    static Orders convert(List<Order> oandaVersion) {
+    static Orders convert(List<Order> oandaVersion, String accountId) {
 
         List<MarketOrder> marketOrders = new ArrayList<>();
         List<TakeProfitOrder> takeProfits = new ArrayList<>();
@@ -152,15 +152,15 @@ class OrderConverter {
         ordersCreated.forEach((type, orders) -> {
             if (type == OrderType.MARKET) {
                 orders.stream()
-                        .map(it -> convert((com.oanda.v20.order.MarketOrder) it))
+                        .map(it -> convert((com.oanda.v20.order.MarketOrder) it, accountId))
                         .forEach(marketOrders::add);
             } else if (type == OrderType.TAKE_PROFIT) {
                 orders.stream()
-                        .map(it -> convert((com.oanda.v20.order.TakeProfitOrder) it))
+                        .map(it -> convert((com.oanda.v20.order.TakeProfitOrder) it, accountId))
                         .forEach(takeProfits::add);
             } else if (type == OrderType.STOP_LOSS) {
                 orders.stream()
-                        .map(it -> convert((com.oanda.v20.order.StopLossOrder) it))
+                        .map(it -> convert((com.oanda.v20.order.StopLossOrder) it, accountId))
                         .forEach(stopLosses::add);
             } else {
                 LOG.error("Unsupported order type: {}", type);
@@ -170,7 +170,7 @@ class OrderConverter {
         return new Orders(marketOrders, takeProfits, stopLosses);
     }
 
-    private static MarketOrder convert(com.oanda.v20.order.MarketOrder oandaVersion) {
+    private static MarketOrder convert(com.oanda.v20.order.MarketOrder oandaVersion, String accountId) {
         LocalDateTime createTime = parseTimestamp(oandaVersion.getCreateTime());
         LocalDateTime canceledTime = parseTimestamp(oandaVersion.getCancelledTime());
         LocalDateTime filledTime = parseTimestamp(oandaVersion.getFilledTime());
@@ -181,24 +181,24 @@ class OrderConverter {
             units *= -1;
         }
 
-        return new MarketOrder(oandaVersion.getId().toString(), createTime, canceledTime, filledTime, instrument, units);
+        return new MarketOrder(oandaVersion.getId().toString(), accountId, createTime, canceledTime, filledTime, instrument, units);
     }
 
-    private static TakeProfitOrder convert(com.oanda.v20.order.TakeProfitOrder oandaVersion) {
+    private static TakeProfitOrder convert(com.oanda.v20.order.TakeProfitOrder oandaVersion, String accountId) {
         LocalDateTime createTime = parseTimestamp(oandaVersion.getCreateTime());
         LocalDateTime canceledTime = parseTimestamp(oandaVersion.getCancelledTime());
         LocalDateTime filledTime = parseTimestamp(oandaVersion.getFilledTime());
         long price = pippetesFromDouble(oandaVersion.getPrice().doubleValue());
 
-        return new TakeProfitOrder(oandaVersion.getId().toString(), createTime, canceledTime, filledTime, price);
+        return new TakeProfitOrder(oandaVersion.getId().toString(), accountId, createTime, canceledTime, filledTime, price);
     }
 
-    private static StopLossOrder convert(com.oanda.v20.order.StopLossOrder oandaVersion) {
+    private static StopLossOrder convert(com.oanda.v20.order.StopLossOrder oandaVersion, String accountId) {
         LocalDateTime createTime = parseTimestamp(oandaVersion.getCreateTime());
         LocalDateTime canceledTime = parseTimestamp(oandaVersion.getCancelledTime());
         LocalDateTime filledTime = parseTimestamp(oandaVersion.getFilledTime());
         long price = pippetesFromDouble(oandaVersion.getPrice().doubleValue());
 
-        return new StopLossOrder(oandaVersion.getId().toString(), createTime, canceledTime, filledTime, price);
+        return new StopLossOrder(oandaVersion.getId().toString(), accountId, createTime, canceledTime, filledTime, price);
     }
 }

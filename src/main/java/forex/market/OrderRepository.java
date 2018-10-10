@@ -1,9 +1,9 @@
 package forex.market;
 
-import forex.broker.MarketOrderTransaction;
+import forex.broker.MarketOrder;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface OrderRepository extends JpaRepository<MarketOrderTransaction, Integer> {
+public interface OrderRepository extends JpaRepository<MarketOrder, Integer> {
 
-    MarketOrderTransaction findOneByOrderIdAndAccountId(String orderId, String accountID);
+    MarketOrder findOneByOrderIdAndAccountId(String orderId, String accountID);
 }

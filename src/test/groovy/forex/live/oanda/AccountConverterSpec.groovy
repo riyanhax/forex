@@ -51,6 +51,7 @@ class AccountConverterSpec extends Specification {
     }
 
     def 'should convert account changes response correctly'() {
+        def accountID = '1'
 
         def expectedTrades = [
                 new CalculatedTradeState("997", -10L)
@@ -58,19 +59,18 @@ class AccountConverterSpec extends Specification {
 
         def expectedOrdersCreated = new Orders(
                 [],
-                [new TakeProfitOrder('998', LocalDateTime.of(2018, SEPTEMBER, 7, 10, 50, 43, 289257), null, null, 115627L)],
-                [new StopLossOrder('999', LocalDateTime.of(2018, SEPTEMBER, 7, 10, 50, 43, 289257), null, null, 115887L)]
+                [new TakeProfitOrder('998', accountID, LocalDateTime.of(2018, SEPTEMBER, 7, 10, 50, 43, 289257), null, null, 115627L)],
+                [new StopLossOrder('999', accountID, LocalDateTime.of(2018, SEPTEMBER, 7, 10, 50, 43, 289257), null, null, 115887L)]
         )
 
         def expectedOrdersFilled = new Orders(
-                [new MarketOrder('994', LocalDateTime.of(2018, SEPTEMBER, 7, 10, 50, 30, 782081491), null, LocalDateTime.of(2018, SEPTEMBER, 7, 10, 50, 30, 782081491), EURUSD, 1),
-                 new MarketOrder('996', LocalDateTime.of(2018, SEPTEMBER, 7, 10, 50, 43, 289257), null, LocalDateTime.of(2018, SEPTEMBER, 7, 10, 50, 43, 289257), USDEUR, 1)
+                [new MarketOrder('994', accountID, LocalDateTime.of(2018, SEPTEMBER, 7, 10, 50, 30, 782081491), null, LocalDateTime.of(2018, SEPTEMBER, 7, 10, 50, 30, 782081491), EURUSD, 1),
+                 new MarketOrder('996', accountID, LocalDateTime.of(2018, SEPTEMBER, 7, 10, 50, 43, 289257), null, LocalDateTime.of(2018, SEPTEMBER, 7, 10, 50, 43, 289257), USDEUR, 1)
                 ], [], []
         )
 
         def expectedOrdersCanceled = Orders.empty()
 
-        def accountID = '1'
         def expected = new AccountChangesResponse("999", new AccountChanges(
                 expectedOrdersCreated, expectedOrdersFilled, expectedOrdersCanceled, [
                 new TradeSummary('993', accountID, USDEUR, 86402L, LocalDateTime.of(2018, SEPTEMBER, 7, 10, 49, 6,

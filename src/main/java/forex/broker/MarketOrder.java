@@ -3,17 +3,31 @@ package forex.broker;
 import com.google.common.base.MoreObjects.ToStringHelper;
 import forex.market.Instrument;
 
+import javax.persistence.Column;
+import javax.persistence.Entity;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
+@Entity(name = "account_market_order")
 public class MarketOrder extends Order {
 
-    private final Instrument instrument;
-    private final int units;
+    @Column(nullable = false)
+    private Instrument instrument;
 
-    public MarketOrder(String orderId, LocalDateTime createTime, LocalDateTime canceledTime, LocalDateTime filledTime,
+    @Column(nullable = false)
+    private int units;
+
+    public MarketOrder() {
+    }
+
+    public MarketOrder(MarketOrderTransaction transaction) {
+        this(transaction.getOrderId(), transaction.getAccountId(), transaction.getCreateTime(), null,
+                null, transaction.getInstrument(), transaction.getUnits());
+    }
+
+    public MarketOrder(String orderId, String accountId, LocalDateTime createTime, LocalDateTime canceledTime, LocalDateTime filledTime,
                        Instrument instrument, int units) {
-        super(orderId, createTime, canceledTime, filledTime);
+        super(orderId, accountId, createTime, canceledTime, filledTime);
 
         this.instrument = instrument;
         this.units = units;
@@ -23,8 +37,16 @@ public class MarketOrder extends Order {
         return instrument;
     }
 
+    public void setInstrument(Instrument instrument) {
+        this.instrument = instrument;
+    }
+
     public int getUnits() {
         return units;
+    }
+
+    public void setUnits(int units) {
+        this.units = units;
     }
 
     @Override

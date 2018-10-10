@@ -43,13 +43,17 @@ public class OrderServiceImpl implements OrderService {
         OrderFillTransaction fillTransaction = orderCreateResponse.getOrderFillTransaction();
         OrderCancelTransaction cancelTransaction = orderCreateResponse.getOrderCancelTransaction();
         if (orderTransaction != null) {
+
+            MarketOrder order = new MarketOrder(orderTransaction);
+
             if (fillTransaction != null) {
-                orderTransaction.setFilledTime(fillTransaction.getTime());
+                order.setFilledTime(fillTransaction.getTime());
             } else if (cancelTransaction != null) {
-                orderTransaction.setCanceledTime(cancelTransaction.getTime());
-                orderTransaction.setCanceledReason(cancelTransaction.getReason());
+                order.setCanceledTime(cancelTransaction.getTime());
+                order.setCanceledReason(cancelTransaction.getReason());
             }
-            orderRepository.save(orderTransaction);
+
+            orderRepository.save(order);
         }
 
         LOG.info(orderCreateResponse.toString());

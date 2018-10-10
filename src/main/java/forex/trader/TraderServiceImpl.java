@@ -7,7 +7,7 @@ import forex.broker.AccountChangesRequest;
 import forex.broker.AccountChangesResponse;
 import forex.broker.AccountSummary;
 import forex.broker.Context;
-import forex.broker.MarketOrderTransaction;
+import forex.broker.MarketOrder;
 import forex.broker.RequestException;
 import forex.broker.Trade;
 import forex.broker.TradeListRequest;
@@ -74,38 +74,35 @@ class TraderServiceImpl implements TraderService {
 
         // TODO: Save stop loss and take profit orders
         accountChanges.getCreatedOrders().getMarketOrders().forEach(it -> {
-            MarketOrderTransaction order = orderRepository.findOneByOrderIdAndAccountId(it.getOrderId(), accountID);
+            MarketOrder order = orderRepository.findOneByOrderIdAndAccountId(it.getOrderId(), accountID);
             if (order != null) {
                 LOG.info("Order for id {} and account {} already exists!", it, accountID);
                 return;
             }
 
-            // TODO: Should be persisting order, not the transaction
-            order = new MarketOrderTransaction(it.getOrderId(), accountID, it.getCreateTime(), it.getInstrument(), it.getUnits());
+            order = new MarketOrder(it.getOrderId(), accountID, it.getCreateTime(), null, null, it.getInstrument(), it.getUnits());
             orderRepository.save(order);
         });
 
-        accountChanges.getFilledOrders().all().forEach(it -> {
-            MarketOrderTransaction order = orderRepository.findOneByOrderIdAndAccountId(it.getOrderId(), accountID);
-            // Save order if it doesn't exist already
+        accountChanges.getFilledOrders().getMarketOrders().forEach(it -> {
+            MarketOrder order = orderRepository.findOneByOrderIdAndAccountId(it.getOrderId(), accountID);
             if (order == null) {
-                LOG.error("Unable to find order for id {} and account {}", it, accountID);
-                return;
+                order = it;
+            } else {
+                it.setId(order.getId());
             }
 
-            order.setFilledTime(it.getFilledTime());
             orderRepository.save(order);
         });
 
-        accountChanges.getCanceledOrders().all().forEach(it -> {
-            MarketOrderTransaction order = orderRepository.findOneByOrderIdAndAccountId(it.getOrderId(), accountID);
-            // Save order if it doesn't exist already
+        accountChanges.getCanceledOrders().getMarketOrders().forEach(it -> {
+            MarketOrder order = orderRepository.findOneByOrderIdAndAccountId(it.getOrderId(), accountID);
             if (order == null) {
-                LOG.error("Unable to find order for id {} and account {}", it, accountID);
-                return;
+                order = it;
+            } else {
+                it.setId(order.getId());
             }
 
-            order.setCanceledTime(it.getCanceledTime());
             orderRepository.save(order);
         });
 
