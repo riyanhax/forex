@@ -8,9 +8,9 @@ import forex.broker.AccountChangesState
 import forex.broker.Context
 import forex.broker.Orders
 import forex.broker.RequestException
+import forex.market.AccountOrderService
 import forex.market.AccountRepository
 import forex.market.MarketTime
-import forex.market.OrderRepository
 import forex.market.TradeRepository
 import spock.lang.Specification
 import spock.lang.Unroll
@@ -38,9 +38,9 @@ class TraderServiceImplSpec extends Specification {
         tradeRepository.findByAccountIdAndCloseTimeIsNull(accountID) >> []
         tradeRepository.findByAccountIdAndCloseTimeIsNotNullOrderByCloseTimeDesc(accountID, _) >> []
 
-        def orderRepository = Mock(OrderRepository)
+        def orderService = Mock(AccountOrderService)
 
-        TraderServiceImpl traderService = new TraderServiceImpl(context, Mock(MarketTime), accountRepository, tradeRepository, orderRepository)
+        TraderServiceImpl traderService = new TraderServiceImpl(context, Mock(MarketTime), accountRepository, tradeRepository, orderService)
 
         when: 'the updates are processed'
         traderService.accountAndTrades(accountID, 10)
@@ -76,9 +76,9 @@ class TraderServiceImplSpec extends Specification {
         tradeRepository.findByAccountIdAndCloseTimeIsNull(accountID) >> []
         tradeRepository.findByAccountIdAndCloseTimeIsNotNullOrderByCloseTimeDesc(accountID, _) >> []
 
-        def orderRepository = Mock(OrderRepository)
+        def orderService = Mock(AccountOrderService)
 
-        TraderServiceImpl traderService = new TraderServiceImpl(context, Mock(MarketTime), accountRepository, tradeRepository, orderRepository)
+        TraderServiceImpl traderService = new TraderServiceImpl(context, Mock(MarketTime), accountRepository, tradeRepository, orderService)
 
         when: 'the updates are processed'
         def accountAndTrades = traderService.accountAndTrades(accountID, 10)

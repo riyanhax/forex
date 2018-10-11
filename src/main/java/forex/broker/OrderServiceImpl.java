@@ -1,8 +1,8 @@
 package forex.broker;
 
 import com.google.common.base.Preconditions;
+import forex.market.AccountOrderService;
 import forex.market.Instrument;
-import forex.market.OrderRepository;
 import forex.trader.ForexTrader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,10 +17,10 @@ public class OrderServiceImpl implements OrderService {
 
     private static final Logger LOG = LoggerFactory.getLogger(OrderServiceImpl.class);
 
-    private OrderRepository orderRepository;
+    private AccountOrderService accountOrderService;
 
-    public OrderServiceImpl(OrderRepository orderRepository) {
-        this.orderRepository = orderRepository;
+    public OrderServiceImpl(AccountOrderService accountOrderService) {
+        this.accountOrderService = accountOrderService;
     }
 
     @Transactional
@@ -53,7 +53,7 @@ public class OrderServiceImpl implements OrderService {
                 order.setCanceledReason(cancelTransaction.getReason());
             }
 
-            orderRepository.save(order);
+            accountOrderService.saveIfNotExists(order);
         }
 
         LOG.info(orderCreateResponse.toString());

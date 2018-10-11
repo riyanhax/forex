@@ -7,15 +7,14 @@ import forex.broker.AccountChangesRequest;
 import forex.broker.AccountChangesResponse;
 import forex.broker.AccountSummary;
 import forex.broker.Context;
-import forex.broker.MarketOrder;
 import forex.broker.RequestException;
 import forex.broker.Trade;
 import forex.broker.TradeListRequest;
 import forex.broker.TradeListResponse;
 import forex.broker.TradeSummary;
+import forex.market.AccountOrderService;
 import forex.market.AccountRepository;
 import forex.market.MarketTime;
-import forex.market.OrderRepository;
 import forex.market.TradeRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,19 +42,19 @@ class TraderServiceImpl implements TraderService {
     private final MarketTime clock;
     private final AccountRepository accountRepository;
     private final TradeRepository tradeRepository;
-    private final OrderRepository orderRepository;
+    private final AccountOrderService orderService;
 
     @Autowired
     TraderServiceImpl(Context context,
                       MarketTime clock,
                       AccountRepository accountRepository,
                       TradeRepository tradeRepository,
-                      OrderRepository orderRepository) {
+                      AccountOrderService orderService) {
         this.context = context;
         this.clock = clock;
         this.accountRepository = accountRepository;
         this.tradeRepository = tradeRepository;
-        this.orderRepository = orderRepository;
+        this.orderService = orderService;
     }
 
     private void refreshAccount(AccountChangesRequest request) throws RequestException {
@@ -72,39 +71,9 @@ class TraderServiceImpl implements TraderService {
 
         AccountChanges accountChanges = response.getAccountChanges();
 
-        // TODO: Save stop loss and take profit orders
-        accountChanges.getCreatedOrders().getMarketOrders().forEach(it -> {
-            MarketOrder order = orderRepository.findOneByOrderIdAndAccountId(it.getOrderId(), accountID);
-            if (order != null) {
-                LOG.info("Order for id {} and account {} already exists!", it, accountID);
-                return;
-            }
-
-            order = new MarketOrder(it.getOrderId(), accountID, it.getCreateTime(), null, null, it.getInstrument(), it.getUnits());
-            orderRepository.save(order);
-        });
-
-        accountChanges.getFilledOrders().getMarketOrders().forEach(it -> {
-            MarketOrder order = orderRepository.findOneByOrderIdAndAccountId(it.getOrderId(), accountID);
-            if (order == null) {
-                order = it;
-            } else {
-                it.setId(order.getId());
-            }
-
-            orderRepository.save(order);
-        });
-
-        accountChanges.getCanceledOrders().getMarketOrders().forEach(it -> {
-            MarketOrder order = orderRepository.findOneByOrderIdAndAccountId(it.getOrderId(), accountID);
-            if (order == null) {
-                order = it;
-            } else {
-                it.setId(order.getId());
-            }
-
-            orderRepository.save(order);
-        });
+        orderService.saveIfNotExists(accountChanges.getCreatedOrders());
+        orderService.upsert(accountChanges.getFilledOrders());
+        orderService.upsert(accountChanges.getCanceledOrders());
 
         List<Trade> tradesToMerge = new ArrayList<>();
         accountChanges.getTradesOpened().forEach(it ->
