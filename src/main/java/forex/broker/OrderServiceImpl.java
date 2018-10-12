@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 
+import static forex.broker.OrderService.createLimitOrderRequest;
 import static forex.broker.OrderService.createMarketOrderRequest;
 
 @Service
@@ -31,12 +32,19 @@ public class OrderServiceImpl implements OrderService {
 
         Instrument pair = request.getPair();
 
-        MarketOrderRequest marketOrderRequest = createMarketOrderRequest(quote, pair, request.getUnits(),
-                request.getStopLoss().orElse(null),
-                request.getTakeProfit().orElse(null));
+        MarketOrderRequest marketOrderRequest = request.getLimit().isPresent() ? null :
+                createMarketOrderRequest(quote, pair, request.getUnits(),
+                        request.getStopLoss().orElse(null),
+                        request.getTakeProfit().orElse(null));
 
-        OrderCreateRequest orderCreateRequest = new OrderCreateRequest(trader.getAccountNumber());
-        orderCreateRequest.setOrder(marketOrderRequest);
+        LimitOrderRequest limitOrderRequest = request.getLimit().isPresent() ?
+                createLimitOrderRequest(quote, pair, request.getUnits(),
+                        request.getStopLoss().orElse(null),
+                        request.getTakeProfit().orElse(null), request.getLimit().get()) : null;
+
+        OrderCreateRequest orderCreateRequest = new OrderCreateRequest(trader.getAccountNumber())
+                .setOrder(marketOrderRequest)
+                .setOrder(limitOrderRequest);
 
         OrderCreateResponse orderCreateResponse = trader.getContext().createOrder(orderCreateRequest);
         MarketOrderTransaction orderTransaction = orderCreateResponse.getOrderCreateTransaction();

@@ -61,7 +61,7 @@ public class OandaContext extends BaseContext {
         @Override
         public OrderCreateResponse create(OrderCreateRequest request) throws forex.broker.RequestException {
             return processRequest(request, OrderConverter::convert, order::create, it ->
-                    OrderConverter.convert(request.getOrder().getInstrument(), it));
+                    OrderConverter.convert(request.getInstrument(), it));
         }
     }
 

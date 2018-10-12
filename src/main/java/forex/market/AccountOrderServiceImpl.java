@@ -1,6 +1,7 @@
 package forex.market;
 
 import com.google.common.base.Preconditions;
+import forex.broker.LimitOrder;
 import forex.broker.MarketOrder;
 import forex.broker.Order;
 import forex.broker.Orders;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 
 import static java.util.stream.Collectors.toList;
@@ -23,13 +25,16 @@ class AccountOrderServiceImpl implements AccountOrderService {
     public static final Logger LOG = LoggerFactory.getLogger(AccountOrderServiceImpl.class);
 
     private final MarketOrderRepository marketOrderRepo;
+    private final LimitOrderRepository limitOrderRepo;
     private final StopLossOrderRepository stopLossOrderRepo;
     private final TakeProfitOrderRepository takeProfitOrderRepo;
 
     AccountOrderServiceImpl(MarketOrderRepository marketOrderRepo,
+                            LimitOrderRepository limitOrderRepo,
                             StopLossOrderRepository stopLossOrderRepo,
                             TakeProfitOrderRepository takeProfitOrderRepo) {
         this.marketOrderRepo = marketOrderRepo;
+        this.limitOrderRepo = limitOrderRepo;
         this.stopLossOrderRepo = stopLossOrderRepo;
         this.takeProfitOrderRepo = takeProfitOrderRepo;
     }
@@ -37,6 +42,11 @@ class AccountOrderServiceImpl implements AccountOrderService {
     @Override
     public MarketOrder upsert(MarketOrder order) {
         return saveMarketOrder(order, true);
+    }
+
+    @Override
+    public LimitOrder upsert(LimitOrder order) {
+        return saveLimitOrder(order, true);
     }
 
     @Override
@@ -55,6 +65,11 @@ class AccountOrderServiceImpl implements AccountOrderService {
     }
 
     @Override
+    public LimitOrder findLimitOrder(String orderId, String accountID) {
+        return limitOrderRepo.findOneByOrderIdAndAccountId(orderId, accountID);
+    }
+
+    @Override
     public StopLossOrder findStopLossOrder(String orderId, String accountID) {
         return stopLossOrderRepo.findOneByOrderIdAndAccountId(orderId, accountID);
     }
@@ -67,6 +82,11 @@ class AccountOrderServiceImpl implements AccountOrderService {
     @Override
     public MarketOrder saveIfNotExists(MarketOrder order) {
         return saveMarketOrder(order, false);
+    }
+
+    @Override
+    public LimitOrder saveIfNotExists(LimitOrder order) {
+        return saveLimitOrder(order, false);
     }
 
     @Override
@@ -89,13 +109,28 @@ class AccountOrderServiceImpl implements AccountOrderService {
         return persist(orders, true);
     }
 
+    @Override
+    public Orders findPendingOrders(String accountId) {
+        Set<MarketOrder> marketOrders = marketOrderRepo.findByAccountIdEqualsAndFilledTimeIsNullAndCanceledTimeIsNull(accountId);
+        Set<LimitOrder> limitOrders = limitOrderRepo.findByAccountIdEqualsAndFilledTimeIsNullAndCanceledTimeIsNull(accountId);
+        Set<TakeProfitOrder> takeProfitOrders = takeProfitOrderRepo.findByAccountIdEqualsAndFilledTimeIsNullAndCanceledTimeIsNull(accountId);
+        Set<StopLossOrder> stopLossOrders = stopLossOrderRepo.findByAccountIdEqualsAndFilledTimeIsNullAndCanceledTimeIsNull(accountId);
+
+        return new Orders(marketOrders, limitOrders, takeProfitOrders, stopLossOrders);
+    }
+
     private Orders persist(Orders orders, boolean overwriteExisting) {
         Function<MarketOrder, MarketOrder> marketOrderPersist = overwriteExisting ? this::upsert : this::saveIfNotExists;
+        Function<LimitOrder, LimitOrder> limitOrderPersist = overwriteExisting ? this::upsert : this::saveIfNotExists;
         Function<TakeProfitOrder, TakeProfitOrder> takeProfitOrderPersist = overwriteExisting ? this::upsert : this::saveIfNotExists;
         Function<StopLossOrder, StopLossOrder> stopLossOrderPersist = overwriteExisting ? this::upsert : this::saveIfNotExists;
 
         List<MarketOrder> marketOrders = orders.getMarketOrders().stream()
                 .map(marketOrderPersist)
+                .collect(toList());
+
+        List<LimitOrder> limitOrders = orders.getLimitOrders().stream()
+                .map(limitOrderPersist)
                 .collect(toList());
 
         List<TakeProfitOrder> takeProfitOrders = orders.getTakeProfits().stream()
@@ -106,11 +141,15 @@ class AccountOrderServiceImpl implements AccountOrderService {
                 .map(stopLossOrderPersist)
                 .collect(toList());
 
-        return new Orders(marketOrders, takeProfitOrders, stopLossOrders);
+        return new Orders(marketOrders, limitOrders, takeProfitOrders, stopLossOrders);
     }
 
     private MarketOrder saveMarketOrder(MarketOrder order, boolean overwriteExisting) {
         return saveOrder(order, overwriteExisting, marketOrderRepo);
+    }
+
+    private LimitOrder saveLimitOrder(LimitOrder order, boolean overwriteExisting) {
+        return saveOrder(order, overwriteExisting, limitOrderRepo);
     }
 
     private StopLossOrder saveStopLossOrder(StopLossOrder order, boolean overwriteExisting) {

@@ -24,11 +24,11 @@ class AccountSummarySpec extends Specification {
                 .withLastTransactionID('1')
                 .build()
 
-        def current = new AccountSummary(account, [])
+        def current = new AccountSummary(account, [], Orders.empty())
         def actual = current.positionOpened(position, newTransactionID)
 
         expect:
-        actual == new AccountSummary(new Account(accountID, 4767914L, '2', 0L), [position])
+        actual == new AccountSummary(new Account(accountID, 4767914L, '2', 0L), [position], Orders.empty())
     }
 
     def 'should modify correctly for closed positions'() {
@@ -41,12 +41,12 @@ class AccountSummarySpec extends Specification {
                 .withBalance(4767954L)
                 .withLastTransactionID('1')
                 .build()
-        def current = new AccountSummary(account, trades)
+        def current = new AccountSummary(account, trades, Orders.empty())
 
         def actual = current.positionClosed(position, newTransactionID)
 
         expect:
-        actual == new AccountSummary(new Account(accountID, 4999860, '2', -180L), [])
+        actual == new AccountSummary(new Account(accountID, 4999860, '2', -180L), [], Orders.empty())
     }
 
     @Unroll
@@ -56,7 +56,7 @@ class AccountSummarySpec extends Specification {
                 .withBalance(4767954L)
                 .build()
 
-        def summary = new AccountSummary(account, trades)
+        def summary = new AccountSummary(account, trades, Orders.empty())
         def actual = summary.getNetAssetValue()
 
         expect:
@@ -80,7 +80,7 @@ class AccountSummarySpec extends Specification {
         def account = new Account.Builder(accountID)
                 .withBalance(4767954L)
                 .build()
-        def summary = new AccountSummary(account, trades)
+        def summary = new AccountSummary(account, trades, Orders.empty())
 
         def actual = summary.getUnrealizedProfitLoss();
 
@@ -114,7 +114,7 @@ class AccountSummarySpec extends Specification {
                 .withLastTransactionID('3')
                 .withProfitLoss(1L)
                 .build()
-        def summary = new AccountSummary(account, openTrades)
+        def summary = new AccountSummary(account, openTrades, Orders.empty())
 
         when: 'account changes are processed'
         def actual = summary.processChanges(changes)
@@ -126,23 +126,24 @@ class AccountSummarySpec extends Specification {
         description                      | changes                                                                                                                                                                                    | expected
         'no changes'                     | new AccountChangesResponse('3', new AccountChanges(Orders.empty(), Orders.empty(), Orders.empty(), [], []), new AccountChangesState(5000165, 55L, []))                                     | new AccountSummary(new Account(accountID, 4913822L, '3', 1L), [
                 new TradeSummary('309', accountID, USDEUR, 86288L, LocalDateTime.of(2018, SEPTEMBER, 7, 7, 43, 13, 567036542), 1, 1, 0L, 55L, null)
-        ])
+        ], Orders.empty())
 
         'updated NAV and unrealized P&L' | new AccountChangesResponse('3', new AccountChanges(Orders.empty(), Orders.empty(), Orders.empty(), [], []), new AccountChangesState(5000167, 57L, [new CalculatedTradeState('309', 57L)])) | new AccountSummary(new Account(accountID, 4913822L, '3', 1L), [
                 new TradeSummary('309', accountID, USDEUR, 86288L, LocalDateTime.of(2018, SEPTEMBER, 7, 7, 43, 13, 567036542), 1, 1, 0L, 57L, null)
-        ])
+        ], Orders.empty())
 
         'closed trade'                   | new AccountChangesResponse('4', new AccountChanges(Orders.empty(), Orders.empty(), Orders.empty(), [
                 new TradeSummary('309', accountID, USDEUR, 86288L, LocalDateTime.of(2018, SEPTEMBER, 7, 7, 43, 13, 567036542), 1, 0, 63L, 0L, LocalDateTime.of(2018, SEPTEMBER, 7, 7, 45, 11, 338759441)
                 )
-        ], []), new AccountChangesState(5000173, 0L, []))                                                                                                                                                                             | new AccountSummary(new Account(accountID, 5000173L, '4', 64L), [])
+        ], []), new AccountChangesState(5000173, 0L, []))                                                                                                                                                                             | new AccountSummary(new Account(accountID, 5000173L, '4', 64L), [
+        ], Orders.empty())
 
         'open trade'                     | new AccountChangesResponse('4', new AccountChanges(Orders.empty(), Orders.empty(), Orders.empty(), [], [
                 new TradeSummary('303', accountID, EURUSD, 116029L, LocalDateTime.of(2018, SEPTEMBER, 7, 7, 31, 9, 524922739), 2, 2, 0L, 150L, null)
 
         ]), new AccountChangesState(5000150, 150L, [new CalculatedTradeState('303', 150L)]))                                                                                                                                          | new AccountSummary(new Account(accountID, 4767942, '4', 1L), [
                 new TradeSummary('303', accountID, EURUSD, 116029L, LocalDateTime.of(2018, SEPTEMBER, 7, 7, 31, 9, 524922739), 2, 2, 0L, 150L, null)
-        ])
+        ], Orders.empty())
     }
 
     @Unroll
@@ -152,7 +153,7 @@ class AccountSummarySpec extends Specification {
                 .withBalanceDollars(50)
                 .build()
 
-        def actual = new AccountSummary(account, []).processStateChanges(stateChanges)
+        def actual = new AccountSummary(account, [], Orders.empty()).processStateChanges(stateChanges)
 
 
         expect:
@@ -160,8 +161,8 @@ class AccountSummarySpec extends Specification {
 
         where:
         stateChanges                              | expected
-        new AccountChangesState(5000000L, 0L, []) | new AccountSummary(new Account.Builder(accountID).withBalanceDollars(50).build(), [])
-        new AccountChangesState(5001000L, 0L, []) | new AccountSummary(new Account.Builder(accountID).withBalance(5001000L).build(), [])
-        new AccountChangesState(4991000L, 0L, []) | new AccountSummary(new Account.Builder(accountID).withBalance(4991000L).build(), [])
+        new AccountChangesState(5000000L, 0L, []) | new AccountSummary(new Account.Builder(accountID).withBalanceDollars(50).build(), [], Orders.empty())
+        new AccountChangesState(5001000L, 0L, []) | new AccountSummary(new Account.Builder(accountID).withBalance(5001000L).build(), [], Orders.empty())
+        new AccountChangesState(4991000L, 0L, []) | new AccountSummary(new Account.Builder(accountID).withBalance(4991000L).build(), [], Orders.empty())
     }
 }

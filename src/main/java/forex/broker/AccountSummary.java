@@ -15,10 +15,12 @@ public class AccountSummary {
 
     private final Account account;
     private final List<TradeSummary> trades;
+    private final Orders pendingOrders;
 
-    public AccountSummary(Account account, List<TradeSummary> trades) {
+    public AccountSummary(Account account, List<TradeSummary> trades, Orders pendingOrders) {
         this.account = account;
         this.trades = trades;
+        this.pendingOrders = pendingOrders;
     }
 
     public Account getAccount() {
@@ -45,6 +47,10 @@ public class AccountSummary {
         return trades;
     }
 
+    public Orders getPendingOrders() {
+        return pendingOrders;
+    }
+
     public long getProfitLoss() {
         return account.getProfitLoss();
     }
@@ -59,12 +65,13 @@ public class AccountSummary {
         if (o == null || getClass() != o.getClass()) return false;
         AccountSummary that = (AccountSummary) o;
         return Objects.equals(account, that.account) &&
-                Objects.equals(trades, that.trades);
+                Objects.equals(trades, that.trades) &&
+                Objects.equals(pendingOrders, that.pendingOrders);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(account, trades);
+        return Objects.hash(account, trades, pendingOrders);
     }
 
     @Override
@@ -73,6 +80,7 @@ public class AccountSummary {
                 .add("account", account)
                 .add("netAssetValue", formatDollars(getNetAssetValue()))
                 .add("trades", trades)
+                .add("pendingOrders", pendingOrders)
                 .toString();
     }
 
@@ -82,7 +90,7 @@ public class AccountSummary {
         List<TradeSummary> newTrades = new ArrayList<>(this.trades);
         newTrades.add(position);
 
-        return new AccountSummary(newAccount, newTrades);
+        return new AccountSummary(newAccount, newTrades, pendingOrders);
     }
 
     public AccountSummary positionClosed(TradeSummary position, String latestTransactionID) {
@@ -91,12 +99,12 @@ public class AccountSummary {
         List<TradeSummary> newTrades = new ArrayList<>(this.trades);
         newTrades.removeIf(it -> it.getTradeId().equals(position.getTradeId()));
 
-        return new AccountSummary(newAccount, newTrades);
+        return new AccountSummary(newAccount, newTrades, pendingOrders);
     }
 
     AccountSummary processStateChanges(AccountChangesState stateChanges) {
         List<TradeSummary> newTrades = TradeSummary.incorporateState(this.trades, stateChanges);
-        AccountSummary newSummary = new AccountSummary(this.account, newTrades);
+        AccountSummary newSummary = new AccountSummary(this.account, newTrades, pendingOrders);
 
         // This intentionally calculates NAV on its own to make sure our calculations stay in line with the broker
         long newNAV = newSummary.getNetAssetValue();
@@ -110,7 +118,7 @@ public class AccountSummary {
         if (balanceAdjustment != 0) {
             long newBalance = account.getBalance() + balanceAdjustment;
             Account newAccount = new Account(this.account.getId(), newBalance, this.account.getLastTransactionID(), this.account.getProfitLoss());
-            newSummary = new AccountSummary(newAccount, newTrades);
+            newSummary = new AccountSummary(newAccount, newTrades, pendingOrders);
         }
 
         long newUnrealizedProfitLoss = newSummary.getUnrealizedProfitLoss();

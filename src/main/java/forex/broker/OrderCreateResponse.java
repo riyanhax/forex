@@ -13,14 +13,17 @@ public class OrderCreateResponse {
      * The Transaction that created the Order specified by the request.
      */
     private final MarketOrderTransaction orderCreateTransaction;
+    private final LimitOrderTransaction limitOrderCreateTransaction;
     private final OrderFillTransaction orderFillTransaction;
     private final OrderCancelTransaction orderCancelTransaction;
 
     public OrderCreateResponse(Instrument instrument, MarketOrderTransaction orderCreateTransaction,
+                               LimitOrderTransaction limitOrderCreateTransaction,
                                OrderFillTransaction orderFillTransaction,
                                OrderCancelTransaction orderCancelTransaction) {
         this.instrument = instrument;
         this.orderCreateTransaction = orderCreateTransaction;
+        this.limitOrderCreateTransaction = limitOrderCreateTransaction;
         this.orderFillTransaction = orderFillTransaction;
         this.orderCancelTransaction = orderCancelTransaction;
     }
@@ -31,6 +34,10 @@ public class OrderCreateResponse {
 
     public MarketOrderTransaction getOrderCreateTransaction() {
         return orderCreateTransaction;
+    }
+
+    public LimitOrderTransaction getLimitOrderCreateTransaction() {
+        return limitOrderCreateTransaction;
     }
 
     public OrderFillTransaction getOrderFillTransaction() {
@@ -48,13 +55,14 @@ public class OrderCreateResponse {
         OrderCreateResponse that = (OrderCreateResponse) o;
         return instrument == that.instrument &&
                 Objects.equals(orderCreateTransaction, that.orderCreateTransaction) &&
+                Objects.equals(limitOrderCreateTransaction, that.limitOrderCreateTransaction) &&
                 Objects.equals(orderFillTransaction, that.orderFillTransaction) &&
                 Objects.equals(orderCancelTransaction, that.orderCancelTransaction);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(instrument, orderCreateTransaction, orderFillTransaction, orderCancelTransaction);
+        return Objects.hash(instrument, orderCreateTransaction, limitOrderCreateTransaction, orderFillTransaction, orderCancelTransaction);
     }
 
     @Override
@@ -62,6 +70,7 @@ public class OrderCreateResponse {
         return MoreObjects.toStringHelper(this)
                 .add("instrument", instrument)
                 .add("orderCreateTransaction", orderCreateTransaction)
+                .add("limitOrderCreateTransaction", limitOrderCreateTransaction)
                 .add("orderFillTransaction", orderFillTransaction)
                 .add("orderCancelTransaction", orderCancelTransaction)
                 .toString();

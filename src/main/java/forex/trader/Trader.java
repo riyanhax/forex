@@ -7,6 +7,7 @@ import forex.broker.AccountSummary;
 import forex.broker.Context;
 import forex.broker.ForexBroker;
 import forex.broker.OpenPositionRequest;
+import forex.broker.Orders;
 import forex.broker.RequestException;
 import forex.broker.TradeSummary;
 import forex.market.MarketTime;
@@ -65,19 +66,7 @@ public class Trader implements ForexTrader {
         LocalDateTime now = clock.now();
         boolean stopTrading = now.getHour() > 11 && now.getDayOfWeek() == FRIDAY;
 
-        if (positions.isEmpty()) {
-            if (!stopTrading) {
-                Optional<OpenPositionRequest> toOpen = tradingStrategy.shouldOpenPosition(this, broker, clock);
-                toOpen.ifPresent(request -> {
-                    LOG.info("Opening position: {}", request);
-                    try {
-                        broker.openPosition(this, request);
-                    } catch (Exception e) {
-                        LOG.error("Unable to open position!", e);
-                    }
-                });
-            }
-        } else {
+        if (!positions.isEmpty()) {
             TradeSummary positionValue = positions.iterator().next();
 
             LOG.info("Existing position: {}", positionValue);
@@ -88,7 +77,29 @@ public class Trader implements ForexTrader {
 
                 broker.closePosition(this, positionValue, null);
             }
+
+            return;
         }
+
+        if (stopTrading) {
+            return;
+        }
+
+        Orders pendingOrders = account.getPendingOrders();
+        if (!(pendingOrders.getMarketOrders().isEmpty() && pendingOrders.getLimitOrders().isEmpty())) {
+            LOG.info("Pending orders exist: {}", pendingOrders);
+            return;
+        }
+
+        Optional<OpenPositionRequest> toOpen = tradingStrategy.shouldOpenPosition(this, broker, clock);
+        toOpen.ifPresent(request -> {
+            LOG.info("Opening position: {}", request);
+            try {
+                broker.openPosition(this, request);
+            } catch (Exception e) {
+                LOG.error("Unable to open position!", e);
+            }
+        });
     }
 
     private AccountAndTrades refreshDataSinceLastInterval() {

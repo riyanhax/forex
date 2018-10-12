@@ -9,6 +9,7 @@ import forex.broker.Context
 import forex.broker.LiveTraders
 import forex.broker.MarketOrderRequest
 import forex.broker.OrderService
+import forex.broker.Orders
 import forex.broker.Quote
 import forex.broker.StopLossDetails
 import forex.broker.TakeProfitDetails
@@ -101,7 +102,7 @@ class BrokerSpec extends Specification {
                 .withBalanceDollars(50)
                 .withLastTransactionID('1234')
                 .withProfitLoss(13L)
-                .build(), [])
+                .build(), [], Orders.empty())
 
         def trader = Mock(ForexTrader)
         trader.accountNumber >> expectedAccountData.id
@@ -149,7 +150,7 @@ class BrokerSpec extends Specification {
                 .withBalanceDollars(50)
                 .withLastTransactionID('3')
                 .withProfitLoss(1L)
-                .build(), [position])
+                .build(), [position], Orders.empty())
 
         def context = Mock(Context)
 
@@ -185,7 +186,7 @@ class BrokerSpec extends Specification {
                 .withBalanceDollars(50)
                 .withLastTransactionID('1234')
                 .withProfitLoss(13L)
-                .build(), [])
+                .build(), [], Orders.empty())
 
         def trader = Mock(ForexTrader)
         trader.accountNumber >> accountID
@@ -236,7 +237,7 @@ class BrokerSpec extends Specification {
                 .withBalanceDollars(50)
                 .withLastTransactionID('1234')
                 .withProfitLoss(13L)
-                .build(), [])
+                .build(), [], Orders.empty())
 
         def trader = Mock(ForexTrader)
         trader.accountNumber >> accountID
@@ -287,7 +288,7 @@ class BrokerSpec extends Specification {
                 .withBalanceDollars(50)
                 .withLastTransactionID('1234')
                 .withProfitLoss(13L)
-                .build(), [])
+                .build(), [], Orders.empty())
 
         def trader = Mock(ForexTrader)
         trader.accountNumber >> accountID

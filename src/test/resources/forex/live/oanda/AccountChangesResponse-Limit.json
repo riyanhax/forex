@@ -1,0 +1,305 @@
+{
+  "changes": {
+    "ordersCreated": [],
+    "ordersCancelled": [
+      {
+        "id": "1237",
+        "createTime": "2018-10-12T15:04:20.367755954Z",
+        "type": "TAKE_PROFIT",
+        "tradeID": "1236",
+        "price": "1.14970",
+        "timeInForce": "GTC",
+        "triggerCondition": "DEFAULT",
+        "state": "CANCELLED",
+        "cancellingTransactionID": "1241",
+        "cancelledTime": "2018-10-12T15:06:32.541484526Z"
+      },
+      {
+        "id": "1238",
+        "createTime": "2018-10-12T15:04:20.367755954Z",
+        "type": "STOP_LOSS",
+        "tradeID": "1236",
+        "price": "1.15869",
+        "guaranteed": false,
+        "timeInForce": "GTC",
+        "triggerCondition": "DEFAULT",
+        "state": "CANCELLED",
+        "cancellingTransactionID": "1242",
+        "cancelledTime": "2018-10-12T15:06:32.541484526Z"
+      }
+    ],
+    "ordersFilled": [
+      {
+        "id": "1235",
+        "createTime": "2018-10-12T15:04:20.367755954Z",
+        "type": "LIMIT",
+        "instrument": "EUR_USD",
+        "units": "-1",
+        "timeInForce": "GTC",
+        "takeProfitOnFill": {
+          "price": "1.14970",
+          "timeInForce": "GTC"
+        },
+        "stopLossOnFill": {
+          "price": "1.15869",
+          "timeInForce": "GTC"
+        },
+        "price": "1.15569",
+        "triggerCondition": "DEFAULT",
+        "partialFill": "DEFAULT_FILL",
+        "positionFill": "DEFAULT",
+        "state": "FILLED",
+        "fillingTransactionID": "1236",
+        "filledTime": "2018-10-12T15:04:20.367755954Z",
+        "tradeOpenedID": "1236"
+      }
+    ],
+    "ordersTriggered": [],
+    "tradesOpened": [],
+    "tradesReduced": [],
+    "tradesClosed": [],
+    "positions": [
+      {
+        "instrument": "EUR_USD",
+        "long": {
+          "units": "0",
+          "pl": "-0.8921",
+          "resettablePL": "-0.8921",
+          "financing": "-0.0031",
+          "guaranteedExecutionFees": "0.0000"
+        },
+        "short": {
+          "units": "0",
+          "pl": "1.9535",
+          "resettablePL": "1.9535",
+          "financing": "0.0033",
+          "guaranteedExecutionFees": "0.0000"
+        },
+        "pl": "1.0614",
+        "resettablePL": "1.0614",
+        "financing": "0.0002",
+        "commission": "0.0000",
+        "guaranteedExecutionFees": "0.0000"
+      }
+    ],
+    "transactions": [
+      {
+        "type": "LIMIT_ORDER",
+        "instrument": "EUR_USD",
+        "units": "-1",
+        "price": "1.15569",
+        "timeInForce": "GTC",
+        "triggerCondition": "DEFAULT",
+        "partialFill": "DEFAULT",
+        "positionFill": "DEFAULT",
+        "takeProfitOnFill": {
+          "price": "1.14970",
+          "timeInForce": "GTC"
+        },
+        "stopLossOnFill": {
+          "price": "1.15869",
+          "timeInForce": "GTC"
+        },
+        "reason": "CLIENT_ORDER",
+        "id": "1235",
+        "accountID": "101-001-1775714-001",
+        "userID": 1775714,
+        "batchID": "1235",
+        "requestID": "24470928307195359",
+        "time": "2018-10-12T15:04:20.367755954Z"
+      },
+      {
+        "type": "ORDER_FILL",
+        "orderID": "1235",
+        "instrument": "EUR_USD",
+        "units": "-1",
+        "requestedUnits": "-1",
+        "price": "1.15573",
+        "pl": "0.0000",
+        "financing": "0.0000",
+        "commission": "0.0000",
+        "accountBalance": "501.6861",
+        "gainQuoteHomeConversionFactor": "1",
+        "lossQuoteHomeConversionFactor": "1",
+        "guaranteedExecutionFee": "0.0000",
+        "halfSpreadCost": "0.0001",
+        "fullVWAP": "1.15573",
+        "reason": "LIMIT_ORDER",
+        "tradeOpened": {
+          "price": "1.15573",
+          "tradeID": "1236",
+          "units": "-1",
+          "guaranteedExecutionFee": "0.0000",
+          "halfSpreadCost": "0.0001",
+          "initialMarginRequired": "0.0231"
+        },
+        "fullPrice": {
+          "closeoutBid": "1.15558",
+          "closeoutAsk": "1.15601",
+          "timestamp": "2018-10-12T15:04:18.938481056Z",
+          "bids": [
+            {
+              "price": "1.15573",
+              "liquidity": "10000000"
+            }
+          ],
+          "asks": [
+            {
+              "price": "1.15586",
+              "liquidity": "10000000"
+            }
+          ]
+        },
+        "id": "1236",
+        "accountID": "101-001-1775714-001",
+        "userID": 1775714,
+        "batchID": "1235",
+        "requestID": "24470928307195359",
+        "time": "2018-10-12T15:04:20.367755954Z"
+      },
+      {
+        "type": "TAKE_PROFIT_ORDER",
+        "tradeID": "1236",
+        "timeInForce": "GTC",
+        "triggerCondition": "DEFAULT",
+        "price": "1.14970",
+        "reason": "ON_FILL",
+        "id": "1237",
+        "accountID": "101-001-1775714-001",
+        "userID": 1775714,
+        "batchID": "1235",
+        "requestID": "24470928307195359",
+        "time": "2018-10-12T15:04:20.367755954Z"
+      },
+      {
+        "type": "STOP_LOSS_ORDER",
+        "tradeID": "1236",
+        "timeInForce": "GTC",
+        "triggerCondition": "DEFAULT",
+        "price": "1.15869",
+        "guaranteed": false,
+        "reason": "ON_FILL",
+        "id": "1238",
+        "accountID": "101-001-1775714-001",
+        "userID": 1775714,
+        "batchID": "1235",
+        "requestID": "24470928307195359",
+        "time": "2018-10-12T15:04:20.367755954Z"
+      },
+      {
+        "type": "MARKET_ORDER",
+        "instrument": "EUR_USD",
+        "units": "1",
+        "timeInForce": "FOK",
+        "positionFill": "REDUCE_ONLY",
+        "reason": "POSITION_CLOSEOUT",
+        "shortPositionCloseout": {
+          "instrument": "EUR_USD",
+          "units": "ALL"
+        },
+        "id": "1239",
+        "accountID": "101-001-1775714-001",
+        "userID": 1775714,
+        "batchID": "1239",
+        "requestID": "24470928861080638",
+        "time": "2018-10-12T15:06:32.541484526Z"
+      },
+      {
+        "type": "ORDER_FILL",
+        "orderID": "1239",
+        "instrument": "EUR_USD",
+        "units": "1",
+        "requestedUnits": "1",
+        "price": "1.15614",
+        "pl": "-0.0004",
+        "financing": "0.0000",
+        "commission": "0.0000",
+        "accountBalance": "501.6857",
+        "gainQuoteHomeConversionFactor": "1",
+        "lossQuoteHomeConversionFactor": "1",
+        "guaranteedExecutionFee": "0.0000",
+        "halfSpreadCost": "0.0001",
+        "fullVWAP": "1.15614",
+        "reason": "MARKET_ORDER_POSITION_CLOSEOUT",
+        "tradesClosed": [
+          {
+            "tradeID": "1236",
+            "units": "1",
+            "realizedPL": "-0.0004",
+            "financing": "0.0000",
+            "price": "1.15614",
+            "guaranteedExecutionFee": "0.0000",
+            "halfSpreadCost": "0.0001"
+          }
+        ],
+        "fullPrice": {
+          "closeoutBid": "1.15587",
+          "closeoutAsk": "1.15629",
+          "timestamp": "2018-10-12T15:06:30.915200864Z",
+          "bids": [
+            {
+              "price": "1.15602",
+              "liquidity": "10000000"
+            }
+          ],
+          "asks": [
+            {
+              "price": "1.15614",
+              "liquidity": "10000000"
+            }
+          ]
+        },
+        "id": "1240",
+        "accountID": "101-001-1775714-001",
+        "userID": 1775714,
+        "batchID": "1239",
+        "requestID": "24470928861080638",
+        "time": "2018-10-12T15:06:32.541484526Z"
+      },
+      {
+        "type": "ORDER_CANCEL",
+        "orderID": "1237",
+        "reason": "LINKED_TRADE_CLOSED",
+        "closedTradeID": "1236",
+        "tradeCloseTransactionID": "1240",
+        "id": "1241",
+        "accountID": "101-001-1775714-001",
+        "userID": 1775714,
+        "batchID": "1239",
+        "requestID": "24470928861080638",
+        "time": "2018-10-12T15:06:32.541484526Z"
+      },
+      {
+        "type": "ORDER_CANCEL",
+        "orderID": "1238",
+        "reason": "LINKED_TRADE_CLOSED",
+        "closedTradeID": "1236",
+        "tradeCloseTransactionID": "1240",
+        "id": "1242",
+        "accountID": "101-001-1775714-001",
+        "userID": 1775714,
+        "batchID": "1239",
+        "requestID": "24470928861080638",
+        "time": "2018-10-12T15:06:32.541484526Z"
+      }
+    ]
+  },
+  "state": {
+    "unrealizedPL": "0.0000",
+    "NAV": "501.6857",
+    "marginUsed": "0.0000",
+    "marginAvailable": "501.6857",
+    "positionValue": "0.0000",
+    "marginCloseoutUnrealizedPL": "0.0000",
+    "marginCloseoutNAV": "501.6857",
+    "marginCloseoutMarginUsed": "0.0000",
+    "marginCloseoutPercent": "0.00000",
+    "withdrawalLimit": "501.6857",
+    "marginCallMarginUsed": "0.0000",
+    "marginCallPercent": "0.00000",
+    "orders": [],
+    "trades": [],
+    "positions": []
+  },
+  "lastTransactionID": "1242"
+}

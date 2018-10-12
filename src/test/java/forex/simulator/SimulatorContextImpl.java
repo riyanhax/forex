@@ -253,7 +253,8 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
             MarketOrderTransaction orderCreateTransaction = new MarketOrderTransaction(submitted.getId(), accountID,
                     submitted.getSubmissionDate(), submitted.getInstrument(), submitted.getUnits());
 
-            return new OrderCreateResponse(marketOrder.getInstrument(), orderCreateTransaction, null, null);
+            // TODO: Support limit orders
+            return new OrderCreateResponse(marketOrder.getInstrument(), orderCreateTransaction, null, null, null);
         }
     }
 
@@ -371,7 +372,8 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
 
         Account newAccount = new Account(account.getId(), account.getBalance(), account.getLastTransactionID(),
                 account.getProfitLoss());
-        AccountSummary summary = new AccountSummary(newAccount, newTradeValues);
+        // TODO: Add support for pending orders
+        AccountSummary summary = new AccountSummary(newAccount, newTradeValues, forex.broker.Orders.empty());
 
         return new AccountSnapshot(summary, clock.now());
     }
@@ -480,7 +482,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
             return new AccountSummary(new Account.Builder(id)
                     .withBalance(balance)
                     .withLastTransactionID(getLatestTransactionId(id))
-                    .build(), emptyList());
+                    .build(), emptyList(), forex.broker.Orders.empty());
         });
     }
 

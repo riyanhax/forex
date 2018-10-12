@@ -5,6 +5,7 @@ import forex.broker.AccountAndTrades
 import forex.broker.AccountSummary
 import forex.broker.Context
 import forex.broker.ForexBroker
+import forex.broker.Orders
 import forex.broker.RequestException
 import forex.market.MarketTime
 import forex.trader.Trader
@@ -48,7 +49,7 @@ class TraderSpec extends Specification {
         1 * traderService.accountAndTrades(accountID, _) >> new AccountAndTrades(new AccountSummary(new Account.Builder(accountID)
                 .withBalanceDollars(50)
                 .withLastTransactionID('1234')
-                .build(), []), [])
+                .build(), [], Orders.empty()), [])
     }
 
 }

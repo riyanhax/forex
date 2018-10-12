@@ -4,6 +4,7 @@ import com.google.common.collect.Range;
 import forex.broker.CandlestickData;
 import forex.broker.ForexBroker;
 import forex.broker.OpenPositionRequest;
+import forex.broker.Quote;
 import forex.broker.RequestException;
 import forex.broker.TradeSummary;
 import forex.market.Instrument;
@@ -120,7 +121,13 @@ public enum TradingStrategies implements TradingStrategy {
         @Override
         public Optional<OpenPositionRequest> shouldOpenPosition(ForexTrader trader, ForexBroker broker, MarketTime clock) {
             Instrument pair = TradingStrategies.randomInstrument();
-            return Optional.of(new OpenPositionRequest(pair, 1, null, 300L, 600L));
+            try {
+                Quote quote = broker.getQuote(trader, pair);
+                return Optional.of(new OpenPositionRequest(pair, 1, quote.getAsk() - 50L, 300L, 600L));
+            } catch (Exception e) {
+                LoggerFactory.getLogger(TradingStrategies.class).error("Unable to retrieve quote!");
+                return Optional.empty();
+            }
         }
     },
     OPEN_RANDOM_POSITION_HIGH_FREQUENCY {

@@ -20,7 +20,7 @@ class OrderServiceImplSpec extends Specification {
                 .withBalanceDollars(50)
                 .withLastTransactionID('someId')
                 .withProfitLoss(13L)
-                .build(), []), [])
+                .build(), [], Orders.empty()), [])
         def context = Mock(Context)
         context.getPricing(_) >> new PricingGetResponse([new Price(EURUSD, 10010L, 10020L)])
 
@@ -36,7 +36,7 @@ class OrderServiceImplSpec extends Specification {
         1 * context.createOrder({
             it.order.units == 3
         }) >> new OrderCreateResponse(EURUSD, new MarketOrderTransaction('6367', id,
-                LocalDateTime.of(2016, Month.JUNE, 22, 13, 41, 29, 264030555), EURUSD, 3), null, null)
+                LocalDateTime.of(2016, Month.JUNE, 22, 13, 41, 29, 264030555), EURUSD, 3), null, null, null)
     }
 
 }

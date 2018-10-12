@@ -73,12 +73,13 @@ class AccountConverter {
     private static AccountSummary convert(com.oanda.v20.account.Account oandaAccount) {
         List<TradeSummary> trades = oandaAccount.getTrades().stream().map(it ->
                 TradeConverter.convert(it, oandaAccount.getId().toString())).collect(toList());
+        Orders pendingOrders = OrderConverter.convert(oandaAccount.getOrders(), oandaAccount.getId().toString());
 
         return new AccountSummary(new Account.Builder(convert(oandaAccount.getId()))
                 .withBalance(pippetesFromDouble(oandaAccount.getBalance().doubleValue()))
                 .withLastTransactionID(CommonConverter.convert(oandaAccount.getLastTransactionID()))
                 .withProfitLoss(pippetesFromDouble(oandaAccount.getPl().doubleValue()))
-                .build(), trades);
+                .build(), trades, pendingOrders);
     }
 
     private static String convert(com.oanda.v20.account.AccountID id) {

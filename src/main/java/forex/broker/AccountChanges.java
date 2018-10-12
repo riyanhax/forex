@@ -77,7 +77,15 @@ public class AccountChanges {
         List<TradeSummary> newTradesOpened = new ArrayList<>(tradesOpened);
         newTradesOpened.add(filledPosition);
 
-        return new AccountChanges(createdOrders, filledOrders, canceledOrders, tradesClosed, newTradesOpened);
+        // TODO: Need to support limit orders as well
+        List<MarketOrder> marketOrders = new ArrayList<>(filledOrders.getMarketOrders());
+        marketOrders.add(new MarketOrder(filledPosition.getTradeId(), filledPosition.getAccountId(), filledPosition.getOpenTime(),
+                null, filledPosition.getOpenTime(), filledPosition.getInstrument(), filledPosition.getInitialUnits()));
+
+        Orders newFilledOrders = new Orders(marketOrders, filledOrders.getLimitOrders(),
+                filledOrders.getTakeProfits(), filledOrders.getStopLosses());
+
+        return new AccountChanges(createdOrders, newFilledOrders, canceledOrders, tradesClosed, newTradesOpened);
     }
 
     AccountChanges tradeClosed(TradeSummary filledPosition) {

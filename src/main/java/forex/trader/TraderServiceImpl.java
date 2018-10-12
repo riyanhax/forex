@@ -7,6 +7,7 @@ import forex.broker.AccountChangesRequest;
 import forex.broker.AccountChangesResponse;
 import forex.broker.AccountSummary;
 import forex.broker.Context;
+import forex.broker.Orders;
 import forex.broker.RequestException;
 import forex.broker.Trade;
 import forex.broker.TradeListRequest;
@@ -30,7 +31,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static forex.broker.TradeStateFilter.CLOSED;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 @Service
@@ -106,6 +106,7 @@ class TraderServiceImpl implements TraderService {
         AccountSummary accountSummary = accountAndTrades.getAccount();
 
         accountRepository.save(accountSummary.getAccount());
+        orderService.saveIfNotExists(accountSummary.getPendingOrders());
 
         for (TradeSummary openTrade : accountSummary.getTrades()) {
             Trade trade = tradeRepository.findByAccountIdAndTradeId(openTrade.getAccountId(), openTrade.getTradeId());
@@ -135,16 +136,16 @@ class TraderServiceImpl implements TraderService {
             return null;
         }
 
-        List<TradeSummary> openTrades = tradeRepository.findByAccountIdAndCloseTimeIsNull(accountId)
-                .stream().map(TradeSummary::new).collect(toList());
         List<Trade> closedTrades = tradeRepository.findByAccountIdAndCloseTimeIsNotNullOrderByCloseTimeDesc(accountId, PageRequest.of(0, 10));
 
-        return new AccountAndTrades(new AccountSummary(accountOpt.get(), openTrades), closedTrades);
+        return new AccountAndTrades(getAccountSummary(accountId), closedTrades);
     }
 
     private AccountSummary getAccountSummary(String accountID) {
         List<TradeSummary> openTrades = tradeRepository.findByAccountIdAndCloseTimeIsNull(accountID)
                 .stream().map(TradeSummary::new).collect(Collectors.toList());
-        return new AccountSummary(accountRepository.getOne(accountID), openTrades);
+        Orders pendingOrders = orderService.findPendingOrders(accountID);
+
+        return new AccountSummary(accountRepository.getOne(accountID), openTrades, pendingOrders);
     }
 }
