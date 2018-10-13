@@ -36,7 +36,7 @@ spring: # Integration test
 
 simulation:
   startTime: 2017-01-01 01:00
-  endTime: 2017-12-31 23:59
+  endTime: 2017-01-31 23:59
   millisDelayBetweenMinutes: 0
   accountBalanceDollars: 50
   pippeteSpread: 20

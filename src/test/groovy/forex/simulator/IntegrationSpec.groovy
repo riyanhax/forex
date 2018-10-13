@@ -1,7 +1,6 @@
 package forex.simulator
 
 import forex.broker.LiveTraders
-import org.junit.Ignore
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.annotation.Configuration
@@ -12,7 +11,6 @@ import spock.lang.Specification
 
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.NONE
 
-@Ignore
 @SpringBootTest(webEnvironment = NONE, classes = SpecConfiguration.class)
 @ActiveProfiles("integration")
 @ContextConfiguration
@@ -50,15 +48,15 @@ class IntegrationSpec extends Specification {
         def regressionComparatorPortfolio4 = regressionComparatorData2.mostRecentPortfolio
 
         expect: 'history comparator profit/loss was calculated correctly'
-        historyComparatorPortfolio1.pipettesProfit == -12503L
-        historyComparatorPortfolio1.getNetAssetValue() == 4987497L
+        historyComparatorPortfolio1.pipettesProfit == 3582L
+        historyComparatorPortfolio1.getNetAssetValue() == 5003730L
 
         and: 'both history comparator traders had the same profit/loss'
         historyComparatorPortfolio2.pipettesProfit == historyComparatorPortfolio1.pipettesProfit
 
         and: 'regression comparator profit/loss was calculated correctly'
-        regressionComparatorPortfolio3.pipettesProfit == 5444L
-        regressionComparatorPortfolio3.getNetAssetValue() == 5005444L
+        regressionComparatorPortfolio3.pipettesProfit == -3010L
+        regressionComparatorPortfolio3.getNetAssetValue() == 4996362L
 
         and: 'both regression comparator traders had the same profit/loss'
         regressionComparatorPortfolio4.pipettesProfit == regressionComparatorPortfolio3.pipettesProfit
