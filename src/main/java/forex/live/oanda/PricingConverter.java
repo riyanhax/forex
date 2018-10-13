@@ -10,7 +10,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import static forex.broker.Quote.pippetesFromDouble;
+import static forex.live.oanda.CommonConverter.pippetes;
 import static forex.live.oanda.CommonConverter.verifyResponseInstrument;
 import static java.util.stream.Collectors.toSet;
 
@@ -44,12 +44,12 @@ class PricingConverter {
 
         boolean inverse = requestedInstrument.isInverse();
 
-        long bid = pippetesFromDouble(inverse, oandaPrice.getBids().stream().findFirst()
+        long bid = pippetes(inverse, oandaPrice.getBids().stream().findFirst()
                 .orElseThrow(() -> new IllegalStateException("No bid prices found!"))
-                .getPrice().doubleValue());
-        long ask = pippetesFromDouble(inverse, oandaPrice.getAsks().stream().findFirst()
+                .getPrice());
+        long ask = pippetes(inverse, oandaPrice.getAsks().stream().findFirst()
                 .orElseThrow(() -> new IllegalStateException("No ask prices found!"))
-                .getPrice().doubleValue());
+                .getPrice());
 
         if (inverse) {
             long actualAsk = bid;

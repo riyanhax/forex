@@ -21,9 +21,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 
-import static forex.broker.Quote.pippetesFromDouble;
 import static forex.live.oanda.CommonConverter.ISO_INSTANT_FORMATTER;
 import static forex.live.oanda.CommonConverter.parseToZone;
+import static forex.live.oanda.CommonConverter.pippetes;
 import static forex.live.oanda.CommonConverter.verifyResponseInstrument;
 import static forex.market.MarketTime.ZONE;
 import static java.time.format.TextStyle.NARROW;
@@ -108,22 +108,18 @@ class InstrumentConverter {
             return null;
         }
 
-        double open = data.getO().doubleValue();
-        double high = data.getH().doubleValue();
-        double low = data.getL().doubleValue();
-        double close = data.getC().doubleValue();
+        long open = pippetes(inverse, data.getO());
+        long high = pippetes(inverse, data.getH());
+        long low = pippetes(inverse, data.getL());
+        long close = pippetes(inverse, data.getC());
 
         if (inverse) {
-            double actualHigh = low;
+            long actualHigh = low;
             low = high;
             high = actualHigh;
         }
 
-        return new CandlestickData(
-                pippetesFromDouble(inverse, open),
-                pippetesFromDouble(inverse, high),
-                pippetesFromDouble(inverse, low),
-                pippetesFromDouble(inverse, close));
+        return new CandlestickData(open, high, low, close);
     }
 
     private static BiMap<CandlestickGranularity, com.oanda.v20.instrument.CandlestickGranularity> granularities =

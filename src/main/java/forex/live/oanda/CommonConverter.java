@@ -1,7 +1,10 @@
 package forex.live.oanda;
 
 import com.google.common.base.Preconditions;
+import com.oanda.v20.pricing.PriceValue;
+import com.oanda.v20.primitives.AccountUnits;
 import com.oanda.v20.primitives.DateTime;
+import com.oanda.v20.primitives.DecimalNumber;
 import com.oanda.v20.primitives.InstrumentName;
 import forex.market.Instrument;
 import forex.market.MarketTime;
@@ -11,6 +14,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
+import static forex.broker.Quote.pippetesFromDouble;
 import static java.time.LocalDateTime.parse;
 
 class CommonConverter {
@@ -37,8 +41,20 @@ class CommonConverter {
         }
     }
 
-    static String convert(com.oanda.v20.transaction.TransactionID oandaVersion) {
-        return oandaVersion.toString();
+    static int toInt(DecimalNumber number) {
+        return (int) number.doubleValue();
+    }
+
+    static long pippetes(AccountUnits units) {
+        return pippetesFromDouble(units.doubleValue());
+    }
+
+    static long pippetes(PriceValue price) {
+        return pippetesFromDouble(price.doubleValue());
+    }
+
+    static long pippetes(boolean inverse, PriceValue price) {
+        return pippetesFromDouble(inverse, price.doubleValue());
     }
 
     static Instrument convert(InstrumentName instrument) {

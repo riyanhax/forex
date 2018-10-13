@@ -2,13 +2,14 @@ package forex.live.oanda;
 
 import com.oanda.v20.account.AccountID;
 import com.oanda.v20.order.Order;
+import com.oanda.v20.order.OrderID;
 import com.oanda.v20.order.OrderType;
 import com.oanda.v20.transaction.Transaction;
+import com.oanda.v20.transaction.TransactionID;
 import forex.broker.LimitOrder;
 import forex.broker.LimitOrderRequest;
 import forex.broker.LimitOrderTransaction;
 import forex.broker.MarketOrder;
-import forex.broker.OrderRequest;
 import forex.broker.MarketOrderRequest;
 import forex.broker.MarketOrderTransaction;
 import forex.broker.OrderCancelReason;
@@ -16,6 +17,7 @@ import forex.broker.OrderCancelTransaction;
 import forex.broker.OrderCreateRequest;
 import forex.broker.OrderCreateResponse;
 import forex.broker.OrderFillTransaction;
+import forex.broker.OrderRequest;
 import forex.broker.Orders;
 import forex.broker.StopLossDetails;
 import forex.broker.StopLossOrder;
@@ -34,8 +36,9 @@ import java.util.function.Consumer;
 import static com.google.common.base.Preconditions.checkArgument;
 import static forex.broker.Quote.doubleFromPippetes;
 import static forex.broker.Quote.invert;
-import static forex.broker.Quote.pippetesFromDouble;
 import static forex.live.oanda.CommonConverter.parseTimestamp;
+import static forex.live.oanda.CommonConverter.pippetes;
+import static forex.live.oanda.CommonConverter.toInt;
 import static forex.live.oanda.CommonConverter.verifyResponseInstrument;
 import static java.util.stream.Collectors.groupingBy;
 
@@ -48,7 +51,15 @@ class OrderConverter {
 
     }
 
-    public static final Logger LOG = LoggerFactory.getLogger(OrderConverter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(OrderConverter.class);
+
+    static String id(TransactionID id) {
+        return id.toString();
+    }
+
+    static String id(OrderID id) {
+        return id.toString();
+    }
 
     static com.oanda.v20.order.OrderCreateRequest convert(OrderCreateRequest request) {
         com.oanda.v20.order.OrderCreateRequest oandaRequest = new com.oanda.v20.order.OrderCreateRequest(
@@ -91,12 +102,12 @@ class OrderConverter {
 
     private static OrderFillTransaction convert(com.oanda.v20.transaction.OrderFillTransaction oandaVersion) {
         return new OrderFillTransaction(oandaVersion.getOrderID().toString(),
-                oandaVersion.getId().toString(), parseTimestamp(oandaVersion.getTime().toString()));
+                id(oandaVersion.getId()), parseTimestamp(oandaVersion.getTime()));
     }
 
     private static OrderCancelTransaction convert(com.oanda.v20.transaction.OrderCancelTransaction oandaVersion) {
         return new OrderCancelTransaction(oandaVersion.getOrderID().toString(), OrderCancelReason.valueOf(oandaVersion.getReason().name()),
-                oandaVersion.getId().toString(), oandaVersion.getRequestID().toString(), parseTimestamp(oandaVersion.getTime().toString())
+                id(oandaVersion.getId()), oandaVersion.getRequestID().toString(), parseTimestamp(oandaVersion.getTime())
         );
     }
 
@@ -104,7 +115,7 @@ class OrderConverter {
         Instrument responseInstrument = CommonConverter.convert(marketOrderTransaction.getInstrument());
         verifyResponseInstrument(requestedInstrument, responseInstrument);
 
-        int units = (int) marketOrderTransaction.getUnits().doubleValue();
+        int units = toInt(marketOrderTransaction.getUnits());
         if (requestedInstrument != responseInstrument) {
             units *= -1;
         }
@@ -113,7 +124,7 @@ class OrderConverter {
 
         return new MarketOrderTransaction(marketOrderTransaction.getId().toString(),
                 marketOrderTransaction.getAccountID().toString(),
-                parseTimestamp(marketOrderTransaction.getTime().toString()),
+                parseTimestamp(marketOrderTransaction.getTime()),
                 requestedInstrument, units);
     }
 
@@ -122,8 +133,8 @@ class OrderConverter {
         Instrument responseInstrument = CommonConverter.convert(limitOrderTransaction.getInstrument());
         verifyResponseInstrument(requestedInstrument, responseInstrument);
 
-        int units = (int) limitOrderTransaction.getUnits().doubleValue();
-        long price = pippetesFromDouble(limitOrderTransaction.getPrice().doubleValue());
+        int units = toInt(limitOrderTransaction.getUnits());
+        long price = pippetes(limitOrderTransaction.getPrice());
         if (requestedInstrument != responseInstrument) {
             units *= -1;
             price = invert(price);
@@ -133,7 +144,7 @@ class OrderConverter {
 
         return new LimitOrderTransaction(limitOrderTransaction.getId().toString(),
                 limitOrderTransaction.getAccountID().toString(),
-                parseTimestamp(limitOrderTransaction.getTime().toString()),
+                parseTimestamp(limitOrderTransaction.getTime()),
                 requestedInstrument, units, price);
     }
 
@@ -246,13 +257,13 @@ class OrderConverter {
         LocalDateTime canceledTime = parseTimestamp(oandaVersion.getCancelledTime());
         LocalDateTime filledTime = parseTimestamp(oandaVersion.getFilledTime());
         Instrument instrument = CommonConverter.convert(oandaVersion.getInstrument());
-        int units = (int) oandaVersion.getUnits().doubleValue();
+        int units = toInt(oandaVersion.getUnits());
         if (units < 0) {
             instrument = instrument.getOpposite();
             units *= -1;
         }
 
-        return new MarketOrder(oandaVersion.getId().toString(), accountId, createTime, canceledTime, filledTime, instrument, units);
+        return new MarketOrder(id(oandaVersion.getId()), accountId, createTime, canceledTime, filledTime, instrument, units);
     }
 
     private static LimitOrder convert(com.oanda.v20.order.LimitOrder oandaVersion, String accountId) {
@@ -260,33 +271,33 @@ class OrderConverter {
         LocalDateTime canceledTime = parseTimestamp(oandaVersion.getCancelledTime());
         LocalDateTime filledTime = parseTimestamp(oandaVersion.getFilledTime());
         Instrument instrument = CommonConverter.convert(oandaVersion.getInstrument());
-        long price = pippetesFromDouble(oandaVersion.getPrice().doubleValue());
+        long price = pippetes(oandaVersion.getPrice());
 
-        int units = (int) oandaVersion.getUnits().doubleValue();
+        int units = toInt(oandaVersion.getUnits());
         if (units < 0) {
             instrument = instrument.getOpposite();
             price = invert(price);
             units *= -1;
         }
 
-        return new LimitOrder(oandaVersion.getId().toString(), accountId, createTime, canceledTime, filledTime, instrument, units, price);
+        return new LimitOrder(id(oandaVersion.getId()), accountId, createTime, canceledTime, filledTime, instrument, units, price);
     }
 
     private static TakeProfitOrder convert(com.oanda.v20.order.TakeProfitOrder oandaVersion, String accountId) {
         LocalDateTime createTime = parseTimestamp(oandaVersion.getCreateTime());
         LocalDateTime canceledTime = parseTimestamp(oandaVersion.getCancelledTime());
         LocalDateTime filledTime = parseTimestamp(oandaVersion.getFilledTime());
-        long price = pippetesFromDouble(oandaVersion.getPrice().doubleValue());
+        long price = pippetes(oandaVersion.getPrice());
 
-        return new TakeProfitOrder(oandaVersion.getId().toString(), accountId, createTime, canceledTime, filledTime, price);
+        return new TakeProfitOrder(id(oandaVersion.getId()), accountId, createTime, canceledTime, filledTime, price);
     }
 
     private static StopLossOrder convert(com.oanda.v20.order.StopLossOrder oandaVersion, String accountId) {
         LocalDateTime createTime = parseTimestamp(oandaVersion.getCreateTime());
         LocalDateTime canceledTime = parseTimestamp(oandaVersion.getCancelledTime());
         LocalDateTime filledTime = parseTimestamp(oandaVersion.getFilledTime());
-        long price = pippetesFromDouble(oandaVersion.getPrice().doubleValue());
+        long price = pippetes(oandaVersion.getPrice());
 
-        return new StopLossOrder(oandaVersion.getId().toString(), accountId, createTime, canceledTime, filledTime, price);
+        return new StopLossOrder(id(oandaVersion.getId()), accountId, createTime, canceledTime, filledTime, price);
     }
 }

@@ -14,12 +14,20 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-import static forex.broker.Quote.pippetesFromDouble;
+import static forex.live.oanda.CommonConverter.pippetes;
 import static java.util.stream.Collectors.toList;
 
 class AccountConverter {
 
     private static final Logger LOG = LoggerFactory.getLogger(AccountConverter.class);
+
+    static String id(com.oanda.v20.account.AccountID id) {
+        return id == null ? null : id.toString();
+    }
+
+    static String id(com.oanda.v20.account.Account account) {
+        return account == null ? null : id(account.getId());
+    }
 
     static com.oanda.v20.account.AccountID convert(String accountID) {
         return new com.oanda.v20.account.AccountID(accountID);
@@ -40,7 +48,7 @@ class AccountConverter {
     }
 
     static AccountChangesResponse convert(com.oanda.v20.account.AccountChangesResponse oandaResponse, String accountId) {
-        String lastTransactionID = CommonConverter.convert(oandaResponse.getLastTransactionID());
+        String lastTransactionID = OrderConverter.id(oandaResponse.getLastTransactionID());
 
         return new AccountChangesResponse(lastTransactionID, convert(oandaResponse.getChanges(), accountId),
                 convert(oandaResponse.getState())
@@ -48,8 +56,8 @@ class AccountConverter {
     }
 
     private static AccountChangesState convert(com.oanda.v20.account.AccountChangesState state) {
-        return new AccountChangesState(pippetesFromDouble(state.getNAV().doubleValue()),
-                pippetesFromDouble(state.getUnrealizedPL().doubleValue()),
+        return new AccountChangesState(pippetes(state.getNAV()),
+                pippetes(state.getUnrealizedPL()),
                 state.getTrades().stream().map(TradeConverter::convert).collect(toList()));
     }
 
@@ -72,18 +80,14 @@ class AccountConverter {
 
     private static AccountSummary convert(com.oanda.v20.account.Account oandaAccount) {
         List<TradeSummary> trades = oandaAccount.getTrades().stream().map(it ->
-                TradeConverter.convert(it, oandaAccount.getId().toString())).collect(toList());
-        Orders pendingOrders = OrderConverter.convert(oandaAccount.getOrders(), oandaAccount.getId().toString());
+                TradeConverter.convert(it, id(oandaAccount))).collect(toList());
+        Orders pendingOrders = OrderConverter.convert(oandaAccount.getOrders(), id(oandaAccount));
 
-        return new AccountSummary(new Account.Builder(convert(oandaAccount.getId()))
-                .withBalance(pippetesFromDouble(oandaAccount.getBalance().doubleValue()))
-                .withLastTransactionID(CommonConverter.convert(oandaAccount.getLastTransactionID()))
-                .withProfitLoss(pippetesFromDouble(oandaAccount.getPl().doubleValue()))
+        return new AccountSummary(new Account.Builder(id(oandaAccount.getId()))
+                .withBalance(pippetes(oandaAccount.getBalance()))
+                .withLastTransactionID(OrderConverter.id(oandaAccount.getLastTransactionID()))
+                .withProfitLoss(pippetes(oandaAccount.getPl()))
                 .build(), trades, pendingOrders);
-    }
-
-    private static String convert(com.oanda.v20.account.AccountID id) {
-        return id.toString();
     }
 
 }

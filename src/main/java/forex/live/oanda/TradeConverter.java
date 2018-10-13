@@ -16,7 +16,9 @@ import forex.market.Instrument;
 import java.time.LocalDateTime;
 
 import static forex.broker.Quote.invert;
-import static forex.broker.Quote.pippetesFromDouble;
+import static forex.live.oanda.CommonConverter.parseTimestamp;
+import static forex.live.oanda.CommonConverter.pippetes;
+import static forex.live.oanda.CommonConverter.toInt;
 import static java.lang.Math.abs;
 import static java.util.stream.Collectors.toList;
 
@@ -32,7 +34,7 @@ class TradeConverter {
         com.oanda.v20.transaction.MarketOrderTransaction orderCreateTransaction = oandaResponse.getOrderCreateTransaction();
 
         Instrument instrument = CommonConverter.convert(oandaResponse.getOrderCreateTransaction().getInstrument());
-        if ((int) orderCreateTransaction.getUnits().doubleValue() < 0) {
+        if (toInt(orderCreateTransaction.getUnits()) < 0) {
             instrument = instrument.getOpposite();
         }
 
@@ -61,15 +63,15 @@ class TradeConverter {
     static TradeListResponse convert(com.oanda.v20.trade.TradeListResponse oandaResponse, String accountId) {
         return new TradeListResponse(
                 oandaResponse.getTrades().stream().map(it -> convert(it, accountId)).collect(toList()),
-                CommonConverter.convert(oandaResponse.getLastTransactionID()));
+                OrderConverter.id(oandaResponse.getLastTransactionID()));
     }
 
     static Trade convert(com.oanda.v20.trade.Trade trade, String accountId) {
 
         Instrument instrument = InstrumentConverter.convert(trade.getInstrument());
-        long price = pippetesFromDouble(trade.getPrice().doubleValue());
-        long averageClosePrice = trade.getAverageClosePrice() == null ? 0L : pippetesFromDouble(trade.getAverageClosePrice().doubleValue());
-        int initialUnits = (int) trade.getInitialUnits().doubleValue();
+        long price = pippetes(trade.getPrice());
+        long averageClosePrice = trade.getAverageClosePrice() == null ? 0L : pippetes(trade.getAverageClosePrice());
+        int initialUnits = toInt(trade.getInitialUnits());
 
         if (initialUnits < 0) {
             instrument = instrument.getOpposite();
@@ -81,27 +83,27 @@ class TradeConverter {
 
         return new Trade(trade.getId().toString(), accountId, instrument,
                 price,
-                trade.getOpenTime() == null ? null : CommonConverter.parseTimestamp(trade.getOpenTime().toString()),
+                parseTimestamp(trade.getOpenTime()),
                 TradeState.valueOf(trade.getState().name()),
                 abs(initialUnits),
-                abs((int) trade.getCurrentUnits().doubleValue()),
-                trade.getRealizedPL() == null ? 0L : pippetesFromDouble(trade.getRealizedPL().doubleValue()),
-                trade.getUnrealizedPL() == null ? 0L : pippetesFromDouble(trade.getUnrealizedPL().doubleValue()),
-                trade.getMarginUsed() == null ? 0L : pippetesFromDouble(trade.getMarginUsed().doubleValue()),
+                abs(toInt(trade.getCurrentUnits())),
+                trade.getRealizedPL() == null ? 0L : pippetes(trade.getRealizedPL()),
+                trade.getUnrealizedPL() == null ? 0L : pippetes(trade.getUnrealizedPL()),
+                trade.getMarginUsed() == null ? 0L : pippetes(trade.getMarginUsed()),
                 averageClosePrice,
-                trade.getClosingTransactionIDs().stream().map(CommonConverter::convert).collect(toList()),
-                trade.getFinancing() == null ? 0L : pippetesFromDouble(trade.getFinancing().doubleValue()),
-                trade.getCloseTime() == null ? null : CommonConverter.parseTimestamp(trade.getCloseTime().toString()));
+                trade.getClosingTransactionIDs().stream().map(OrderConverter::id).collect(toList()),
+                trade.getFinancing() == null ? 0L : pippetes(trade.getFinancing()),
+                parseTimestamp(trade.getCloseTime()));
     }
 
     static TradeSummary convert(com.oanda.v20.trade.TradeSummary tradeSummary, String accountId) {
         Instrument instrument = InstrumentConverter.convert(tradeSummary.getInstrument());
-        LocalDateTime openTime = tradeSummary.getOpenTime() == null ? null : CommonConverter.parseTimestamp(tradeSummary.getOpenTime().toString());
-        LocalDateTime closeTime = tradeSummary.getCloseTime() == null ? null : CommonConverter.parseTimestamp(tradeSummary.getCloseTime().toString());
-        long price = pippetesFromDouble(tradeSummary.getPrice().doubleValue());
-        long realizedProfitLoss = pippetesFromDouble(tradeSummary.getRealizedPL() == null ? 0L : tradeSummary.getRealizedPL().doubleValue());
-        long unrealizedProfitLoss = pippetesFromDouble(tradeSummary.getUnrealizedPL() == null ? 0L : tradeSummary.getUnrealizedPL().doubleValue());
-        double initialUnits = tradeSummary.getInitialUnits().doubleValue();
+        LocalDateTime openTime = parseTimestamp(tradeSummary.getOpenTime());
+        LocalDateTime closeTime = parseTimestamp(tradeSummary.getCloseTime());
+        long price = pippetes(tradeSummary.getPrice());
+        long realizedProfitLoss = tradeSummary.getRealizedPL() == null ? 0L : pippetes(tradeSummary.getRealizedPL());
+        long unrealizedProfitLoss = tradeSummary.getUnrealizedPL() == null ? 0L : pippetes(tradeSummary.getUnrealizedPL());
+        int initialUnits = toInt(tradeSummary.getInitialUnits());
 
         if (initialUnits < 0) {
             instrument = instrument.getOpposite();
@@ -109,10 +111,10 @@ class TradeConverter {
         }
 
         return new TradeSummary(tradeSummary.getId().toString(), accountId, instrument, price, openTime, abs((int) initialUnits),
-                abs((int) tradeSummary.getCurrentUnits().doubleValue()), realizedProfitLoss, unrealizedProfitLoss, closeTime);
+                abs(toInt(tradeSummary.getCurrentUnits())), realizedProfitLoss, unrealizedProfitLoss, closeTime);
     }
 
     static CalculatedTradeState convert(com.oanda.v20.trade.CalculatedTradeState state) {
-        return new CalculatedTradeState(state.getId().toString(), pippetesFromDouble(state.getUnrealizedPL().doubleValue()));
+        return new CalculatedTradeState(state.getId().toString(), pippetes(state.getUnrealizedPL()));
     }
 }
