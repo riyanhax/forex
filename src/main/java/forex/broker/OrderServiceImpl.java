@@ -10,8 +10,12 @@ import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 
+import java.util.Set;
+
 import static forex.broker.OrderService.createLimitOrderRequest;
 import static forex.broker.OrderService.createMarketOrderRequest;
+import static java.util.Collections.emptySet;
+import static java.util.Collections.singleton;
 
 @Service
 public class OrderServiceImpl implements OrderService {
@@ -48,11 +52,21 @@ public class OrderServiceImpl implements OrderService {
 
         OrderCreateResponse orderCreateResponse = trader.getContext().createOrder(orderCreateRequest);
         MarketOrderTransaction orderTransaction = orderCreateResponse.getOrderCreateTransaction();
+        LimitOrderTransaction limitOrderTransaction = orderCreateResponse.getLimitOrderCreateTransaction();
         OrderFillTransaction fillTransaction = orderCreateResponse.getOrderFillTransaction();
         OrderCancelTransaction cancelTransaction = orderCreateResponse.getOrderCancelTransaction();
-        if (orderTransaction != null) {
+        MarketOrder marketOrder = null;
+        LimitOrder limitOrder = null;
 
-            MarketOrder order = new MarketOrder(orderTransaction);
+        if (orderTransaction != null) {
+            marketOrder = new MarketOrder(orderTransaction);
+        }
+        if (limitOrderTransaction != null) {
+            limitOrder = new LimitOrder(limitOrderTransaction);
+        }
+
+        Order order = marketOrder == null ? limitOrder : marketOrder;
+        if (order != null) {
 
             if (fillTransaction != null) {
                 order.setFilledTime(fillTransaction.getTime());
@@ -61,7 +75,10 @@ public class OrderServiceImpl implements OrderService {
                 order.setCanceledReason(cancelTransaction.getReason());
             }
 
-            accountOrderService.saveIfNotExists(order);
+            Set<MarketOrder> marketOrders = marketOrder == null ? emptySet() : singleton(marketOrder);
+            Set<LimitOrder> limitOrders = limitOrder == null ? emptySet() : singleton(limitOrder);
+
+            accountOrderService.saveIfNotExists(new Orders(marketOrders, limitOrders, emptySet(), emptySet()));
         }
 
         LOG.info(orderCreateResponse.toString());

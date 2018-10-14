@@ -16,6 +16,10 @@ public class LimitOrderTransaction extends OrderTransaction {
         this.price = price;
     }
 
+    public long getPrice() {
+        return price;
+    }
+
     @Override
     protected ToStringHelper toStringHelper() {
         return super.toStringHelper()

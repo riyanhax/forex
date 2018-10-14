@@ -45,13 +45,15 @@ public enum TradingStrategies implements TradingStrategy {
             LocalDateTime now = clock.now();
             int minute = now.getMinute();
 
-            if (!(minute % 16 == 0)) {
+            if (!(minute % 8 == 0)) {
                 return Optional.empty();
             }
 
-            Instrument instrument = minute % 32 == 0 ? Instrument.USDEUR : Instrument.EURUSD;
+            Instrument instrument = minute % 16 == 0 ? Instrument.USDEUR : Instrument.EURUSD;
             int units = (minute % 3) + 1;
-            return Optional.of(new OpenPositionRequest(instrument, units, null, 300L, 600L));
+            Long limit = units > 1 ? broker.getQuote(trader, instrument).getAsk() - 40L : null;
+
+            return Optional.of(new OpenPositionRequest(instrument, units, limit, 300L, 600L));
         }
     },
     /**

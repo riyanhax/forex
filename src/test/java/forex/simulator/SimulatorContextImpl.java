@@ -19,7 +19,8 @@ import forex.broker.CandlestickGranularity;
 import forex.broker.InstrumentCandlesRequest;
 import forex.broker.InstrumentCandlesResponse;
 import forex.broker.InstrumentContext;
-import forex.broker.MarketOrderRequest;
+import forex.broker.LimitOrderRequest;
+import forex.broker.LimitOrderTransaction;
 import forex.broker.MarketOrderTransaction;
 import forex.broker.OrderContext;
 import forex.broker.OrderCreateRequest;
@@ -66,6 +67,8 @@ import java.util.TreeSet;
 
 import static forex.broker.Quote.pippetesFromDouble;
 import static forex.market.MarketTime.formatTimestamp;
+import static forex.market.order.Orders.buyLimitOrder;
+import static forex.market.order.Orders.buyMarketOrder;
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 
@@ -80,7 +83,7 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
 
     private final Map<String, String> accountIdsByOrderId = new HashMap<>();
     private final Map<String, TraderData> traderDataById = new HashMap<>();
-    private final Map<String, MarketOrderRequest> stopLossTakeProfitsById = new HashMap<>();
+    private final Map<String, forex.broker.OrderRequest> stopLossTakeProfitsById = new HashMap<>();
     private final Map<String, AccountChangesResponse> accountChangesById = new HashMap<>();
 
     @Override
@@ -188,7 +191,8 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
             List<TradeSummary> openTrades = account.getTrades();
 
             AccountChangesResponse accountChangesResponse = stagedAccountChanges(accountID);
-            accountChangesById.put(accountID, accountChangesResponse.tradeOpened(transactionId, filledPosition, new AccountChangesState(account.getNetAssetValue(),
+            accountChangesById.put(accountID, accountChangesResponse.tradeOpened(transactionId, stopLossTakeProfitsById.get(accountID),
+                    filledPosition, new AccountChangesState(account.getNetAssetValue(),
                     openTrades.stream().mapToLong(TradeSummary::getUnrealizedProfitLoss).sum(),
                     CalculatedTradeState.fromAll(openTrades))
             ));
@@ -240,21 +244,38 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
         @Override
         public OrderCreateResponse create(OrderCreateRequest request) throws RequestException {
 
-            MarketOrderRequest marketOrder = request.getOrder();
-            Instrument pair = marketOrder.getInstrument();
-            int units = marketOrder.getUnits();
+            forex.broker.OrderRequest requestedOrder = request.getOrder();
+            boolean limit = false;
+            if (requestedOrder == null) {
+                requestedOrder = request.getLimitOrder();
+                limit = true;
+            }
+            Instrument pair = requestedOrder.getInstrument();
+            int units = requestedOrder.getUnits();
 
-            BuyMarketOrder order = Orders.buyMarketOrder(units, pair);
-            OrderRequest submitted = marketEngine.submit(SimulatorContextImpl.this, order);
             String accountID = request.getAccountID();
+            LimitOrderTransaction limitOrderTransaction = null;
+            MarketOrderTransaction marketOrderTransaction = null;
+            OrderRequest submitted;
+            if (limit) {
+                long price = ((LimitOrderRequest) requestedOrder).getPrice();
+                submitted = marketEngine.submit(SimulatorContextImpl.this,
+                        buyLimitOrder(units, pair, price));
+
+                limitOrderTransaction = new LimitOrderTransaction(submitted.getId(), accountID,
+                        submitted.getSubmissionDate(), submitted.getInstrument(), submitted.getUnits(), price);
+            } else {
+                BuyMarketOrder order = buyMarketOrder(units, pair);
+                submitted = marketEngine.submit(SimulatorContextImpl.this, order);
+
+                marketOrderTransaction = new MarketOrderTransaction(submitted.getId(), accountID,
+                        submitted.getSubmissionDate(), submitted.getInstrument(), submitted.getUnits());
+            }
+
             accountIdsByOrderId.put(submitted.getId(), accountID);
-            stopLossTakeProfitsById.put(accountID, marketOrder);
+            stopLossTakeProfitsById.put(accountID, requestedOrder);
 
-            MarketOrderTransaction orderCreateTransaction = new MarketOrderTransaction(submitted.getId(), accountID,
-                    submitted.getSubmissionDate(), submitted.getInstrument(), submitted.getUnits());
-
-            // TODO: Support limit orders
-            return new OrderCreateResponse(marketOrder.getInstrument(), orderCreateTransaction, null, null, null);
+            return new OrderCreateResponse(pair, marketOrderTransaction, limitOrderTransaction, null, null);
         }
     }
 
@@ -532,11 +553,14 @@ class SimulatorContextImpl extends BaseContext implements OrderListener, Simulat
      */
     private boolean handleStopLossTakeProfits(AccountSummary account) throws RequestException {
         String id = account.getId();
-        MarketOrderRequest openedPosition = stopLossTakeProfitsById.get(id);
+        forex.broker.OrderRequest openedPosition = stopLossTakeProfitsById.get(id);
 
         if (openedPosition != null) {
             AccountSnapshot accountSnapshot = accountSnapshot(account);
             List<TradeSummary> positions = accountSnapshot.getPositionValues();
+            if (positions.isEmpty()) { // Limit order that hasn't been filled yet
+                return false;
+            }
 
             TradeSummary positionValue = positions.iterator().next();
             long pipsProfit = positionValue.getUnrealizedProfitLoss();

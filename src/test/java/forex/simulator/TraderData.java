@@ -1,6 +1,5 @@
 package forex.simulator;
 
-import forex.broker.MarketOrderRequest;
 import forex.market.AccountSnapshot;
 
 public class TraderData {
@@ -8,9 +7,6 @@ public class TraderData {
     private AccountSnapshot drawdownPortfolio = null;
     private AccountSnapshot profitPortfolio = null;
     private AccountSnapshot mostRecentPortfolio = null;
-
-    // This should be managed in the market
-    private MarketOrderRequest openedPosition;
 
     public void addSnapshot(AccountSnapshot accountSnapshot) {
         if (drawdownPortfolio == null || drawdownPortfolio.pipettes() > accountSnapshot.pipettes()) {

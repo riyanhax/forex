@@ -53,8 +53,8 @@ public class AccountChangesResponse {
                 .toString();
     }
 
-    public AccountChangesResponse tradeOpened(Integer transactionId, TradeSummary filledPosition, AccountChangesState state) {
-        AccountChanges changes = accountChanges.tradeOpened(filledPosition);
+    public AccountChangesResponse tradeOpened(Integer transactionId, OrderRequest orderRequest, TradeSummary filledPosition, AccountChangesState state) {
+        AccountChanges changes = accountChanges.tradeOpened(orderRequest, filledPosition);
 
         return new AccountChangesResponse(transactionId.toString(), changes, state);
     }

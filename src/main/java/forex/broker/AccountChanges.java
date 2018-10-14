@@ -1,6 +1,8 @@
 package forex.broker;
 
 import com.google.common.base.MoreObjects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,6 +11,8 @@ import java.util.Objects;
 import static java.util.Collections.emptyList;
 
 public class AccountChanges {
+
+    private static final Logger LOG = LoggerFactory.getLogger(AccountChanges.class);
 
     private final Orders createdOrders;
     private final Orders filledOrders;
@@ -73,16 +77,26 @@ public class AccountChanges {
                 .toString();
     }
 
-    AccountChanges tradeOpened(TradeSummary filledPosition) {
+    AccountChanges tradeOpened(OrderRequest orderRequest, TradeSummary filledPosition) {
         List<TradeSummary> newTradesOpened = new ArrayList<>(tradesOpened);
         newTradesOpened.add(filledPosition);
 
-        // TODO: Need to support limit orders as well
         List<MarketOrder> marketOrders = new ArrayList<>(filledOrders.getMarketOrders());
-        marketOrders.add(new MarketOrder(filledPosition.getTradeId(), filledPosition.getAccountId(), filledPosition.getOpenTime(),
-                null, filledPosition.getOpenTime(), filledPosition.getInstrument(), filledPosition.getInitialUnits()));
+        List<LimitOrder> limitOrders = new ArrayList<>(filledOrders.getLimitOrders());
 
-        Orders newFilledOrders = new Orders(marketOrders, filledOrders.getLimitOrders(),
+        if (orderRequest instanceof MarketOrderRequest) {
+            marketOrders.add(new MarketOrder(filledPosition.getTradeId(), filledPosition.getAccountId(), filledPosition.getOpenTime(),
+                    null, filledPosition.getOpenTime(), filledPosition.getInstrument(), filledPosition.getInitialUnits()));
+        } else if (orderRequest instanceof LimitOrderRequest) {
+            LimitOrderRequest request = (LimitOrderRequest) orderRequest;
+
+            limitOrders.add(new LimitOrder(filledPosition.getTradeId(), filledPosition.getAccountId(), filledPosition.getOpenTime(),
+                    null, filledPosition.getOpenTime(), filledPosition.getInstrument(), filledPosition.getInitialUnits(), request.getPrice()));
+        } else {
+            LOG.error("Unexpected order request type: {}", orderRequest.getClass().getName());
+        }
+
+        Orders newFilledOrders = new Orders(marketOrders, limitOrders,
                 filledOrders.getTakeProfits(), filledOrders.getStopLosses());
 
         return new AccountChanges(createdOrders, newFilledOrders, canceledOrders, tradesClosed, newTradesOpened);
