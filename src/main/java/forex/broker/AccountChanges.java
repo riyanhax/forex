@@ -19,6 +19,7 @@ public class AccountChanges {
     private final Orders canceledOrders;
     private final List<TradeSummary> tradesClosed;
     private final List<TradeSummary> tradesOpened;
+    // TODO: Add transactions here and store when retrieved
 
     public AccountChanges(Orders createdOrders, Orders filledOrders, Orders canceledOrders,
                           List<TradeSummary> tradesClosed, List<TradeSummary> tradesOpened) {

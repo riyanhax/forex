@@ -21,7 +21,7 @@ public class MarketOrder extends Order {
     }
 
     public MarketOrder(MarketOrderTransaction transaction) {
-        this(transaction.getOrderId(), transaction.getAccountId(), transaction.getCreateTime(), null,
+        this(transaction.getTransactionId(), transaction.getAccountId(), transaction.getTime(), null,
                 null, transaction.getInstrument(), transaction.getUnits());
     }
 

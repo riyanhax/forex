@@ -33,7 +33,7 @@ public class LimitOrder extends Order {
     }
 
     public LimitOrder(LimitOrderTransaction transaction) {
-        this(transaction.getOrderId(), transaction.getAccountId(), transaction.getCreateTime(), null, null,
+        this(transaction.getTransactionId(), transaction.getAccountId(), transaction.getTime(), null, null,
                 transaction.getInstrument(), transaction.getUnits(), transaction.getPrice());
     }
 

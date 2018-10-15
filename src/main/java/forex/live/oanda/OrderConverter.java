@@ -101,13 +101,14 @@ class OrderConverter {
     }
 
     private static OrderFillTransaction convert(com.oanda.v20.transaction.OrderFillTransaction oandaVersion) {
-        return new OrderFillTransaction(oandaVersion.getOrderID().toString(),
-                id(oandaVersion.getId()), parseTimestamp(oandaVersion.getTime()));
+        return new OrderFillTransaction(id(oandaVersion.getId()), AccountConverter.id(oandaVersion.getAccountID()),
+                parseTimestamp(oandaVersion.getTime()), id(oandaVersion.getOrderID()));
     }
 
     private static OrderCancelTransaction convert(com.oanda.v20.transaction.OrderCancelTransaction oandaVersion) {
-        return new OrderCancelTransaction(oandaVersion.getOrderID().toString(), OrderCancelReason.valueOf(oandaVersion.getReason().name()),
-                id(oandaVersion.getId()), oandaVersion.getRequestID().toString(), parseTimestamp(oandaVersion.getTime())
+        return new OrderCancelTransaction(id(oandaVersion.getId()), AccountConverter.id(oandaVersion.getAccountID()),
+                parseTimestamp(oandaVersion.getTime()), OrderConverter.id(oandaVersion.getOrderID()),
+                OrderCancelReason.valueOf(oandaVersion.getReason().name()), oandaVersion.getRequestID().toString()
         );
     }
 

@@ -2,6 +2,7 @@ package forex.broker
 
 import forex.live.TestTrader
 import forex.market.AccountOrderService
+import forex.market.AccountTransactionService
 import forex.market.MarketTime
 import forex.trader.TraderService
 import spock.lang.Specification
@@ -27,7 +28,7 @@ class OrderServiceImplSpec extends Specification {
         def clock = Mock(MarketTime)
         def trader = new TestTrader(id, context, traderService, clock)
 
-        OrderService service = new OrderServiceImpl(Mock(AccountOrderService))
+        OrderService service = new OrderServiceImpl(Mock(AccountOrderService), Mock(AccountTransactionService))
 
         when: 'a trader opens a position with a specific number of units'
         service.openPosition(trader, new OpenPositionRequest(EURUSD, 3, null, null, null), Mock(Quote))

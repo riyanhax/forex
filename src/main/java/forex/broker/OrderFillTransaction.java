@@ -1,55 +1,52 @@
 package forex.broker;
 
-import com.google.common.base.MoreObjects;
+import com.google.common.base.MoreObjects.ToStringHelper;
 
+import javax.persistence.Column;
+import javax.persistence.Entity;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
-public class OrderFillTransaction {
+@Entity(name = "account_transaction_order_fill")
+public class OrderFillTransaction extends Transaction {
 
-    private final String orderID;
-    private final String id;
-    private final LocalDateTime time;
+    @Column(name = "order_id", nullable = false)
+    private String orderId;
 
-    public OrderFillTransaction(String orderID, String id, LocalDateTime time) {
-        this.orderID = orderID;
-        this.id = id;
-        this.time = time;
+    public OrderFillTransaction() {
     }
 
-    public String getOrderID() {
-        return orderID;
+    public OrderFillTransaction(String transactionId, String accountId, LocalDateTime time, String orderId) {
+        super(transactionId, accountId, time);
+
+        this.orderId = orderId;
     }
 
-    public String getId() {
-        return id;
+    public String getOrderId() {
+        return orderId;
     }
 
-    public LocalDateTime getTime() {
-        return time;
+    public void setOrderId(String orderId) {
+        this.orderId = orderId;
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
         OrderFillTransaction that = (OrderFillTransaction) o;
-        return Objects.equals(orderID, that.orderID) &&
-                Objects.equals(id, that.id) &&
-                Objects.equals(time, that.time);
+        return Objects.equals(orderId, that.orderId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(orderID, id, time);
+        return Objects.hash(super.hashCode(), orderId);
     }
 
     @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("orderID", orderID)
-                .add("id", id)
-                .add("time", time)
-                .toString();
+    protected ToStringHelper toStringHelper() {
+        return super.toStringHelper()
+                .add("orderId", orderId);
     }
 }

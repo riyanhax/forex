@@ -2,6 +2,7 @@ package forex.broker;
 
 import com.google.common.base.Preconditions;
 import forex.market.AccountOrderService;
+import forex.market.AccountTransactionService;
 import forex.market.Instrument;
 import forex.trader.ForexTrader;
 import org.slf4j.Logger;
@@ -22,10 +23,12 @@ public class OrderServiceImpl implements OrderService {
 
     private static final Logger LOG = LoggerFactory.getLogger(OrderServiceImpl.class);
 
-    private AccountOrderService accountOrderService;
+    private final AccountOrderService accountOrderService;
+    private final AccountTransactionService accountTransactionService;
 
-    public OrderServiceImpl(AccountOrderService accountOrderService) {
+    public OrderServiceImpl(AccountOrderService accountOrderService, AccountTransactionService accountTransactionService) {
         this.accountOrderService = accountOrderService;
+        this.accountTransactionService = accountTransactionService;
     }
 
     @Transactional
@@ -60,9 +63,13 @@ public class OrderServiceImpl implements OrderService {
 
         if (orderTransaction != null) {
             marketOrder = new MarketOrder(orderTransaction);
+
+            accountTransactionService.saveIfNotExists(orderTransaction);
         }
         if (limitOrderTransaction != null) {
             limitOrder = new LimitOrder(limitOrderTransaction);
+
+            accountTransactionService.saveIfNotExists(limitOrderTransaction);
         }
 
         Order order = marketOrder == null ? limitOrder : marketOrder;
@@ -70,9 +77,13 @@ public class OrderServiceImpl implements OrderService {
 
             if (fillTransaction != null) {
                 order.setFilledTime(fillTransaction.getTime());
+
+                accountTransactionService.saveIfNotExists(fillTransaction);
             } else if (cancelTransaction != null) {
                 order.setCanceledTime(cancelTransaction.getTime());
                 order.setCanceledReason(cancelTransaction.getReason());
+
+                accountTransactionService.saveIfNotExists(cancelTransaction);
             }
 
             Set<MarketOrder> marketOrders = marketOrder == null ? emptySet() : singleton(marketOrder);
