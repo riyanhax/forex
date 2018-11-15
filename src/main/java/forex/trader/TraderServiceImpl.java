@@ -38,6 +38,9 @@ import static java.util.stream.Collectors.toSet;
 class TraderServiceImpl implements TraderService {
 
     private static final Logger LOG = LoggerFactory.getLogger(TraderServiceImpl.class);
+
+    private static final String INVALID_TRANSACTION_ID_MESSAGE = "The transaction ID range specified is invalid";
+
     private final Context context;
     private final MarketTime clock;
     private final AccountRepository accountRepository;
@@ -118,7 +121,41 @@ class TraderServiceImpl implements TraderService {
         }
 
         for (Trade closedTrade : accountAndTrades.getTrades()) {
+            Trade trade = tradeRepository.findByAccountIdAndTradeId(closedTrade.getAccountId(), closedTrade.getTradeId());
+            if (trade != null) {
+                closedTrade.setId(trade.getId());
+            }
+
             tradeRepository.save(closedTrade);
+        }
+
+        reconcileOpenTrades(accountSummary);
+    }
+
+    /**
+     * Force closes any trades that are open in the database but not in the current account summary.
+     *
+     * @param accountSummary
+     */
+    private void reconcileOpenTrades(AccountSummary accountSummary) {
+        List<Trade> openTradesInDB = tradeRepository.findByAccountIdAndCloseTimeIsNull(accountSummary.getId());
+        if (!openTradesInDB.isEmpty()) {
+            Set<String> openTradeIds = accountSummary.getTrades().stream().map(TradeSummary::getTradeId).collect(toSet());
+            List<Trade> forceClosed = new ArrayList<>();
+
+            for (Trade openTradeInDB : openTradesInDB) {
+                if (!openTradeIds.contains(openTradeInDB.getTradeId())) {
+                    Trade toClose = new Trade(openTradeInDB, clock.now());
+
+                    tradeRepository.save(toClose);
+
+                    forceClosed.add(toClose);
+                }
+            }
+
+            if (!forceClosed.isEmpty()) {
+                LOG.info("Force closed {} trades: {}", forceClosed.size(), forceClosed);
+            }
         }
     }
 
@@ -126,7 +163,17 @@ class TraderServiceImpl implements TraderService {
     public AccountAndTrades accountAndTrades(String accountId, int numberClosedTrades) throws RequestException {
         Optional<Account> accountOpt = accountRepository.findById(accountId);
         if (accountOpt.isPresent()) {
-            refreshAccount(new AccountChangesRequest(accountOpt.get().getId(), accountOpt.get().getLastTransactionID()));
+            String lastTransactionID = accountOpt.get().getLastTransactionID();
+            try {
+                refreshAccount(new AccountChangesRequest(accountOpt.get().getId(), lastTransactionID));
+            } catch (RequestException e) {
+                if (INVALID_TRANSACTION_ID_MESSAGE.equals(e.getMessage())) {
+                    LOG.error("Invalid transaction id: {}, attempting to reinitialize", lastTransactionID);
+                } else {
+                    LOG.error("Unable to refresh account, attempting to reinitialize", e);
+                }
+                initializeAccount(accountId, numberClosedTrades);
+            }
         } else {
             initializeAccount(accountId, numberClosedTrades);
         }

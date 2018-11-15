@@ -1,10 +1,12 @@
 package forex.trader
 
 import forex.broker.Account
+import forex.broker.AccountAndTrades
 import forex.broker.AccountChanges
 import forex.broker.AccountChangesRequest
 import forex.broker.AccountChangesResponse
 import forex.broker.AccountChangesState
+import forex.broker.AccountSummary
 import forex.broker.Context
 import forex.broker.Orders
 import forex.broker.RequestException
@@ -89,7 +91,7 @@ class TraderServiceImplSpec extends Specification {
             throw new RequestException('Something unexpected happened')
         }
 
-        and: 'the exception was thrown'
-        thrown(RequestException)
+        and: 'the account was reinitialized'
+        1 * context.initializeAccount(accountID, 10) >> new AccountAndTrades(new AccountSummary(currentAccount, [], Orders.empty()), [])
     }
 }

@@ -101,6 +101,14 @@ public class Trade {
         this.closeTime = closeTime;
     }
 
+    public Trade(Trade trade, @Nullable LocalDateTime closeTime) {
+        this(trade.getTradeId(), trade.getAccountId(), trade.getInstrument(), trade.getPrice(), trade.getOpenTime(),
+                trade.getCloseTime() == null ? OPEN : CLOSED, trade.getInitialUnits(), trade.getCurrentUnits(), trade.getRealizedProfitLoss(), trade.getUnrealizedProfitLoss(),
+                0L, 0L, emptyList(), 0L, closeTime);
+
+        this.id = trade.getId();
+    }
+
     public Trade(TradeSummary summary) {
         this(summary.getTradeId(), summary.getAccountId(), summary.getInstrument(), summary.getPrice(), summary.getOpenTime(),
                 summary.getCloseTime() == null ? OPEN : CLOSED, summary.getInitialUnits(), summary.getCurrentUnits(), summary.getRealizedProfitLoss(), summary.getUnrealizedProfitLoss(),
