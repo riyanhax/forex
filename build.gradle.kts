@@ -18,16 +18,6 @@ val slf4jVersion = "1.7.25"
 val spockVersion = "1.1-groovy-2.4-rc-3"
 val springVersion = "4.3.3.RELEASE"
 
-tasks.getByName<BootJar>("bootJar") {
-    launchScript()
-}
-
-tasks.getByName<Jar>("jar") {
-    version = ""
-    isPreserveFileTimestamps = false
-    isReproducibleFileOrder = true
-}
-
 dependencies {
     implementation("org.slf4j:slf4j-api:$slf4jVersion")
     implementation("org.springframework.boot:spring-boot-starter")
@@ -47,6 +37,20 @@ dependencies {
     testImplementation("com.h2database:h2:1.4.197")
 }
 
+tasks.getByName<BootJar>("bootJar") {
+    launchScript()
+}
+
+tasks.getByName<Jar>("jar") {
+    version = ""
+    isPreserveFileTimestamps = false
+    isReproducibleFileOrder = true
+}
+
+tasks.withType<Test> {
+    maxHeapSize = "4096m"
+}
+
 val stopService = tasks.register<Exec>("stopService") {
     commandLine("sudo", "service", "forex", "stop")
 }
@@ -60,7 +64,7 @@ val copyJar = tasks.register<DefaultTask>("copyJar") {
         exec {
             val targetDir = file(project.property("targetDir")!!)
 
-            logger.lifecycle("Releasing ${archive} to $targetDir")
+            logger.lifecycle("Releasing $archive to $targetDir")
 
             commandLine("sudo", "cp", archive, targetDir)
         }
